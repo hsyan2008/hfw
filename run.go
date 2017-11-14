@@ -29,7 +29,7 @@ func Run() {
 	certFile := Config.Server.HTTPSCertFile
 	keyFile := Config.Server.HTTPSKeyFile
 	if IsExist(certFile) && IsExist(keyFile) {
-		startHttpsServe(certFile, keyFile)
+		startHTTPSServe(certFile, keyFile)
 	} else {
 		startServe()
 	}

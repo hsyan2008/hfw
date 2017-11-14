@@ -48,6 +48,15 @@ func (aesCrypt *AesCrypt) Encrypt(plantText []byte) ([]byte, error) {
 	return ciphertext, nil
 }
 
+//Encrypt2Base64 加密结果转为base64
+func (aesCrypt *AesCrypt) Encrypt2Base64(plantText string) (string, error) {
+	ac, err := aesCrypt.Encrypt([]byte(plantText))
+	if err != nil {
+		return "", err
+	}
+	return Base64Encode(ac), nil
+}
+
 //PKCS7Padding ..
 func (aesCrypt *AesCrypt) PKCS7Padding(ciphertext []byte, blockSize int) []byte {
 	padding := blockSize - len(ciphertext)%blockSize
@@ -72,6 +81,19 @@ func (aesCrypt *AesCrypt) Decrypt(ciphertext []byte) ([]byte, error) {
 	blockModel.CryptBlocks(plantText, ciphertext)
 	plantText = aesCrypt.PKCS7UnPadding(plantText, block.BlockSize())
 	return plantText, nil
+}
+
+//Baes642Decrypt 解密base64格式的密文
+func (aesCrypt *AesCrypt) Baes642Decrypt(ciphertext string) (string, error) {
+	ubase, err := Base64Decode(ciphertext)
+	if err != nil {
+		return "", err
+	}
+	pass, err := aesCrypt.Decrypt(ubase)
+	if err != nil {
+		return "", err
+	}
+	return string(pass), nil
 }
 
 //PKCS7UnPadding ..

@@ -28,7 +28,7 @@ func startServe() {
 }
 
 //支持https、grace
-func startHttpsServe(certFile, keyFile string) {
+func startHTTPSServe(certFile, keyFile string) {
 
 	var err error
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
@@ -40,7 +40,7 @@ func startHttpsServe(certFile, keyFile string) {
 		Addr: ":" + Config.Server.Port,
 		// Handler:      controllers,
 		ReadTimeout:  time.Duration(Config.Server.ReadTimeout) * time.Second,
-		WriteTimeout: time.Duration(Config.Server.WriteTimeout) * time.Second,
+		WriteTimeout: time.Duration(Config.Server.WriteTimeout+Config.Server.ReadTimeout) * time.Second,
 		// MaxHeaderBytes: 1 << 20,
 		TLSConfig: &tls.Config{
 			// NextProtos: []string{"http/1.1", "h2"}, //去掉1.1才支持h2

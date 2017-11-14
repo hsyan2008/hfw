@@ -8,9 +8,9 @@ import (
 
 //Result ..
 type Result struct {
-	ErrNo   int64       `json:"err_no"`
-	ErrMsg  string      `json:"err_msg"`
-	Results interface{} `json:"results"`
+	ErrNo   int64       `json:"code"`
+	ErrMsg  string      `json:"msg"`
+	Results interface{} `json:"result"`
 }
 
 //Max ..
