@@ -51,6 +51,10 @@ func openCache(cacheType string, cacheServers []string) {
 		cacher = xorm.NewLRUCacher(xorm.NewMemoryStore(), 1000)
 	case "memcache":
 		cacher = xorm.NewLRUCacher(cachestore.NewMemCache(cacheServers), 999999999)
+		// case "redis":
+		// 	cacher = xorm.NewLRUCacher(cachestore.NewRedisCache(cacheServers), 999999999)
+		// case "leveldb":
+		// 	cacher = xorm.NewLRUCacher(cachestore.NewLevelDBStore(cacheServers), 999999999)
 	}
 	if cacher != nil {
 		//可以指定缓存有效时间，如下
