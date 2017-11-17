@@ -91,6 +91,8 @@ func (ctl *Controller) Init(ctx *HTTPContext) {
 	if strings.Contains(ctl.Request.Header.Get("Accept-Encoding"), "gzip") {
 		ctl.IsZip = true
 	}
+
+	_ = ctl.Request.ParseForm()
 }
 
 //Before ..

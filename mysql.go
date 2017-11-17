@@ -29,12 +29,8 @@ func initDb(dbConfig DbConfig, cacheServers []string) {
 		panic(err)
 	}
 
-	if ENVIRONMENT != "prod" {
-		engine.ShowSQL(true)
-		engine.Logger().SetLevel(core.LOG_DEBUG)
-	} else {
-		engine.Logger().SetLevel(core.LOG_WARNING)
-	}
+	engine.SetLogger(&mysqlLog{})
+	engine.ShowSQL(true)
 
 	//连接池的空闲数大小
 	engine.SetMaxIdleConns(dbConfig.MaxIdleConns)
@@ -70,4 +66,48 @@ func keepalive(long time.Duration) {
 		time.Sleep(long * time.Second)
 		_ = engine.Ping()
 	}
+}
+
+type mysqlLog struct {
+	isShowSQL bool
+}
+
+func (mlog *mysqlLog) Debug(v ...interface{}) {
+	logger.Output(4, "DEBUG", v)
+}
+func (mlog *mysqlLog) Debugf(format string, v ...interface{}) {
+	logger.Output(4, "DEBUG", fmt.Sprintf(format, v...))
+}
+func (mlog *mysqlLog) Error(v ...interface{}) {
+	logger.Output(4, "ERROR", v)
+}
+func (mlog *mysqlLog) Errorf(format string, v ...interface{}) {
+	logger.Output(4, "ERROR", fmt.Sprintf(format, v...))
+}
+func (mlog *mysqlLog) Info(v ...interface{}) {
+	logger.Output(4, "INFO", v)
+}
+func (mlog *mysqlLog) Infof(format string, v ...interface{}) {
+	logger.Output(4, "INFO", fmt.Sprintf(format, v...))
+}
+func (mlog *mysqlLog) Warn(v ...interface{}) {
+	logger.Output(4, "WARN", v)
+}
+func (mlog *mysqlLog) Warnf(format string, v ...interface{}) {
+	logger.Output(4, "WARN", fmt.Sprintf(format, v...))
+}
+
+func (mlog *mysqlLog) Level() core.LogLevel {
+	return core.LogLevel(logger.Level())
+}
+
+func (mlog *mysqlLog) SetLevel(l core.LogLevel) {
+	logger.SetLevel(logger.LEVEL(l))
+}
+
+func (mlog *mysqlLog) ShowSQL(show ...bool) {
+	mlog.isShowSQL = show[0]
+}
+func (mlog *mysqlLog) IsShowSQL() bool {
+	return mlog.isShowSQL
 }

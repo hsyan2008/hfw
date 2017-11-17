@@ -11,8 +11,7 @@ var Config struct {
 	Cache    CacheConfig
 	Template TemplateConfig
 	Route    RouteConfig
-	Session  struct {
-		SessID     string
+	Redis    struct {
 		Server     string
 		Prefix     string
 		Expiration int32
