@@ -21,7 +21,7 @@ func init() {
 		panic("can not run by root")
 	}
 
-	initDb(Config.Db, Config.Cache.Servers)
+	initDb()
 }
 
 //Run start

@@ -15,9 +15,10 @@ import (
 var engine *xorm.Engine
 
 //InitDb init db
-func initDb(dbConfig DbConfig, cacheServers []string) {
+func initDb() {
 
 	var err error
+	dbConfig := Config.Db
 	driver := dbConfig.Driver
 	dbDsn := fmt.Sprintf("%s:%s@%s(%s)/%s%s",
 		dbConfig.Username, dbConfig.Password, dbConfig.Protocol,
@@ -39,20 +40,24 @@ func initDb(dbConfig DbConfig, cacheServers []string) {
 
 	go keepalive(time.Duration(dbConfig.KeepAlive))
 
-	openCache(dbConfig.CacheType, cacheServers)
+	openCache()
 }
 
-func openCache(cacheType string, cacheServers []string) {
+func openCache() {
 	var cacher *xorm.LRUCacher
 
 	//开启缓存
-	switch cacheType {
+	switch Config.Db.CacheType {
 	case "memory":
 		cacher = xorm.NewLRUCacher(xorm.NewMemoryStore(), 1000)
 	case "memcache":
-		cacher = xorm.NewLRUCacher(cachestore.NewMemCache(cacheServers), 999999999)
-		// case "redis":
-		// 	cacher = xorm.NewLRUCacher(cachestore.NewRedisCache(cacheServers), 999999999)
+		cacher = xorm.NewLRUCacher(cachestore.NewMemCache(Config.Cache.Servers), 999999999)
+	case "redis":
+		cf := make(map[string]string)
+		cf["key"] = Config.Redis.Prefix + "mysqlCache"
+		cf["password"] = Config.Redis.Password
+		cf["conn"] = Config.Redis.Server
+		cacher = xorm.NewLRUCacher(cachestore.NewRedisCache(cf), 999999999)
 		// case "leveldb":
 		// 	cacher = xorm.NewLRUCacher(cachestore.NewLevelDBStore(cacheServers), 999999999)
 	}
