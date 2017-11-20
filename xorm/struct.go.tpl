@@ -26,11 +26,9 @@ func (m *{{Mapper .Name}}) TableName() string {
 
 func (m *{{Mapper .Name}}) Save(t *{{Mapper .Name}}) (err error) {
 
-	t.UpdatedAt = int(time.Now().Unix())
 	if t.Id > 0 {
 		err = dao.UpdateById(t)
 	} else {
-		t.CreatedAt = int(time.Now().Unix())
 		err = dao.Insert(t)
 	}
 
@@ -40,7 +38,6 @@ func (m *{{Mapper .Name}}) Save(t *{{Mapper .Name}}) (err error) {
 func (m *{{Mapper .Name}}) Update(params Cond,
 	where Cond) (err error) {
 
-	params["updated_at"] = time.Now().Unix()
 	return dao.UpdateByWhere(m, params, where)
 }
 
