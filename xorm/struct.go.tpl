@@ -3,12 +3,7 @@ package {{.Model}}
 {{$ilen := len .Imports}}
 {{if gt $ilen 0}}
 import (
-	"time"
 	{{range .Imports}}"{{.}}"{{end}}
-)
-{{else}}
-import (
-	"time"
 )
 {{end}}
 
