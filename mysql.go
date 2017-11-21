@@ -12,21 +12,20 @@ import (
 	"github.com/hsyan2008/go-logger/logger"
 )
 
-var engine *xorm.Engine
+func ConnectDb(dbConfig DbConfig) *xorm.Engine {
 
-//InitDb init db
-func initDb() {
+	if dbConfig.Driver == "" {
+		panic("dbConfig Driver is nil")
+	}
 
-	var err error
-	dbConfig := Config.Db
 	driver := dbConfig.Driver
 	dbDsn := fmt.Sprintf("%s:%s@%s(%s)/%s%s",
 		dbConfig.Username, dbConfig.Password, dbConfig.Protocol,
 		dbConfig.Address, dbConfig.Dbname, dbConfig.Params)
 
-	engine, err = xorm.NewEngine(driver, dbDsn)
+	engine, err := xorm.NewEngine(driver, dbDsn)
 	if err != nil {
-		logger.Warn(err)
+		logger.Warn(dbConfig, err)
 		panic(err)
 	}
 
@@ -34,25 +33,39 @@ func initDb() {
 	engine.ShowSQL(true)
 
 	//连接池的空闲数大小
-	engine.SetMaxIdleConns(dbConfig.MaxIdleConns)
+	if dbConfig.MaxIdleConns > 0 {
+		engine.SetMaxIdleConns(dbConfig.MaxIdleConns)
+	}
 	//最大打开连接数
-	engine.SetMaxOpenConns(dbConfig.MaxOpenConns)
+	if dbConfig.MaxOpenConns > 0 {
+		engine.SetMaxOpenConns(dbConfig.MaxOpenConns)
+	}
 
-	go keepalive(time.Duration(dbConfig.KeepAlive))
+	if dbConfig.KeepAlive > 0 {
+		go keepalive(engine, time.Duration(dbConfig.KeepAlive))
+	}
 
-	openCache()
+	openCache(engine, dbConfig)
+
+	return engine
 }
 
-func openCache() {
+func openCache(engine *xorm.Engine, dbConfig DbConfig) {
 	var cacher *xorm.LRUCacher
 
 	//开启缓存
-	switch Config.Db.CacheType {
+	switch dbConfig.CacheType {
 	case "memory":
 		cacher = xorm.NewLRUCacher(xorm.NewMemoryStore(), 1000)
 	case "memcache":
+		if len(Config.Cache.Servers) == 0 {
+			return
+		}
 		cacher = xorm.NewLRUCacher(cachestore.NewMemCache(Config.Cache.Servers), 999999999)
 	case "redis":
+		if Config.Redis.Server == "" {
+			return
+		}
 		cf := make(map[string]string)
 		cf["key"] = Config.Redis.Prefix + "mysqlCache"
 		cf["password"] = Config.Redis.Password
@@ -70,7 +83,7 @@ func openCache() {
 }
 
 //保持mysql连接活跃
-func keepalive(long time.Duration) {
+func keepalive(engine *xorm.Engine, long time.Duration) {
 	for {
 		time.Sleep(long * time.Second)
 		_ = engine.Ping()

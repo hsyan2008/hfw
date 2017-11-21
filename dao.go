@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/go-xorm/xorm"
 	"github.com/hsyan2008/go-logger/logger"
 )
 
@@ -22,15 +23,19 @@ type Dao interface {
 
 var _ Dao = &NoCacheDao{}
 
-func NewNoCacheDao() *NoCacheDao {
-	return &NoCacheDao{}
+func NewNoCacheDao(engine *xorm.Engine) *NoCacheDao {
+	if engine == nil {
+		engine = ConnectDb(Config.Db)
+	}
+	return &NoCacheDao{engine: engine}
 }
 
 type NoCacheDao struct {
+	engine *xorm.Engine
 }
 
 func (d *NoCacheDao) UpdateById(t interface{}) (err error) {
-	sess := engine.NewSession()
+	sess := d.engine.NewSession()
 	defer sess.Close()
 
 	id := reflect.ValueOf(t).Elem().FieldByName("Id").Int()
@@ -50,7 +55,7 @@ func (d *NoCacheDao) UpdateByIds(t interface{}, params map[string]interface{},
 		return errors.New("ids parameters error")
 	}
 
-	sess := engine.NewSession()
+	sess := d.engine.NewSession()
 	defer sess.Close()
 	_, err = sess.Table(t).In("id", ids).Update(params)
 	if err != nil {
@@ -66,7 +71,7 @@ func (d *NoCacheDao) UpdateByWhere(t interface{}, params map[string]interface{},
 	if len(where) == 0 {
 		return errors.New("where paramters error")
 	}
-	sess := engine.NewSession()
+	sess := d.engine.NewSession()
 	defer sess.Close()
 
 	var (
@@ -87,7 +92,7 @@ func (d *NoCacheDao) UpdateByWhere(t interface{}, params map[string]interface{},
 }
 
 func (d *NoCacheDao) Insert(t interface{}) (err error) {
-	sess := engine.NewSession()
+	sess := d.engine.NewSession()
 	defer sess.Close()
 	_, err = sess.Insert(t)
 	if err != nil {
@@ -98,7 +103,7 @@ func (d *NoCacheDao) Insert(t interface{}) (err error) {
 }
 
 func (d *NoCacheDao) SearchOne(t interface{}) (err error) {
-	sess := engine.NewSession()
+	sess := d.engine.NewSession()
 	defer sess.Close()
 	_, err = sess.Get(t)
 	if err != nil {
@@ -109,7 +114,7 @@ func (d *NoCacheDao) SearchOne(t interface{}) (err error) {
 }
 
 func (d *NoCacheDao) Search(t interface{}, cond map[string]interface{}) (err error) {
-	sess := engine.NewSession()
+	sess := d.engine.NewSession()
 	defer sess.Close()
 	var (
 		str      []string
@@ -157,7 +162,7 @@ func (d *NoCacheDao) Search(t interface{}, cond map[string]interface{}) (err err
 }
 
 func (d *NoCacheDao) GetMulti(t interface{}, ids ...interface{}) (err error) {
-	sess := engine.NewSession()
+	sess := d.engine.NewSession()
 	defer sess.Close()
 
 	err = sess.In("id", ids...).Find(t)
@@ -166,7 +171,7 @@ func (d *NoCacheDao) GetMulti(t interface{}, ids ...interface{}) (err error) {
 }
 
 func (d *NoCacheDao) Count(t interface{}, cond map[string]interface{}) (total int64, err error) {
-	sess := engine.NewSession()
+	sess := d.engine.NewSession()
 	defer sess.Close()
 	var (
 		str   []string

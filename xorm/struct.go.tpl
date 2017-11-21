@@ -3,15 +3,34 @@ package {{.Model}}
 {{$ilen := len .Imports}}
 {{if gt $ilen 0}}
 import (
+    "encoding/gob"
+    hfw "github.com/hsyan2008/hfw2"
 	{{range .Imports}}"{{.}}"{{end}}
 )
+{{else}}
+import (
+    "encoding/gob"
+    hfw "github.com/hsyan2008/hfw2"
+)
 {{end}}
+
+{{range .Tables}}
+var {{Mapper .Name}}Model = &{{Mapper .Name}}{Dao: hfw.NewNoCacheDao(nil)}
+{{end}}
+
+func init() {
+	//gob: type not registered for interface
+{{range .Tables}}
+	gob.Register({{Mapper .Name}}Model)
+{{end}}
+}
 
 {{range .Tables}}
 type {{Mapper .Name}} struct {
 {{$table := .}}
 {{range .ColumnsSeq}}{{$col := $table.GetColumn .}}	{{Mapper $col.Name}}	{{Type $col}} {{Tag $table $col}}
 {{end}}
+    Dao         *hfw.NoCacheDao     `json:"-" xorm:"-"`
 }
 
 func (m *{{Mapper .Name}}) TableName() string {
@@ -22,21 +41,21 @@ func (m *{{Mapper .Name}}) TableName() string {
 func (m *{{Mapper .Name}}) Save(t *{{Mapper .Name}}) (err error) {
 
 	if t.Id > 0 {
-		err = dao.UpdateById(t)
+		err = m.Dao.UpdateById(t)
 	} else {
-		err = dao.Insert(t)
+		err = m.Dao.Insert(t)
 	}
 
 	return
 }
 
-func (m *{{Mapper .Name}}) Update(params Cond,
-	where Cond) (err error) {
+func (m *{{Mapper .Name}}) Update(params hfw.Cond,
+	where hfw.Cond) (err error) {
 
-	return dao.UpdateByWhere(m, params, where)
+	return m.Dao.UpdateByWhere(m, params, where)
 }
 
-func (m *{{Mapper .Name}}) SearchOne(cond Cond) (t *{{Mapper .Name}}, err error) {
+func (m *{{Mapper .Name}}) SearchOne(cond hfw.Cond) (t *{{Mapper .Name}}, err error) {
 
 	cond["page"] = 1
 	cond["pagesize"] = 1
@@ -49,22 +68,22 @@ func (m *{{Mapper .Name}}) SearchOne(cond Cond) (t *{{Mapper .Name}}, err error)
 	return
 }
 
-func (m *{{Mapper .Name}}) Search(cond Cond) (t []*{{Mapper .Name}}, err error) {
+func (m *{{Mapper .Name}}) Search(cond hfw.Cond) (t []*{{Mapper .Name}}, err error) {
 
-	err = dao.Search(&t, cond)
+	err = m.Dao.Search(&t, cond)
 
 	return
 }
 
-func (m *{{Mapper .Name}}) Count(cond Cond) (total int64, err error) {
+func (m *{{Mapper .Name}}) Count(cond hfw.Cond) (total int64, err error) {
 
-	total, err = dao.Count(m, cond)
+	total, err = m.Dao.Count(m, cond)
 
 	return
 }
 
 func (m *{{Mapper .Name}}) GetMulti(ids ...interface{}) (t []*{{Mapper .Name}}, err error) {
-	err = dao.GetMulti(&t, ids...)
+	err = m.Dao.GetMulti(&t, ids...)
 
 	return
 }

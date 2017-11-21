@@ -13,7 +13,6 @@ import (
 func init() {
 	loadConfig()
 	setLog()
-	initDb()
 }
 
 //Run start
