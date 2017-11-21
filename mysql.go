@@ -82,28 +82,28 @@ type mysqlLog struct {
 }
 
 func (mlog *mysqlLog) Debug(v ...interface{}) {
-	logger.Output(4, "DEBUG", v)
+	logger.Output(4, "DEBUG", v...)
 }
 func (mlog *mysqlLog) Debugf(format string, v ...interface{}) {
 	logger.Output(4, "DEBUG", fmt.Sprintf(format, v...))
 }
-func (mlog *mysqlLog) Error(v ...interface{}) {
-	logger.Output(4, "ERROR", v)
-}
-func (mlog *mysqlLog) Errorf(format string, v ...interface{}) {
-	logger.Output(4, "ERROR", fmt.Sprintf(format, v...))
-}
 func (mlog *mysqlLog) Info(v ...interface{}) {
-	logger.Output(4, "INFO", v)
+	logger.Output(4, "INFO", v...)
 }
 func (mlog *mysqlLog) Infof(format string, v ...interface{}) {
 	logger.Output(4, "INFO", fmt.Sprintf(format, v...))
 }
 func (mlog *mysqlLog) Warn(v ...interface{}) {
-	logger.Output(4, "WARN", v)
+	logger.Output(4, "WARN", v...)
 }
 func (mlog *mysqlLog) Warnf(format string, v ...interface{}) {
 	logger.Output(4, "WARN", fmt.Sprintf(format, v...))
+}
+func (mlog *mysqlLog) Error(v ...interface{}) {
+	logger.Output(4, "ERROR", v...)
+}
+func (mlog *mysqlLog) Errorf(format string, v ...interface{}) {
+	logger.Output(4, "ERROR", fmt.Sprintf(format, v...))
 }
 
 func (mlog *mysqlLog) Level() core.LogLevel {
