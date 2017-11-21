@@ -2,7 +2,6 @@ package hfw
 
 import (
 	"flag"
-	"os/user"
 	//pprof
 	_ "net/http/pprof"
 	"path/filepath"
@@ -14,13 +13,6 @@ import (
 func init() {
 	loadConfig()
 	setLog()
-
-	user, _ := user.Current()
-	if user.Uid == "0" {
-		logger.Error("can not run by root")
-		panic("can not run by root")
-	}
-
 	initDb()
 }
 
