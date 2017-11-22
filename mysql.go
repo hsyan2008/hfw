@@ -2,6 +2,7 @@ package hfw
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	//mysql
@@ -11,6 +12,16 @@ import (
 	"github.com/go-xorm/xorm"
 	"github.com/hsyan2008/go-logger/logger"
 )
+
+type engineCache struct {
+	engines map[string]*xorm.Engine
+	mtx     *sync.Mutex
+}
+
+var ec = &engineCache{
+	engines: make(map[string]*xorm.Engine),
+	mtx:     new(sync.Mutex),
+}
 
 func ConnectDb(dbConfig DbConfig) *xorm.Engine {
 
@@ -22,6 +33,12 @@ func ConnectDb(dbConfig DbConfig) *xorm.Engine {
 	dbDsn := fmt.Sprintf("%s:%s@%s(%s)/%s%s",
 		dbConfig.Username, dbConfig.Password, dbConfig.Protocol,
 		dbConfig.Address, dbConfig.Dbname, dbConfig.Params)
+
+	ec.mtx.Lock()
+	if e, ok := ec.engines[dbDsn]; ok {
+		ec.mtx.Unlock()
+		return e
+	}
 
 	engine, err := xorm.NewEngine(driver, dbDsn)
 	if err != nil {
@@ -46,6 +63,9 @@ func ConnectDb(dbConfig DbConfig) *xorm.Engine {
 	}
 
 	openCache(engine, dbConfig)
+
+	ec.engines[dbDsn] = engine
+	ec.mtx.Unlock()
 
 	return engine
 }

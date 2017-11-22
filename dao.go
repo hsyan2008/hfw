@@ -23,11 +23,13 @@ type Dao interface {
 
 var _ Dao = &NoCacheDao{}
 
-func NewNoCacheDao(engine *xorm.Engine) *NoCacheDao {
-	if engine == nil {
-		engine = ConnectDb(Config.Db)
+func NewNoCacheDao(dbConfigs ...DbConfig) *NoCacheDao {
+	dbConfig := Config.Db
+	if len(dbConfigs) > 0 {
+		dbConfig = dbConfigs[0]
 	}
-	return &NoCacheDao{engine: engine}
+
+	return &NoCacheDao{engine: ConnectDb(dbConfig)}
 }
 
 type NoCacheDao struct {
