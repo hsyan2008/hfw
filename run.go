@@ -54,22 +54,13 @@ func loadConfig() {
 	flag.StringVar(&ENVIRONMENT, "e", "dev", "set env, e.g dev test prod")
 	flag.Parse()
 
-	switch ENVIRONMENT {
-	case "dev":
-		fallthrough
-	case "test":
-		fallthrough
-	case "prod":
-		configPath := filepath.Join("config", ENVIRONMENT, "config.toml")
-		if !IsExist(configPath) {
-			panic("config file not exist")
-		}
-		_, err := toml.DecodeFile(configPath, &Config)
-		if err != nil {
-			panic(err)
-		}
-	default:
-		panic("error ENVIRONMENT")
+	configPath := filepath.Join("config", ENVIRONMENT, "config.toml")
+	if !IsExist(configPath) {
+		panic("config file not exist")
+	}
+	_, err := toml.DecodeFile(configPath, &Config)
+	if err != nil {
+		panic(err)
 	}
 
 	// logger.Info(Config)
