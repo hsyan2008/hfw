@@ -139,6 +139,29 @@ func Setnx(key string, value interface{}) (isExist bool, err error) {
 }
 
 //set的复杂格式，支持过期时间
+func SetEx(key string, value interface{}, expiration int) (err error) {
+	key = redisConfig.Prefix + key
+	// key = fmt.Sprintf("%x", md5.Sum([]byte(key)))
+	// Debug("Put cache key:", sessid, key, value)
+
+	v, err := hfw.Gob.Marshal(&value)
+	if err != nil {
+		logger.Debug("SetEx cache Gob Marshal key:", key, value, err)
+	} else {
+		var ok string
+		ok, err = redis.String(redisPool.Get().Do("SET", key, v, "EX", expiration))
+		if ok != "OK" {
+			err = errors.New("SetEx return not ok")
+		}
+		if err != nil {
+			logger.Debug("SetEx cache key:", key, v, ok, err)
+		}
+	}
+
+	return
+}
+
+//set的复杂格式，支持过期时间，当key存在的时候不保存
 func SetNxEx(key string, value interface{}, expiration int) (err error) {
 	key = redisConfig.Prefix + key
 	// key = fmt.Sprintf("%x", md5.Sum([]byte(key)))
