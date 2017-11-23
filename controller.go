@@ -15,6 +15,84 @@ import (
 	"github.com/hsyan2008/go-logger/logger"
 )
 
+//ControllerInterface ..
+//Init和Finish必定会执行，而且不允许被修改
+// Before和After之间是业务逻辑，所有Before也是必定会执行
+//用户手动StopRun()后，中止业务逻辑，跳过After，继续Finish
+type ControllerInterface interface {
+	init(*HTTPContext)
+	Before(*HTTPContext)
+	After(*HTTPContext)
+	finish(*HTTPContext)
+	NotFound(*HTTPContext)
+	ServerError(*HTTPContext)
+}
+
+//确认Controller实现了接口 ControllerInterface
+var _ ControllerInterface = &Controller{}
+
+//ErrStopRun ..
+var ErrStopRun = errors.New("user stop run")
+
+//Controller ..
+type Controller struct {
+}
+
+//Init ..
+func (ctl *Controller) init(ctx *HTTPContext) {
+	// logger.Debug("Controller init")
+
+	if strings.Contains(ctx.Request.URL.RawQuery, "format=json") {
+		ctx.IsJSON = true
+	} else if strings.Contains(ctx.Request.Header.Get("Accept"), "application/json") {
+		ctx.IsJSON = true
+	}
+
+	if strings.Contains(ctx.Request.Header.Get("Accept-Encoding"), "gzip") {
+		ctx.IsZip = true
+	}
+
+	_ = ctx.Request.ParseForm()
+}
+
+//Finish ..
+func (ctl *Controller) finish(ctx *HTTPContext) {
+
+	ctx.Output()
+}
+
+//Before ..
+func (ctl *Controller) Before(ctx *HTTPContext) {
+	// logger.Debug("Controller Before")
+}
+
+//After ..
+func (ctl *Controller) After(ctx *HTTPContext) {
+	// logger.Debug("Controller After")
+}
+
+//NotFound ..
+func (ctl *Controller) NotFound(ctx *HTTPContext) {
+
+	ctx.ResponseWriter.WriteHeader(http.StatusNotFound)
+	ctx.IsError = true
+
+	ctx.ErrNo = 99404
+	ctx.ErrMsg = "NotFound"
+}
+
+//ServerError ..
+//不要手动调用，用于捕获未知错误，手动请用Throw
+//该方法不能使用StopRun，也不能panic，因为会被自动调用
+func (ctl *Controller) ServerError(ctx *HTTPContext) {
+
+	ctx.ResponseWriter.WriteHeader(http.StatusInternalServerError)
+	ctx.IsError = true
+
+	ctx.ErrNo = 99500
+	ctx.ErrMsg = "ServerError"
+}
+
 //HTTPContext ..
 //渲染模板的数据放Data
 //Json里的数据放Result
@@ -47,72 +125,8 @@ func (ctx *HTTPContext) GetFormInt(key string) int {
 	return n
 }
 
-//ControllerInterface ..
-//Init和Finish必定会执行，而且不允许被修改
-// Before和After之间是业务逻辑，所有Before也是必定会执行
-//用户手动StopRun()后，中止业务逻辑，跳过After，继续Finish
-type ControllerInterface interface {
-	Init(*HTTPContext)
-	Before()
-	After()
-	Finish()
-	Redirect(string)
-	Output()
-	NotFound()
-	ServerError()
-	StopRun()
-}
-
-//确认Controller实现了接口 ControllerInterface
-var _ ControllerInterface = &Controller{}
-
-//ErrStopRun ..
-var ErrStopRun = errors.New("user stop run")
-
-//Controller ..
-type Controller struct {
-	HTTPContext
-}
-
-//Init ..
-func (ctl *Controller) Init(ctx *HTTPContext) {
-	// logger.Debug("Controller init")
-
-	ctl.HTTPContext = *ctx
-	ctl.Data = make(map[string]interface{})
-	ctl.FuncMap = make(map[string]interface{})
-
-	if strings.Contains(ctl.Request.URL.RawQuery, "format=json") {
-		ctl.IsJSON = true
-	} else if strings.Contains(ctl.Request.Header.Get("Accept"), "application/json") {
-		ctl.IsJSON = true
-	}
-
-	if strings.Contains(ctl.Request.Header.Get("Accept-Encoding"), "gzip") {
-		ctl.IsZip = true
-	}
-
-	_ = ctl.Request.ParseForm()
-}
-
-//Before ..
-func (ctl *Controller) Before() {
-	// logger.Debug("Controller Before")
-}
-
-//After ..
-func (ctl *Controller) After() {
-	// logger.Debug("Controller After")
-}
-
-//Finish ..
-func (ctl *Controller) Finish() {
-
-	ctl.Output()
-}
-
 //StopRun ..
-func (ctl *Controller) StopRun() {
+func (ctx *HTTPContext) StopRun() {
 	// logger.Debug("StopRun")
 	panic(ErrStopRun)
 
@@ -120,59 +134,37 @@ func (ctl *Controller) StopRun() {
 	//经测试，会执行defer，但连接在这里就中断了，浏览器拿不到结果
 }
 
-//NotFound ..
-func (ctl *Controller) NotFound() {
-
-	ctl.ResponseWriter.WriteHeader(http.StatusNotFound)
-	ctl.IsError = true
-
-	ctl.ErrNo = 99404
-	ctl.ErrMsg = "NotFound"
-}
-
-//ServerError ..
-//不要手动调用，用于捕获未知错误，手动请用Throw
-//该方法不能使用StopRun，也不能panic，因为会被自动调用
-func (ctl *Controller) ServerError() {
-
-	ctl.ResponseWriter.WriteHeader(http.StatusInternalServerError)
-	ctl.IsError = true
-
-	ctl.ErrNo = 99500
-	ctl.ErrMsg = "ServerError"
-}
-
 //Redirect ..
-func (ctl *Controller) Redirect(url string) {
-	http.Redirect(ctl.ResponseWriter, ctl.Request, url, http.StatusFound)
-	ctl.StopRun()
+func (ctx *HTTPContext) Redirect(url string) {
+	http.Redirect(ctx.ResponseWriter, ctx.Request, url, http.StatusFound)
+	ctx.StopRun()
 }
 
 //ThrowException ..
-func (ctl *Controller) ThrowException(code int64, msg string) {
-	ctl.ErrNo = code
-	ctl.ErrMsg = msg
-	ctl.StopRun()
+func (ctx *HTTPContext) ThrowException(code int64, msg string) {
+	ctx.ErrNo = code
+	ctx.ErrMsg = msg
+	ctx.StopRun()
 }
 
 //CheckErr ..
-func (ctl *Controller) CheckErr(err error) {
+func (ctx *HTTPContext) CheckErr(err error) {
 	if nil != err {
 		logger.Error(err)
-		ctl.ThrowException(99500, "系统错误")
+		ctx.ThrowException(99500, "系统错误")
 	}
 }
 
 //Output ..
-func (ctl *Controller) Output() {
+func (ctx *HTTPContext) Output() {
 	// logger.Debug("Output")
-	if ctl.ResponseWriter.Header().Get("Location") != "" {
+	if ctx.ResponseWriter.Header().Get("Location") != "" {
 		return
 	}
-	if ctl.TemplateFile == "" || ctl.IsJSON {
-		ctl.RenderJSON()
+	if ctx.TemplateFile == "" || ctx.IsJSON {
+		ctx.RenderJSON()
 	} else {
-		ctl.RenderFile()
+		ctx.RenderFile()
 	}
 }
 
@@ -185,9 +177,9 @@ var templatesCache = struct {
 }
 
 //RenderFile ..
-func (ctl *Controller) RenderFile() {
+func (ctx *HTTPContext) RenderFile() {
 
-	ctl.ResponseWriter.Header().Set("Content-Type", "text/html; charset=utf-8")
+	ctx.ResponseWriter.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	var (
 		t   *template.Template
@@ -196,75 +188,75 @@ func (ctl *Controller) RenderFile() {
 	)
 	if Config.Template.IsCache {
 		templatesCache.l.RLock()
-		if t, ok = templatesCache.list[ctl.TemplateFile]; !ok {
+		if t, ok = templatesCache.list[ctx.TemplateFile]; !ok {
 			templatesCache.l.RUnlock()
-			if len(ctl.FuncMap) == 0 {
-				t = template.Must(template.ParseFiles(Config.Template.HTMLPath + ctl.TemplateFile))
+			if len(ctx.FuncMap) == 0 {
+				t = template.Must(template.ParseFiles(Config.Template.HTMLPath + ctx.TemplateFile))
 			} else {
-				t = template.Must(template.New(filepath.Base(ctl.TemplateFile)).Funcs(ctl.FuncMap).ParseFiles(Config.Template.HTMLPath + ctl.TemplateFile))
+				t = template.Must(template.New(filepath.Base(ctx.TemplateFile)).Funcs(ctx.FuncMap).ParseFiles(Config.Template.HTMLPath + ctx.TemplateFile))
 			}
 			t = template.Must(t.ParseGlob(Config.Template.HTMLPath + "/widgets/*.html"))
 
 			templatesCache.l.Lock()
-			templatesCache.list[ctl.TemplateFile] = t
+			templatesCache.list[ctx.TemplateFile] = t
 			templatesCache.l.Unlock()
 		} else {
 			templatesCache.l.RUnlock()
 		}
 	} else {
-		if len(ctl.FuncMap) == 0 {
-			t = template.Must(template.ParseFiles(Config.Template.HTMLPath + ctl.TemplateFile))
+		if len(ctx.FuncMap) == 0 {
+			t = template.Must(template.ParseFiles(Config.Template.HTMLPath + ctx.TemplateFile))
 		} else {
-			t = template.Must(template.New(filepath.Base(ctl.TemplateFile)).Funcs(ctl.FuncMap).ParseFiles(Config.Template.HTMLPath + ctl.TemplateFile))
+			t = template.Must(template.New(filepath.Base(ctx.TemplateFile)).Funcs(ctx.FuncMap).ParseFiles(Config.Template.HTMLPath + ctx.TemplateFile))
 		}
 		t = template.Must(t.ParseGlob(Config.Template.HTMLPath + "/widgets/*.html"))
 	}
 
-	if !ctl.IsError && ctl.IsZip {
-		ctl.ResponseWriter.Header().Del("Content-Length")
-		ctl.ResponseWriter.Header().Set("Content-Encoding", "gzip")
-		writer := gzip.NewWriter(ctl.ResponseWriter)
+	if !ctx.IsError && ctx.IsZip {
+		ctx.ResponseWriter.Header().Del("Content-Length")
+		ctx.ResponseWriter.Header().Set("Content-Encoding", "gzip")
+		writer := gzip.NewWriter(ctx.ResponseWriter)
 		defer func() {
 			_ = writer.Close()
 		}()
-		err = t.Execute(writer, ctl)
+		err = t.Execute(writer, ctx)
 		if err != nil {
 			logger.Warn(err)
 		}
-		ctl.CheckErr(err)
+		ctx.CheckErr(err)
 	} else {
-		err = t.Execute(ctl.ResponseWriter, ctl)
+		err = t.Execute(ctx.ResponseWriter, ctx)
 		if err != nil {
 			logger.Warn(err)
 		}
-		ctl.CheckErr(err)
+		ctx.CheckErr(err)
 	}
 
 }
 
 //RenderJSON ..
-func (ctl *Controller) RenderJSON() {
+func (ctx *HTTPContext) RenderJSON() {
 
-	ctl.ResponseWriter.Header().Set("Content-Type", "application/json; charset=utf-8")
+	ctx.ResponseWriter.Header().Set("Content-Type", "application/json; charset=utf-8")
 
-	if len(ctl.Data) > 0 && ctl.Results == nil {
-		ctl.Results = ctl.Data
+	if len(ctx.Data) > 0 && ctx.Results == nil {
+		ctx.Results = ctx.Data
 	}
 
-	b, err := json.Marshal(ctl.Result)
-	ctl.CheckErr(err)
+	b, err := json.Marshal(ctx.Result)
+	ctx.CheckErr(err)
 
-	if !ctl.IsError && ctl.IsZip {
-		ctl.ResponseWriter.Header().Del("Content-Length")
-		ctl.ResponseWriter.Header().Set("Content-Encoding", "gzip")
-		writer := gzip.NewWriter(ctl.ResponseWriter)
+	if !ctx.IsError && ctx.IsZip {
+		ctx.ResponseWriter.Header().Del("Content-Length")
+		ctx.ResponseWriter.Header().Set("Content-Encoding", "gzip")
+		writer := gzip.NewWriter(ctx.ResponseWriter)
 		defer func() {
 			_ = writer.Close()
 		}()
 		_, err = writer.Write(b)
-		ctl.CheckErr(err)
+		ctx.CheckErr(err)
 	} else {
-		_, err = ctl.ResponseWriter.Write(b)
-		ctl.CheckErr(err)
+		_, err = ctx.ResponseWriter.Write(b)
+		ctx.CheckErr(err)
 	}
 }

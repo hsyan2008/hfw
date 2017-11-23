@@ -7,9 +7,16 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/hsyan2008/go-logger/logger"
 )
+
+var ctxPool = &sync.Pool{
+	New: func() interface{} {
+		return new(HTTPContext)
+	},
+}
 
 //Router ..
 type Router struct {
@@ -36,31 +43,41 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		urls = append(urls, Config.Route.DefaultAction)
 	}
 
-	ctx := new(HTTPContext)
+	//放入pool里
+	ctx := ctxPool.Get().(*HTTPContext)
+	defer ctxPool.Put(ctx)
 	ctx.ResponseWriter = w
 	ctx.Request = r
 	ctx.Controll = urls[0]
 	ctx.Action = urls[1]
 	ctx.Path = fmt.Sprintf("%s/%s", urls[0], urls[1])
 	// ctx.TemplateFile = fmt.Sprintf("%s.html", ctx.Path)
+	ctx.Layout = ""
+	ctx.TemplateFile = ""
+	ctx.IsJSON = false
+	ctx.IsZip = false
+	ctx.IsError = false
+	ctx.Data = make(map[string]interface{})
+	ctx.FuncMap = make(map[string]interface{})
+	ctx.ErrNo = 0
+	ctx.ErrMsg = ""
+	ctx.Results = nil
 
 	reflectVal := reflect.ValueOf(router.C)
 	rt := reflectVal.Type()
 	ct := reflect.Indirect(reflectVal).Type()
 
 	//初始化Controller
-	newInstance := reflect.New(ct) //因为并发，所以重新创建
-	noneValue := []reflect.Value{}
 	initValue := []reflect.Value{
 		reflect.ValueOf(ctx),
 	}
 
 	//注意方法必须是大写开头，否则无法调用
-	newInstance.MethodByName("Init").Call(initValue)
-	defer newInstance.MethodByName("Finish").Call(noneValue)
+	router.C.init(ctx)
+	defer router.C.finish(ctx)
 
 	//第一个方法不生效，2、3数据无法传递
-	// defer newInstance.MethodByName("ServerError").Call(noneValue)
+	// defer reflectVal.MethodByName("ServerError").Call(initValue)
 	// defer router.C.ServerError() //C里没有初始化ResponseWriter，报nil指针
 	// defer ctx.ServerError()
 	defer func() {
@@ -76,7 +93,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 			errMsg := fmt.Sprint(err)
 			logger.Warn(errMsg)
-			newInstance.MethodByName("ServerError").Call(noneValue)
+			router.C.ServerError(ctx)
 		}
 	}()
 
@@ -96,9 +113,9 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	newInstance.MethodByName("Before").Call(noneValue)
-	newInstance.MethodByName(action).Call(noneValue)
-	newInstance.MethodByName("After").Call(noneValue)
+	router.C.Before(ctx)
+	reflectVal.MethodByName(action).Call(initValue)
+	router.C.After(ctx)
 }
 
 //RegisterRoute ..
