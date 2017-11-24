@@ -29,9 +29,6 @@ func Run() {
 //setLog 初始化log写入文件
 func setLog() {
 	lc := Config.Logger
-	if lc.LogLevel == "" {
-		return
-	}
 	logger.SetLevelStr(lc.LogLevel)
 	logger.SetConsole(lc.IsConsole)
 	logger.SetLogGoID(lc.LogGoID)
