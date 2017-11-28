@@ -59,7 +59,7 @@ func ConnectDb(dbConfig DbConfig) *xorm.Engine {
 	}
 
 	if dbConfig.KeepAlive > 0 {
-		go keepalive(engine, time.Duration(dbConfig.KeepAlive))
+		// go keepalive(engine, time.Duration(dbConfig.KeepAlive))
 	}
 
 	openCache(engine, dbConfig)
