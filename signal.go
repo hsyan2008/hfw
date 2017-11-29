@@ -49,6 +49,9 @@ func listenSignal() {
 }
 
 func wait() {
+	logger.Info("start to shutdown")
+	defer logger.Info("shutdown done")
+
 	go sendNotice()
 
 	c := make(chan bool, 1)
