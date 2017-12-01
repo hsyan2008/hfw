@@ -4,6 +4,7 @@ package hfw
 import (
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"reflect"
 	"runtime"
 	"strings"
@@ -133,6 +134,9 @@ func RegisterRoute(pattern string, handler ControllerInterface) {
 
 //RegisterStatic ..
 func RegisterStatic(pattern string, dir string) {
+	if !filepath.IsAbs(dir) {
+		dir = filepath.Join(APPPATH, dir)
+	}
 	s := "/" + strings.Trim(pattern, "/")
 	if s == "/" {
 		http.Handle(s, http.FileServer(http.Dir(dir)))
@@ -144,6 +148,9 @@ func RegisterStatic(pattern string, dir string) {
 
 //RegisterFile .. favicon.ico
 func RegisterFile(pattern string, dir string) {
+	if !filepath.IsAbs(dir) {
+		dir = filepath.Join(APPPATH, dir)
+	}
 	s := "/" + strings.Trim(pattern, "/")
 	http.Handle(s, http.FileServer(http.Dir(dir)))
 }

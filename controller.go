@@ -190,13 +190,7 @@ func (ctx *HTTPContext) RenderFile() {
 		templatesCache.l.RLock()
 		if t, ok = templatesCache.list[ctx.TemplateFile]; !ok {
 			templatesCache.l.RUnlock()
-			if len(ctx.FuncMap) == 0 {
-				t = template.Must(template.ParseFiles(Config.Template.HTMLPath + ctx.TemplateFile))
-			} else {
-				t = template.Must(template.New(filepath.Base(ctx.TemplateFile)).Funcs(ctx.FuncMap).ParseFiles(Config.Template.HTMLPath + ctx.TemplateFile))
-			}
-			t = template.Must(t.ParseGlob(Config.Template.HTMLPath + "/widgets/*.html"))
-
+			t = ctx.renderFile()
 			templatesCache.l.Lock()
 			templatesCache.list[ctx.TemplateFile] = t
 			templatesCache.l.Unlock()
@@ -204,12 +198,7 @@ func (ctx *HTTPContext) RenderFile() {
 			templatesCache.l.RUnlock()
 		}
 	} else {
-		if len(ctx.FuncMap) == 0 {
-			t = template.Must(template.ParseFiles(Config.Template.HTMLPath + ctx.TemplateFile))
-		} else {
-			t = template.Must(template.New(filepath.Base(ctx.TemplateFile)).Funcs(ctx.FuncMap).ParseFiles(Config.Template.HTMLPath + ctx.TemplateFile))
-		}
-		t = template.Must(t.ParseGlob(Config.Template.HTMLPath + "/widgets/*.html"))
+		t = ctx.renderFile()
 	}
 
 	if !ctx.IsError && ctx.IsZip {
@@ -232,6 +221,21 @@ func (ctx *HTTPContext) RenderFile() {
 		ctx.CheckErr(err)
 	}
 
+}
+
+func (ctx *HTTPContext) renderFile() (t *template.Template) {
+	templateFilePath := filepath.Join(Config.Template.HTMLPath, ctx.TemplateFile)
+	if len(ctx.FuncMap) == 0 {
+		t = template.Must(template.ParseFiles(templateFilePath))
+	} else {
+		t = template.Must(template.New(filepath.Base(ctx.TemplateFile)).Funcs(ctx.FuncMap).ParseFiles(templateFilePath))
+	}
+	if Config.Template.WidgetsPath != "" {
+		widgetsPath := filepath.Join(Config.Template.HTMLPath, Config.Template.WidgetsPath)
+		t = template.Must(t.ParseGlob(widgetsPath))
+	}
+
+	return
 }
 
 //RenderJSON ..

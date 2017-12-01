@@ -2,6 +2,8 @@ package hfw
 
 import (
 	"flag"
+	"os"
+	"strings"
 	//pprof
 	_ "net/http/pprof"
 	"path/filepath"
@@ -10,9 +12,23 @@ import (
 	"github.com/hsyan2008/go-logger/logger"
 )
 
+//APPPATH 项目路径
+var APPPATH string
+
 func init() {
+	initAPPPATH()
 	loadConfig()
 	setLog()
+}
+
+func initAPPPATH() {
+	pwd, _ := filepath.Abs(os.Args[0])
+	//处理go run的情况此判断linux下有效
+	if strings.Contains(pwd, "/tmp/go-build") {
+		APPPATH, _ = os.Getwd()
+	} else {
+		APPPATH = filepath.Dir(pwd)
+	}
 }
 
 //Run start
@@ -51,7 +67,7 @@ func loadConfig() {
 	flag.StringVar(&ENVIRONMENT, "e", "dev", "set env, e.g dev test prod")
 	flag.Parse()
 
-	configPath := filepath.Join("config", ENVIRONMENT, "config.toml")
+	configPath := filepath.Join(APPPATH, "config", ENVIRONMENT, "config.toml")
 	if !IsExist(configPath) {
 		panic("config file not exist")
 	}
@@ -68,5 +84,9 @@ func loadConfig() {
 	}
 	if Config.Route.DefaultAction == "" {
 		Config.Route.DefaultAction = "index"
+	}
+	//转为绝对路径
+	if !filepath.IsAbs(Config.Template.HTMLPath) {
+		Config.Template.HTMLPath = filepath.Join(APPPATH, Config.Template.HTMLPath)
 	}
 }
