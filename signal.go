@@ -41,18 +41,18 @@ func listenSignal() {
 	logger.Info("recv signal:", s)
 	switch s {
 	case syscall.SIGUSR1:
-		wait()
+		waitShutdownDone()
 		//给自己发信号，触发gracehttp重启
 		_ = syscall.Kill(os.Getpid(), syscall.SIGUSR2)
 	case syscall.SIGQUIT:
-		wait()
+		waitShutdownDone()
 		//给自己发信号，触发gracehttp退出
 		_ = syscall.Kill(os.Getpid(), syscall.SIGINT)
 
 	}
 }
 
-func wait() {
+func waitShutdownDone() {
 	logger.Info("start to shutdown")
 	defer logger.Info("shutdown done")
 

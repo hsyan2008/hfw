@@ -21,6 +21,7 @@ func init() {
 	setLog()
 }
 
+//初始化项目路径
 func initAPPPATH() {
 	pwd, _ := filepath.Abs(os.Args[0])
 	//处理go run的情况此判断linux下有效
@@ -28,21 +29,6 @@ func initAPPPATH() {
 		APPPATH, _ = os.Getwd()
 	} else {
 		APPPATH = filepath.Dir(pwd)
-	}
-}
-
-//Run start
-func Run() {
-
-	//等待工作完成
-	defer wait()
-
-	certFile := Config.Server.HTTPSCertFile
-	keyFile := Config.Server.HTTPSKeyFile
-	if IsExist(certFile) && IsExist(keyFile) {
-		startHTTPSServe(certFile, keyFile)
-	} else {
-		startServe()
 	}
 }
 
@@ -92,5 +78,20 @@ func loadConfig() {
 	//转为绝对路径
 	if !filepath.IsAbs(Config.Template.HTMLPath) {
 		Config.Template.HTMLPath = filepath.Join(APPPATH, Config.Template.HTMLPath)
+	}
+}
+
+//Run start
+func Run() {
+
+	//等待工作完成
+	defer waitShutdownDone()
+
+	certFile := Config.Server.HTTPSCertFile
+	keyFile := Config.Server.HTTPSKeyFile
+	if IsExist(certFile) && IsExist(keyFile) {
+		startHTTPSServe(certFile, keyFile)
+	} else {
+		startServe()
 	}
 }
