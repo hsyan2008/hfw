@@ -16,7 +16,7 @@ import (
 )
 
 //ControllerInterface ..
-//Init和Finish必定会执行，而且不允许被修改
+//init和finish必定会执行，而且不允许被修改
 // Before和After之间是业务逻辑，所有Before也是必定会执行
 //用户手动StopRun()后，中止业务逻辑，跳过After，继续Finish
 type ControllerInterface interface {
@@ -40,6 +40,9 @@ type Controller struct {
 
 //Init ..
 func (ctl *Controller) init(ctx *HTTPContext) {
+
+	Wg.Add(1)
+
 	// logger.Debug("Controller init")
 
 	if strings.Contains(ctx.Request.URL.RawQuery, "format=json") {
@@ -57,6 +60,8 @@ func (ctl *Controller) init(ctx *HTTPContext) {
 
 //Finish ..
 func (ctl *Controller) finish(ctx *HTTPContext) {
+
+	defer Wg.Done()
 
 	ctx.Output()
 }

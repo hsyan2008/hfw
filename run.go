@@ -33,6 +33,10 @@ func initAPPPATH() {
 
 //Run start
 func Run() {
+
+	//等待工作完成
+	defer wait()
+
 	certFile := Config.Server.HTTPSCertFile
 	keyFile := Config.Server.HTTPSKeyFile
 	if IsExist(certFile) && IsExist(keyFile) {

@@ -14,7 +14,10 @@ import (
 	"github.com/hsyan2008/go-logger/logger"
 )
 
+//Wg 业务方调用此变量注册工作
 var Wg = new(sync.WaitGroup)
+
+//Shutdown 业务方监听此通道获知通知
 var Shutdown = make(chan bool, 3)
 
 func init() {
@@ -28,6 +31,7 @@ func sendNotice() {
 	}
 }
 
+//暂时保留，建议不用
 func listenSignal() {
 	c := make(chan os.Signal, 1)
 	//syscall.SIGINT, syscall.SIGTERM，syscall.SIGUSR2已被gracehttp接管，前2者直接退出，后者重启
@@ -58,7 +62,7 @@ func wait() {
 	go waitDone(c)
 
 	select {
-	case <-time.After(15 * time.Second):
+	case <-time.After(10 * time.Second):
 		return
 	case <-c:
 		return
