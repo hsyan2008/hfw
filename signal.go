@@ -63,6 +63,7 @@ func waitShutdownDone() {
 
 	select {
 	case <-time.After(10 * time.Second):
+		logger.Warn("waitShutdownDone 10s timeout")
 		return
 	case <-c:
 		return

@@ -89,6 +89,15 @@ func Run() {
 
 	certFile := Config.Server.HTTPSCertFile
 	keyFile := Config.Server.HTTPSKeyFile
+
+	if certFile != "" && !filepath.IsAbs(certFile) {
+		certFile = filepath.Join(APPPATH, certFile)
+	}
+
+	if keyFile != "" && filepath.IsAbs(keyFile) {
+		keyFile = filepath.Join(APPPATH, keyFile)
+	}
+
 	if IsExist(certFile) && IsExist(keyFile) {
 		startHTTPSServe(certFile, keyFile)
 	} else {

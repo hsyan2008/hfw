@@ -1,3 +1,6 @@
+//kill -USR2 pid 重启
+//kill -INT pid 终止
+//kill -TERM pid 终止
 package hfw
 
 import (
@@ -18,7 +21,7 @@ func startServe() {
 		WriteTimeout: time.Duration(Config.Server.WriteTimeout) * time.Second,
 		// MaxHeaderBytes: 1 << 20,
 	}
-	//kill -USR2 pid 来重启
+
 	err := gracehttp.Serve(s)
 	// err:= s.ListenAndServe()
 
@@ -51,7 +54,6 @@ func startHTTPSServe(certFile, keyFile string) {
 		},
 	}
 
-	//kill -USR2 pid 来重启
 	err = gracehttp.Serve(s)
 
 	if err != nil {
