@@ -121,7 +121,7 @@ type HTTPContext struct {
 
 //GetForm 优先post和put,然后get
 func (ctx *HTTPContext) GetForm(key string) string {
-	return ctx.Request.FormValue(key)
+	return strings.TrimSpace(ctx.Request.FormValue(key))
 }
 
 //GetFormInt 优先post和put,然后get，转为int
