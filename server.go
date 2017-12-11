@@ -15,7 +15,7 @@ import (
 func startServe() {
 
 	s := &http.Server{
-		Addr: ":" + Config.Server.Port,
+		Addr: Config.Server.Port,
 		// Handler:      controllers,
 		ReadTimeout:  time.Duration(Config.Server.ReadTimeout) * time.Second,
 		WriteTimeout: time.Duration(Config.Server.WriteTimeout) * time.Second,
@@ -40,7 +40,7 @@ func startHTTPSServe(certFile, keyFile string) {
 	}
 
 	s := &http.Server{
-		Addr: ":" + Config.Server.Port,
+		Addr: Config.Server.Port,
 		// Handler:      controllers,
 		ReadTimeout:  time.Duration(Config.Server.ReadTimeout) * time.Second,
 		WriteTimeout: time.Duration(Config.Server.WriteTimeout+Config.Server.ReadTimeout) * time.Second,
