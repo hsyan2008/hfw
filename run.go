@@ -79,6 +79,10 @@ func loadConfig() {
 	if !filepath.IsAbs(Config.Template.HTMLPath) {
 		Config.Template.HTMLPath = filepath.Join(APPPATH, Config.Template.HTMLPath)
 	}
+
+	if !strings.Contains(Config.Server.Port, ":") {
+		Config.Server.Port = ":" + Config.Server.Port
+	}
 }
 
 //Run start
