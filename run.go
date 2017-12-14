@@ -88,6 +88,8 @@ func loadConfig() {
 //Run start
 func Run() {
 
+	logger.Debug("Start to run, Config ENVIRONMENT is", ENVIRONMENT)
+
 	//等待工作完成
 	defer waitShutdownDone()
 
@@ -98,9 +100,11 @@ func Run() {
 		certFile = filepath.Join(APPPATH, certFile)
 	}
 
-	if keyFile != "" && filepath.IsAbs(keyFile) {
+	if keyFile != "" && !filepath.IsAbs(keyFile) {
 		keyFile = filepath.Join(APPPATH, keyFile)
 	}
+
+	logger.Info("https key is:", certFile, keyFile)
 
 	if IsExist(certFile) && IsExist(keyFile) {
 		startHTTPSServe(certFile, keyFile)
