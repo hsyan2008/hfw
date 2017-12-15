@@ -96,18 +96,22 @@ func Run() {
 	certFile := Config.Server.HTTPSCertFile
 	keyFile := Config.Server.HTTPSKeyFile
 
-	if certFile != "" && !filepath.IsAbs(certFile) {
-		certFile = filepath.Join(APPPATH, certFile)
-	}
+	if certFile != "" && keyFile != "" {
+		if !filepath.IsAbs(certFile) {
+			certFile = filepath.Join(APPPATH, certFile)
+		}
 
-	if keyFile != "" && !filepath.IsAbs(keyFile) {
-		keyFile = filepath.Join(APPPATH, keyFile)
-	}
+		if !filepath.IsAbs(keyFile) {
+			keyFile = filepath.Join(APPPATH, keyFile)
+		}
 
-	logger.Info("https key is:", certFile, keyFile)
+		logger.Info("https key is:", certFile, keyFile)
 
-	if IsExist(certFile) && IsExist(keyFile) {
-		startHTTPSServe(certFile, keyFile, Config.Server.HTTPSPhrase)
+		if IsExist(certFile) && IsExist(keyFile) {
+			startHTTPSServe(certFile, keyFile, Config.Server.HTTPSPhrase)
+		} else {
+			logger.Error("HTTPSCertFile and HTTPSKeyFile is not exist")
+		}
 	} else {
 		startServe()
 	}
