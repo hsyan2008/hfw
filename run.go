@@ -107,7 +107,7 @@ func Run() {
 	logger.Info("https key is:", certFile, keyFile)
 
 	if IsExist(certFile) && IsExist(keyFile) {
-		startHTTPSServe(certFile, keyFile)
+		startHTTPSServe(certFile, keyFile, Config.Server.HTTPSPhrase)
 	} else {
 		startServe()
 	}

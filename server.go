@@ -5,6 +5,9 @@ package hfw
 
 import (
 	"crypto/tls"
+	"crypto/x509"
+	"encoding/pem"
+	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -31,12 +34,40 @@ func startServe() {
 }
 
 //支持https、grace
-func startHTTPSServe(certFile, keyFile string) {
+func startHTTPSServe(certFile, keyFile, phrase string) {
 
 	var err error
-	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	var cert tls.Certificate
+
+	if phrase != "" {
+		//通过密码解密证书，暂时两个文件都是加密过的，如果有个文件没有加密，去掉pem.Decode和x509.DecryptPEMBlock即可
+		certByte, err := ioutil.ReadFile(certFile)
+		if err != nil {
+			logger.Fatal("load cert file error:", err)
+		}
+		certBlock, _ := pem.Decode(certByte)
+		certDeBlock, err := x509.DecryptPEMBlock(certBlock, []byte(phrase))
+		if err != nil {
+			logger.Fatal("Decrypt cert file error:", err)
+		}
+
+		keyByte, err := ioutil.ReadFile(keyFile)
+		if err != nil {
+			logger.Fatal("load key file error:", err)
+		}
+		keyBlock, _ := pem.Decode(keyByte)
+		keyDeBlock, err := x509.DecryptPEMBlock(keyBlock, []byte(phrase))
+		if err != nil {
+			logger.Fatal("Decrypt key file error:", err)
+		}
+
+		cert, err = tls.X509KeyPair(certDeBlock, keyDeBlock)
+	} else {
+		cert, err = tls.LoadX509KeyPair(certFile, keyFile)
+	}
+
 	if err != nil {
-		logger.Fatal("load cert file error:", err)
+		logger.Fatal("X509KeyPair cert file error:", err)
 	}
 
 	s := &http.Server{

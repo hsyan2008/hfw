@@ -27,6 +27,7 @@ type ServerConfig struct {
 	WriteTimeout  int64
 	HTTPSCertFile string
 	HTTPSKeyFile  string
+	HTTPSPhrase   string
 }
 
 //LoggerConfig ..
