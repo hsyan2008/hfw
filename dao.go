@@ -25,11 +25,20 @@ var _ Dao = &NoCacheDao{}
 
 func NewNoCacheDao(dbConfigs ...DbConfig) *NoCacheDao {
 	dbConfig := Config.Db
+
+	instance := &NoCacheDao{}
+
+	//允许默认配置为空
+	if dbConfig.Driver == "" && len(dbConfigs) == 0 {
+		return instance
+	}
+
 	if len(dbConfigs) > 0 {
 		dbConfig = dbConfigs[0]
 	}
+	instance.engine = ConnectDb(dbConfig)
 
-	return &NoCacheDao{engine: ConnectDb(dbConfig)}
+	return instance
 }
 
 type NoCacheDao struct {

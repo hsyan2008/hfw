@@ -2,10 +2,12 @@ package hfw
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
 	//mysql
+	_ "github.com/denisenkom/go-mssqldb"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/go-xorm/cachestore"
 	"github.com/go-xorm/core"
@@ -30,9 +32,8 @@ func ConnectDb(dbConfig DbConfig) *xorm.Engine {
 	}
 
 	driver := dbConfig.Driver
-	dbDsn := fmt.Sprintf("%s:%s@%s(%s)/%s%s",
-		dbConfig.Username, dbConfig.Password, dbConfig.Protocol,
-		dbConfig.Address, dbConfig.Dbname, dbConfig.Params)
+	dbDsn := getDbDsn(dbConfig)
+	logger.Info("dbDsn:", dbDsn)
 
 	ec.mtx.Lock()
 	if e, ok := ec.engines[dbDsn]; ok {
@@ -41,6 +42,11 @@ func ConnectDb(dbConfig DbConfig) *xorm.Engine {
 	}
 
 	engine, err := xorm.NewEngine(driver, dbDsn)
+	if err != nil {
+		logger.Warn(dbConfig, err)
+		panic(err)
+	}
+	err = engine.Ping()
 	if err != nil {
 		logger.Warn(dbConfig, err)
 		panic(err)
@@ -68,6 +74,22 @@ func ConnectDb(dbConfig DbConfig) *xorm.Engine {
 	ec.mtx.Unlock()
 
 	return engine
+}
+
+func getDbDsn(dbConfig DbConfig) string {
+	switch strings.ToLower(dbConfig.Driver) {
+	case "mysql":
+		return fmt.Sprintf("%s:%s@%s(%s)/%s%s",
+			dbConfig.Username, dbConfig.Password, dbConfig.Protocol,
+			dbConfig.Address, dbConfig.Dbname, dbConfig.Params)
+	case "mssql", "sqlserver":
+		return fmt.Sprintf("odbc:user id=%s;password=%s;server=%s;database=%s;%s",
+			dbConfig.Username, dbConfig.Password, dbConfig.Address,
+			dbConfig.Dbname, dbConfig.Params)
+	default:
+		panic("error db driver")
+	}
+
 }
 
 func openCache(engine *xorm.Engine, dbConfig DbConfig) {
