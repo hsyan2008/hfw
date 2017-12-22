@@ -43,12 +43,12 @@ func ConnectDb(dbConfig DbConfig) *xorm.Engine {
 
 	engine, err := xorm.NewEngine(driver, dbDsn)
 	if err != nil {
-		logger.Warn(dbConfig, err)
+		logger.Warn("NewEngine:", dbConfig, err)
 		panic(err)
 	}
 	err = engine.Ping()
 	if err != nil {
-		logger.Warn(dbConfig, err)
+		logger.Warn("Ping:", dbConfig, err)
 		panic(err)
 	}
 
@@ -79,12 +79,15 @@ func ConnectDb(dbConfig DbConfig) *xorm.Engine {
 func getDbDsn(dbConfig DbConfig) string {
 	switch strings.ToLower(dbConfig.Driver) {
 	case "mysql":
+		if dbConfig.Port != "" {
+			dbConfig.Address = fmt.Sprintf("%s:%s", dbConfig.Address, dbConfig.Port)
+		}
 		return fmt.Sprintf("%s:%s@%s(%s)/%s%s",
 			dbConfig.Username, dbConfig.Password, dbConfig.Protocol,
 			dbConfig.Address, dbConfig.Dbname, dbConfig.Params)
 	case "mssql", "sqlserver":
-		return fmt.Sprintf("odbc:user id=%s;password=%s;server=%s;database=%s;%s",
-			dbConfig.Username, dbConfig.Password, dbConfig.Address,
+		return fmt.Sprintf("odbc:user id=%s;password=%s;server=%s;port=%s;database=%s;%s",
+			dbConfig.Username, dbConfig.Password, dbConfig.Address, dbConfig.Port,
 			dbConfig.Dbname, dbConfig.Params)
 	default:
 		panic("error db driver")

@@ -49,6 +49,7 @@ type DbConfig struct {
 	Password     string
 	Protocol     string
 	Address      string
+	Port         string
 	Dbname       string
 	Params       string
 	CacheType    string
