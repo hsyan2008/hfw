@@ -21,7 +21,7 @@ var {{Mapper .Name}}Model = &{{Mapper .Name}}{Dao: hfw.NewNoCacheDao()}
 func init() {
 	//gob: type not registered for interface
 {{range .Tables}}
-	gob.Register({{Mapper .Name}}Model)
+	gob.Register(&{{Mapper .Name}}{})
 {{end}}
 }
 
