@@ -33,13 +33,14 @@ func ConnectDb(dbConfig DbConfig) *xorm.Engine {
 
 	driver := dbConfig.Driver
 	dbDsn := getDbDsn(dbConfig)
-	logger.Info("dbDsn:", dbDsn)
 
 	ec.mtx.Lock()
 	if e, ok := ec.engines[dbDsn]; ok {
 		ec.mtx.Unlock()
 		return e
 	}
+
+	logger.Info("dbDsn:", dbDsn)
 
 	engine, err := xorm.NewEngine(driver, dbDsn)
 	if err != nil {
