@@ -10,6 +10,8 @@ import (
 	"github.com/hsyan2008/go-logger/logger"
 )
 
+const PageSize = 1000
+
 type Dao interface {
 	UpdateById(interface{}) error
 	UpdateByIds(interface{}, map[string]interface{}, []interface{}) error
@@ -130,9 +132,9 @@ func (d *NoCacheDao) Search(t interface{}, cond map[string]interface{}) (err err
 	var (
 		str      []string
 		args     []interface{}
-		orderby  string = "id desc"
-		page     int    = 1
-		pageSize int    = 1000
+		orderby  = "id desc"
+		page     = 1
+		pageSize = PageSize
 		where    string
 	)
 	for k, v := range cond {
