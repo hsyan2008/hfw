@@ -35,20 +35,20 @@ func initAPPPATH() {
 //setLog 初始化log写入文件
 func setLog() {
 	lc := Config.Logger
-	logger.SetLevelStr(lc.LogLevel)
-	logger.SetConsole(lc.IsConsole)
-	logger.SetLogGoID(lc.LogGoID)
 
 	if lc.LogFile != "" {
+		logger.SetLevelStr(lc.LogLevel)
+		logger.SetConsole(lc.IsConsole)
+		logger.SetLogGoID(lc.LogGoID)
 		if lc.LogType == "daily" {
 			logger.SetRollingDaily(lc.LogFile)
 		} else if lc.LogType == "roll" {
 			logger.SetRollingFile(lc.LogFile, lc.LogMaxNum, lc.LogSize, lc.LogUnit)
 		} else {
-			logger.Warn("undefined LogType")
+			panic("undefined logtype")
 		}
 	} else {
-		logger.Warn("undefined LogFile")
+		logger.Info("undefined logfile, log to console")
 	}
 }
 
@@ -59,7 +59,9 @@ func loadConfig() {
 
 	configPath := filepath.Join(APPPATH, "config", ENVIRONMENT, "config.toml")
 	if !IsExist(configPath) {
-		panic("config file not exist")
+		// panic("config file not exist")
+		//如果文件不存在，直接返回，不进行初始化
+		return
 	}
 	_, err := toml.DecodeFile(configPath, &Config)
 	if err != nil {
