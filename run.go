@@ -97,6 +97,9 @@ func loadConfig() {
 //Run start
 func Run() {
 
+	logger.Debug("Pid:", os.Getpid(), "Starting ...")
+	defer logger.Debug("Pid:", os.Getpid(), "Shutdown complete!")
+
 	logger.Debug("Start to run, Config ENVIRONMENT is", ENVIRONMENT)
 
 	//等待工作完成
