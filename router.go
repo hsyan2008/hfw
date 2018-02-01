@@ -106,7 +106,11 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		for i := 0; i < rt.NumMethod(); i++ {
 			if strings.ToLower(rt.Method(i).Name) == urls[1] {
 				action = rt.Method(i).Name
+				break
 			}
+		}
+		if _, ok := rt.MethodByName(action + strings.Title(strings.ToLower(r.Method))); ok {
+			action = action + strings.Title(strings.ToLower(r.Method))
 		}
 		//非法的Action
 		if action == "" {
@@ -115,6 +119,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	router.C.Before(ctx)
+	logger.Debugf("Call Controller:%s Action:%s", urls[0], action)
 	reflectVal.MethodByName(action).Call(initValue)
 	router.C.After(ctx)
 }
