@@ -21,7 +21,7 @@ func startServe() {
 		Addr: Config.Server.Port,
 		// Handler:      controllers,
 		ReadTimeout:  time.Duration(Config.Server.ReadTimeout) * time.Second,
-		WriteTimeout: time.Duration(Config.Server.WriteTimeout) * time.Second,
+		WriteTimeout: time.Duration(Config.Server.WriteTimeout+Config.Server.ReadTimeout) * time.Second,
 		// MaxHeaderBytes: 1 << 20,
 	}
 

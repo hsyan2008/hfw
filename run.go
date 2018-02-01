@@ -85,6 +85,13 @@ func loadConfig() {
 	if !strings.Contains(Config.Server.Port, ":") {
 		Config.Server.Port = ":" + Config.Server.Port
 	}
+
+	if Config.Server.ReadTimeout == 0 {
+		Config.Server.ReadTimeout = 60
+	}
+	if Config.Server.WriteTimeout == 0 {
+		Config.Server.WriteTimeout = 60
+	}
 }
 
 //Run start
