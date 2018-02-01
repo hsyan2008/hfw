@@ -35,11 +35,11 @@ func initAPPPATH() {
 //setLog 初始化log写入文件
 func setLog() {
 	lc := Config.Logger
+	logger.SetLogGoID(lc.LogGoID)
 
 	if lc.LogFile != "" {
 		logger.SetLevelStr(lc.LogLevel)
 		logger.SetConsole(lc.IsConsole)
-		logger.SetLogGoID(lc.LogGoID)
 		if lc.LogType == "daily" {
 			logger.SetRollingDaily(lc.LogFile)
 		} else if lc.LogType == "roll" {
@@ -49,6 +49,7 @@ func setLog() {
 		}
 	} else {
 		logger.Info("undefined logfile, log to console")
+		logger.SetLevelStr("debug")
 	}
 }
 
@@ -82,7 +83,7 @@ func loadConfig() {
 		Config.Template.HTMLPath = filepath.Join(APPPATH, Config.Template.HTMLPath)
 	}
 
-	if !strings.Contains(Config.Server.Port, ":") {
+	if Config.Server.Port != "" && !strings.Contains(Config.Server.Port, ":") {
 		Config.Server.Port = ":" + Config.Server.Port
 	}
 
@@ -104,6 +105,10 @@ func Run() {
 
 	//等待工作完成
 	defer waitShutdownDone()
+
+	if Config.Server.Port == "" {
+		return
+	}
 
 	certFile := Config.Server.HTTPSCertFile
 	keyFile := Config.Server.HTTPSKeyFile
