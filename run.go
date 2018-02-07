@@ -104,14 +104,18 @@ func Run() {
 	logger.Debug("Start to run, Config ENVIRONMENT is", ENVIRONMENT)
 
 	//等待工作完成
-	defer waitShutdownDone()
+	defer Shutdowned()
 
 	if Config.Server.Port == "" {
 		return
 	}
 
+	isHttp = true
+
 	certFile := Config.Server.HTTPSCertFile
 	keyFile := Config.Server.HTTPSKeyFile
+
+	logger.Info("started server listen to ", Config.Server.Port)
 
 	if certFile != "" && keyFile != "" {
 		if !filepath.IsAbs(certFile) {

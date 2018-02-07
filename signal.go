@@ -20,6 +20,11 @@ var Wg = new(sync.WaitGroup)
 //Shutdown 业务方监听此通道获知通知
 var Shutdown = make(chan bool, 3)
 
+//shutdowned 业务方调用Shutdowned函数获取已经完成shutdown的通知
+var shutdowned = make(chan bool, 3)
+
+var isHttp = false
+
 func init() {
 	go listenSignal()
 }
@@ -35,18 +40,24 @@ func sendNotice() {
 func listenSignal() {
 	c := make(chan os.Signal, 1)
 	//syscall.SIGINT, syscall.SIGTERM，syscall.SIGUSR2已被gracehttp接管，前2者直接退出，后者重启
-	signal.Notify(c, syscall.SIGUSR1, syscall.SIGQUIT)
+	signal.Notify(c, syscall.SIGUSR1, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR2)
 	// Block until a signal is received.
 	s := <-c
 	logger.Info("recv signal:", s)
-	switch s {
-	case syscall.SIGUSR1:
-		//给自己发信号，触发gracehttp重启
-		_ = syscall.Kill(os.Getpid(), syscall.SIGUSR2)
-	case syscall.SIGQUIT:
-		//给自己发信号，触发gracehttp退出
-		_ = syscall.Kill(os.Getpid(), syscall.SIGINT)
-
+	go waitShutdownDone()
+	if isHttp {
+		logger.Info("start to stop http")
+		switch s {
+		case syscall.SIGUSR1:
+			//给自己发信号，触发gracehttp重启
+			_ = syscall.Kill(os.Getpid(), syscall.SIGUSR2)
+		case syscall.SIGQUIT:
+			//给自己发信号，触发gracehttp退出
+			_ = syscall.Kill(os.Getpid(), syscall.SIGINT)
+		}
+	} else {
+		logger.Info("start to stop console")
+		//暂时不做重启
 	}
 }
 
@@ -62,14 +73,19 @@ func waitShutdownDone() {
 	select {
 	case <-time.After(10 * time.Second):
 		logger.Warn("waitShutdownDone 10s timeout")
-		return
 	case <-c:
-		return
 	}
+
+	shutdowned <- true
 }
 
 //等待业务方结束
 func waitDone(c chan bool) {
 	Wg.Wait()
 	c <- true
+}
+
+//
+func Shutdowned() {
+	<-shutdowned
 }
