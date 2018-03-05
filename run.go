@@ -15,8 +15,12 @@ import (
 //APPPATH 项目路径
 var APPPATH string
 
+//APPNAME 项目名称
+var APPNAME string
+
 func init() {
 	initAPPPATH()
+	initAPPNAME()
 	loadConfig()
 	setLog()
 }
@@ -29,6 +33,15 @@ func initAPPPATH() {
 		APPPATH, _ = os.Getwd()
 	} else {
 		APPPATH = filepath.Dir(pwd)
+	}
+}
+
+func initAPPNAME() {
+	pwd, _ := filepath.Abs(os.Args[0])
+	if filepath.Base(pwd) == "main" {
+		APPNAME = filepath.Base(APPPATH)
+	} else {
+		APPNAME = filepath.Base(pwd)
 	}
 }
 
@@ -48,8 +61,9 @@ func setLog() {
 			panic("undefined logtype")
 		}
 	} else {
-		logger.Info("undefined logfile, log to console")
 		logger.SetLevelStr("debug")
+		logger.SetRollingDaily(filepath.Join(APPPATH, APPNAME+".log"))
+		logger.Info("undefined logfile, set debug level, log to console and default file")
 	}
 }
 
@@ -101,7 +115,7 @@ func Run() {
 	logger.Debug("Pid:", os.Getpid(), "Starting ...")
 	defer logger.Debug("Pid:", os.Getpid(), "Shutdown complete!")
 
-	logger.Debug("Start to run, Config ENVIRONMENT is", ENVIRONMENT)
+	logger.Debug("Start to run, Config ENVIRONMENT is", ENVIRONMENT, "APPNAME is", APPNAME, "APPPATH is", APPPATH)
 
 	//等待工作完成
 	defer Shutdowned()
