@@ -12,6 +12,7 @@ import (
 
 //SSHConfig ..
 type SSHConfig struct {
+	Id      string `toml:"id"`
 	Addr    string `toml:"addr"`
 	User    string `toml:"user"`
 	Auth    string `toml:"auth"`
@@ -21,15 +22,37 @@ type SSHConfig struct {
 
 //SSH ..
 type SSH struct {
-	c *ssh.Client
+	l       *ssh.Client
+	c       *ssh.Client
+	close   chan bool
+	configs []SSHConfig
 }
 
 //NewSSH 建立第一个ssh连接，一般是跳板机
 func NewSSH(sshConfig SSHConfig) (ssh *SSH, err error) {
 
 	ssh = &SSH{}
+	ssh.close = make(chan bool, 1)
+	ssh.configs = []SSHConfig{sshConfig}
 
 	err = ssh.Dial(sshConfig)
+
+	if err == nil {
+		go func() {
+			t := time.NewTimer(sshConfig.Timeout * time.Second)
+			for {
+				select {
+				case <-ssh.close:
+					t.Stop()
+					return
+				case <-t.C:
+					go func() {
+						_ = ssh.keepalive()
+					}()
+				}
+			}
+		}()
+	}
 
 	return ssh, err
 }
@@ -52,6 +75,8 @@ func (this *SSH) DialRemote(sshConfig SSHConfig) (err error) {
 		return errors.New("err sshConfig")
 	}
 
+	this.configs = append(this.configs, sshConfig)
+
 	rc, err := this.c.Dial("tcp", sshConfig.Addr)
 	if err != nil {
 		return err
@@ -62,9 +87,14 @@ func (this *SSH) DialRemote(sshConfig SSHConfig) (err error) {
 		return err
 	}
 
+	this.l = this.c
 	this.c = ssh.NewClient(conn, nc, req)
 
 	return
+}
+
+func (this *SSH) Configs() []SSHConfig {
+	return this.configs
 }
 
 func (this *SSH) getSshClientConfig(sshConfig SSHConfig) *ssh.ClientConfig {
@@ -90,6 +120,7 @@ func (this *SSH) getAuth(sshConfig SSHConfig) ssh.AuthMethod {
 	//密码
 	if len(key) == 0 {
 		if len(sshConfig.Auth) < 50 {
+			logger.Info("ssh password")
 			return ssh.Password(sshConfig.Auth)
 		} else {
 			key = []byte(sshConfig.Auth)
@@ -98,8 +129,10 @@ func (this *SSH) getAuth(sshConfig SSHConfig) ssh.AuthMethod {
 
 	var signer ssh.Signer
 	if sshConfig.Phrase != "" {
+		logger.Info("ssh phrase")
 		signer, err = ssh.ParsePrivateKeyWithPassphrase(key, []byte(sshConfig.Phrase))
 	} else {
+		logger.Info("ssh private key")
 		signer, err = ssh.ParsePrivateKey(key)
 	}
 	if err != nil {
@@ -109,35 +142,48 @@ func (this *SSH) getAuth(sshConfig SSHConfig) ssh.AuthMethod {
 }
 
 //一个Session只能执行一次
-func (this *SSH) Exec(cmd string) ([]byte, error) {
+func (this *SSH) Exec(cmd string) (string, error) {
+
+	logger.Info("ssh Exec ", this.configs, cmd)
 
 	sess, err := this.c.NewSession()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	defer func() {
 		_ = sess.Close()
 	}()
 
-	return sess.CombinedOutput(cmd)
+	c, err := sess.CombinedOutput(cmd)
+
+	if err != nil {
+		logger.Warn(this.Configs(), "Exec:", cmd, "Return:", string(c), "Err:", err)
+	}
+
+	return string(c), err
 }
 
 func (this *SSH) Close() {
+	this.close <- true
 	_ = this.c.Close()
+	if this.l != nil {
+		_ = this.l.Close()
+	}
 }
 
-func keepalive(s *ssh.Client) (err error) {
+func (this *SSH) keepalive() (err error) {
+	logger.Info("keepalive", this.configs)
 	defer func() {
 		if e := recover(); e != nil {
 			logger.Warn("keepalive error")
 			err = errors.New("keepalive error")
 		}
 	}()
-	if s == nil {
+	if this.c == nil {
 		return errors.New("ssh Client is nil")
 	}
 
-	sess, err := s.NewSession()
+	sess, err := this.c.NewSession()
 	if err != nil {
 		logger.Warn("keepalive NewSession error")
 		return err
