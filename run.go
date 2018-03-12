@@ -2,9 +2,11 @@ package hfw
 
 import (
 	"flag"
+	"net"
 	"os"
 	"strings"
 	//pprof
+	"net/http"
 	_ "net/http/pprof"
 	"path/filepath"
 
@@ -115,6 +117,8 @@ func loadConfig() {
 
 //Run start
 func Run() {
+	//防止被挂起，若webview
+	defer os.Exit(0)
 
 	logger.Debug("Pid:", os.Getpid(), "Starting ...")
 	defer logger.Debug("Pid:", os.Getpid(), "Shutdown complete!")
@@ -123,6 +127,11 @@ func Run() {
 
 	//等待工作完成
 	defer Shutdowned()
+
+	if randPortListener != nil {
+		RunRandPort()
+		return
+	}
 
 	if Config.Server.Address == "" {
 		return
@@ -154,4 +163,15 @@ func Run() {
 	} else {
 		startServe()
 	}
+}
+
+var randPortListener net.Listener
+
+func GetRandPort() string {
+	randPortListener, _ = net.Listen("tcp", "127.0.0.1:0")
+	return randPortListener.Addr().String()
+}
+
+func RunRandPort() {
+	_ = http.Serve(randPortListener, nil)
 }

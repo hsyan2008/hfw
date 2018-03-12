@@ -70,6 +70,12 @@ func waitShutdownDone() {
 	c := make(chan bool, 1)
 	go waitDone(c)
 
+	go func() {
+		if randPortListener != nil {
+			_ = randPortListener.Close()
+		}
+	}()
+
 	select {
 	case <-time.After(10 * time.Second):
 		logger.Warn("waitShutdownDone 10s timeout")
