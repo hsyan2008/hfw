@@ -22,6 +22,8 @@ var Config struct {
 
 //ServerConfig ..
 type ServerConfig struct {
+	Address string
+	//Port已废弃，用Address代替
 	Port          string
 	ReadTimeout   int64
 	WriteTimeout  int64

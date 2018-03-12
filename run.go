@@ -100,6 +100,10 @@ func loadConfig() {
 	if Config.Server.Port != "" && !strings.Contains(Config.Server.Port, ":") {
 		Config.Server.Port = ":" + Config.Server.Port
 	}
+	//兼容
+	if Config.Server.Address == "" && Config.Server.Port != "" {
+		Config.Server.Address = Config.Server.Port
+	}
 
 	if Config.Server.ReadTimeout == 0 {
 		Config.Server.ReadTimeout = 60
