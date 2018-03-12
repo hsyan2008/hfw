@@ -74,14 +74,11 @@ func loadConfig() {
 	flag.Parse()
 
 	configPath := filepath.Join(APPPATH, "config", ENVIRONMENT, "config.toml")
-	if !IsExist(configPath) {
-		// panic("config file not exist")
-		//如果文件不存在，直接返回，不进行初始化
-		return
-	}
-	_, err := toml.DecodeFile(configPath, &Config)
-	if err != nil {
-		panic(err)
+	if IsExist(configPath) {
+		_, err := toml.DecodeFile(configPath, &Config)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	// logger.Info(Config)
