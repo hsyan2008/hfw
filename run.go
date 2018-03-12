@@ -124,7 +124,7 @@ func Run() {
 	//等待工作完成
 	defer Shutdowned()
 
-	if Config.Server.Port == "" {
+	if Config.Server.Address == "" {
 		return
 	}
 
@@ -133,7 +133,7 @@ func Run() {
 	certFile := Config.Server.HTTPSCertFile
 	keyFile := Config.Server.HTTPSKeyFile
 
-	logger.Info("started server listen to ", Config.Server.Port)
+	logger.Info("started server listen to ", Config.Server.Address)
 
 	if certFile != "" && keyFile != "" {
 		if !filepath.IsAbs(certFile) {
