@@ -109,6 +109,7 @@ type HTTPContext struct {
 	Controll       string
 	Action         string
 	Path           string
+	Template       string
 	TemplateFile   string
 	IsJSON         bool
 	IsZip          bool
@@ -166,10 +167,10 @@ func (ctx *HTTPContext) Output() {
 	if ctx.ResponseWriter.Header().Get("Location") != "" {
 		return
 	}
-	if ctx.TemplateFile == "" || ctx.IsJSON {
-		ctx.RenderJSON()
+	if (ctx.TemplateFile == "" && ctx.Template == "") || ctx.IsJSON {
+		ctx.ReturnJSON()
 	} else {
-		ctx.RenderFile()
+		ctx.Render()
 	}
 }
 
@@ -181,30 +182,17 @@ var templatesCache = struct {
 	l:    &sync.RWMutex{},
 }
 
-//RenderFile ..
-func (ctx *HTTPContext) RenderFile() {
+//Render ..
+func (ctx *HTTPContext) Render() {
 
 	ctx.ResponseWriter.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	var (
 		t   *template.Template
 		err error
-		ok  bool
 	)
-	if Config.Template.IsCache {
-		templatesCache.l.RLock()
-		if t, ok = templatesCache.list[ctx.TemplateFile]; !ok {
-			templatesCache.l.RUnlock()
-			t = ctx.renderFile()
-			templatesCache.l.Lock()
-			templatesCache.list[ctx.TemplateFile] = t
-			templatesCache.l.Unlock()
-		} else {
-			templatesCache.l.RUnlock()
-		}
-	} else {
-		t = ctx.renderFile()
-	}
+
+	t = ctx.render()
 
 	if !ctx.IsError && ctx.IsZip {
 		ctx.ResponseWriter.Header().Del("Content-Length")
@@ -228,6 +216,53 @@ func (ctx *HTTPContext) RenderFile() {
 
 }
 
+func (ctx *HTTPContext) render() (t *template.Template) {
+	var key string
+	var render func() *template.Template
+	var ok bool
+	if ctx.Template != "" {
+		key = ctx.Path
+		// return ctx.renderHtml()
+		render = ctx.renderHtml
+	} else if ctx.TemplateFile != "" {
+		key = ctx.TemplateFile
+		// return ctx.renderFile()
+		render = ctx.renderFile
+	}
+
+	if Config.Template.IsCache {
+		templatesCache.l.RLock()
+		if t, ok = templatesCache.list[key]; !ok {
+			templatesCache.l.RUnlock()
+			// t = ctx.render()
+			t = render()
+			templatesCache.l.Lock()
+			templatesCache.list[key] = t
+			templatesCache.l.Unlock()
+		} else {
+			templatesCache.l.RUnlock()
+		}
+	} else {
+		// t = ctx.render()
+		t = render()
+	}
+
+	return t
+}
+
+func (ctx *HTTPContext) renderHtml() (t *template.Template) {
+	if len(ctx.FuncMap) == 0 {
+		t = template.Must(template.New(ctx.Path).Parse(ctx.Template))
+	} else {
+		t = template.Must(template.New(ctx.Path).Funcs(ctx.FuncMap).Parse(ctx.Template))
+	}
+	if Config.Template.WidgetsPath != "" {
+		widgetsPath := filepath.Join(Config.Template.HTMLPath, Config.Template.WidgetsPath)
+		t = template.Must(t.ParseGlob(widgetsPath))
+	}
+
+	return
+}
 func (ctx *HTTPContext) renderFile() (t *template.Template) {
 	templateFilePath := filepath.Join(Config.Template.HTMLPath, ctx.TemplateFile)
 	if len(ctx.FuncMap) == 0 {
@@ -243,8 +278,8 @@ func (ctx *HTTPContext) renderFile() (t *template.Template) {
 	return
 }
 
-//RenderJSON ..
-func (ctx *HTTPContext) RenderJSON() {
+//ReturnJSON ..
+func (ctx *HTTPContext) ReturnJSON() {
 
 	ctx.ResponseWriter.Header().Set("Content-Type", "application/json; charset=utf-8")
 
