@@ -11,8 +11,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/facebookgo/grace/gracehttp"
 	"github.com/hsyan2008/go-logger/logger"
+	"github.com/hsyan2008/grace/gracehttp"
 )
 
 func startServe() {

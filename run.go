@@ -65,7 +65,6 @@ func setLog() {
 	} else {
 		logger.SetLevelStr("debug")
 		logger.SetRollingDaily(filepath.Join(APPPATH, APPNAME+".log"))
-		logger.Info("undefined logfile, set debug level, log to console and default file")
 	}
 }
 

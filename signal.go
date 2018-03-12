@@ -40,20 +40,21 @@ func sendNotice() {
 func listenSignal() {
 	c := make(chan os.Signal, 1)
 	//syscall.SIGINT, syscall.SIGTERM，syscall.SIGUSR2已被gracehttp接管，前2者直接退出，后者重启
-	signal.Notify(c, syscall.SIGUSR1, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR2)
+	signal.Notify(c, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM)
 	// Block until a signal is received.
 	s := <-c
 	logger.Info("recv signal:", s)
 	go waitShutdownDone()
 	if isHttp {
 		logger.Info("start to stop http")
+		p, _ := os.FindProcess(os.Getpid())
 		switch s {
-		case syscall.SIGUSR1:
+		case syscall.SIGTERM:
 			//给自己发信号，触发gracehttp重启
-			_ = syscall.Kill(os.Getpid(), syscall.SIGUSR2)
-		case syscall.SIGQUIT:
+			_ = p.Signal(syscall.SIGTERM)
+		case syscall.SIGINT:
 			//给自己发信号，触发gracehttp退出
-			_ = syscall.Kill(os.Getpid(), syscall.SIGINT)
+			_ = p.Signal(syscall.SIGQUIT)
 		}
 	} else {
 		logger.Info("start to stop console")
