@@ -39,9 +39,7 @@ func sendNotice() {
 //gracehttp外，增加两个信号支持
 func listenSignal() {
 	c := make(chan os.Signal, 1)
-	//syscall.SIGINT, syscall.SIGTERM，syscall.SIGUSR2已被gracehttp接管，前2者直接退出，后者重启
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM)
-	// Block until a signal is received.
 	s := <-c
 	logger.Info("recv signal:", s)
 	go waitShutdownDone()
@@ -51,7 +49,7 @@ func listenSignal() {
 		switch s {
 		case syscall.SIGTERM:
 			//给自己发信号，触发gracehttp重启
-			_ = p.Signal(syscall.SIGTERM)
+			_ = p.Signal(syscall.SIGHUP)
 		case syscall.SIGINT:
 			//给自己发信号，触发gracehttp退出
 			_ = p.Signal(syscall.SIGQUIT)
