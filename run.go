@@ -30,8 +30,7 @@ func init() {
 //初始化项目路径
 func initAPPPATH() {
 	pwd, _ := filepath.Abs(os.Args[0])
-	//处理go run的情况此判断linux下有效
-	if strings.Contains(pwd, "/tmp/go-build") {
+	if strings.Contains(pwd, "go-build") {
 		APPPATH, _ = os.Getwd()
 	} else {
 		APPPATH = filepath.Dir(pwd)
