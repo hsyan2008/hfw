@@ -17,6 +17,9 @@ import (
 //APPPATH 项目路径
 var APPPATH string
 
+//是否go run执行
+var isGoRun bool
+
 //APPNAME 项目名称
 var APPNAME string
 
@@ -32,16 +35,17 @@ func initAPPPATH() {
 	pwd, _ := filepath.Abs(os.Args[0])
 	if strings.Contains(pwd, "go-build") {
 		APPPATH, _ = os.Getwd()
+		isGoRun = true
 	} else {
 		APPPATH = filepath.Dir(pwd)
 	}
 }
 
 func initAPPNAME() {
-	pwd, _ := filepath.Abs(os.Args[0])
-	if filepath.Base(pwd) == "main" {
+	if isGoRun {
 		APPNAME = filepath.Base(APPPATH)
 	} else {
+		pwd, _ := filepath.Abs(os.Args[0])
 		APPNAME = filepath.Base(pwd)
 	}
 }
