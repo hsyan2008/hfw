@@ -51,7 +51,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx.Request = r
 	ctx.Controll = urls[0]
 	ctx.Action = urls[1]
-	ctx.Path = fmt.Sprintf("%s/%s", urls[0], urls[1])
+	ctx.Path = fmt.Sprintf("%s/%s", ctx.Controll, ctx.Action)
 	// ctx.TemplateFile = fmt.Sprintf("%s.html", ctx.Path)
 	ctx.Layout = ""
 	ctx.TemplateFile = ""
@@ -100,17 +100,19 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var action string
 	//非法的Controller
-	if strings.ToLower(ct.Name()) != urls[0] {
+	if strings.ToLower(ct.Name()) != ctx.Controll {
 		action = "NotFound"
 	} else {
-		for i := 0; i < rt.NumMethod(); i++ {
-			if strings.ToLower(rt.Method(i).Name) == urls[1] {
+		numMethod := rt.NumMethod()
+		for i := 0; i < numMethod; i++ {
+			if strings.ToLower(rt.Method(i).Name) == ctx.Action {
 				action = rt.Method(i).Name
 				break
 			}
 		}
-		if _, ok := rt.MethodByName(action + strings.Title(strings.ToLower(r.Method))); ok {
-			action = action + strings.Title(strings.ToLower(r.Method))
+		method := strings.Title(strings.ToLower(r.Method))
+		if _, ok := rt.MethodByName(action + method); ok {
+			action = action + method
 		}
 		//非法的Action
 		if action == "" {
@@ -119,7 +121,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	router.C.Before(ctx)
-	logger.Debugf("Call Controller:%s Action:%s", urls[0], action)
+	logger.Debugf("Query Path: %s -> Call: %s/%s", ctx.Path, ct.Name(), action)
 	reflectVal.MethodByName(action).Call(initValue)
 	router.C.After(ctx)
 }
