@@ -4,6 +4,7 @@ import (
 	"flag"
 	"net"
 	"os"
+	"runtime"
 	"strings"
 	//pprof
 	"net/http"
@@ -46,7 +47,10 @@ func initAPPNAME() {
 		APPNAME = filepath.Base(APPPATH)
 	} else {
 		pwd, _ := filepath.Abs(os.Args[0])
-		APPNAME = filepath.Base(pwd)
+		APPNAME = strings.ToLower(filepath.Base(pwd))
+		if runtime.GOOS == "windows" {
+			APPNAME = strings.TrimSuffix(APPNAME, ".exe")
+		}
 	}
 }
 
