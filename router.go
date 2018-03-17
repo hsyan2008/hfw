@@ -26,8 +26,8 @@ type Router struct {
 
 func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	logger.Debug(r.Method, r.URL.Path, "start")
-	defer logger.Debug(r.Method, r.URL.Path, "end")
+	logger.Debug(r.Method, r.URL.String(), "start")
+	defer logger.Debug(r.Method, r.URL.String(), "end")
 
 	//把url补全为2段
 	trimURL := strings.Trim(strings.ToLower(r.URL.Path), "/")

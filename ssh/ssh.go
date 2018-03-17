@@ -103,6 +103,7 @@ func (this *SSH) getSshClientConfig(sshConfig SSHConfig) *ssh.ClientConfig {
 		Auth: []ssh.AuthMethod{
 			this.getAuth(sshConfig),
 		},
+		//如果没有这个，会说需要know_host文件
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 		Timeout:         sshConfig.Timeout * time.Second,
 	}
