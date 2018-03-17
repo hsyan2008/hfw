@@ -145,7 +145,7 @@ func (this *SSH) getAuth(sshConfig SSHConfig) ssh.AuthMethod {
 //一个Session只能执行一次
 func (this *SSH) Exec(cmd string) (string, error) {
 
-	logger.Info("ssh Exec ", this.configs, cmd)
+	logger.Info("ssh Exec ", this.configs[0].Id, cmd)
 
 	sess, err := this.c.NewSession()
 	if err != nil {
@@ -158,7 +158,7 @@ func (this *SSH) Exec(cmd string) (string, error) {
 	c, err := sess.CombinedOutput(cmd)
 
 	if err != nil {
-		logger.Warn(this.Configs(), "Exec:", cmd, "Return:", string(c), "Err:", err)
+		logger.Warn(this.configs[0].Id, "Exec:", cmd, "Return:", string(c), "Err:", err)
 	}
 
 	return string(c), err
@@ -173,7 +173,7 @@ func (this *SSH) Close() {
 }
 
 func (this *SSH) keepalive() (err error) {
-	logger.Info("keepalive", this.configs)
+	logger.Info("keepalive", this.configs[0].Id)
 	defer func() {
 		if e := recover(); e != nil {
 			logger.Warn("keepalive error")

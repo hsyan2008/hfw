@@ -11,6 +11,8 @@ import (
 
 //实现了目录的上传，未限速
 //可以实现过滤，不支持正则过滤，不过滤最外层
+//文件上传，src和des都要包含文件名字
+//目录上传，src将上传到des目录下面
 func (this *SSH) Scp(src, des, exclude string) (err error) {
 
 	exclude = strings.Replace(exclude, "\r", "", -1)
@@ -30,10 +32,10 @@ func (this *SSH) Scp(src, des, exclude string) (err error) {
 	}
 	if fileinfo.Mode().IsDir() {
 		//如果srcDir是目录，走这个
-		return this.scpDir(src, des, excludes, 0755, true)
+		return this.scpDir(src, des, excludes, fileinfo.Mode().Perm(), true)
 	} else if fileinfo.Mode().IsRegular() {
 		//如果srcDir是文件，则执行ssh.Run的时候，不用mkdir
-		return this.scpDir(src, des, excludes, 0755, false)
+		return this.scpDir(src, des, excludes, fileinfo.Mode().Perm(), false)
 	}
 
 	return nil
@@ -100,10 +102,7 @@ func (this *SSH) scpFile(src, des string, fm os.FileMode, isDir bool) (err error
 		if err != nil {
 			return
 		}
-		// fmt.Fprintln(w, "C0755", info.Size(), info.Name())
-		// fmt.Fprintf(w, "C%#o %d %s\n", info.Mode().Perm(), info.Size(), info.Name())
-		//发布代码，文件默认是644
-		fmt.Fprintf(w, "C0644 %d %s\n", info.Size(), info.Name())
+		fmt.Fprintf(w, "C%#o %d %s\n", info.Mode().Perm(), info.Size(), info.Name())
 		_, err = io.Copy(w, File)
 		if err != nil {
 			return
@@ -116,9 +115,7 @@ func (this *SSH) scpFile(src, des string, fm os.FileMode, isDir bool) (err error
 	sess.Stdout = &b
 	var cmd string
 	if isDir {
-		// cmd = fmt.Sprintf("mkdir -m %#o -p %s; /usr/bin/scp -qrt %s", fm, des, des)
-		//发布代码，目录默认是755
-		cmd = fmt.Sprintf("mkdir -m 0755 -p %s; /usr/bin/scp -qrt %s", des, des)
+		cmd = fmt.Sprintf("mkdir -m %#o -p %s; /usr/bin/scp -qrt %s", fm, des, des)
 	} else {
 		cmd = fmt.Sprintf("/usr/bin/scp -qrt %s", des)
 	}
