@@ -22,39 +22,21 @@ type SSHConfig struct {
 
 //SSH ..
 type SSH struct {
-	l       *ssh.Client
-	c       *ssh.Client
-	close   chan bool
-	configs []SSHConfig
+	c      *ssh.Client
+	close  chan bool
+	config SSHConfig
 }
 
 //NewSSH 建立第一个ssh连接，一般是跳板机
-func NewSSH(sshConfig SSHConfig) (ssh *SSH, err error) {
+func NewSSH(sshConfig SSHConfig) (ins *SSH, err error) {
 
-	ssh = &SSH{}
-	ssh.close = make(chan bool, 1)
-	ssh.configs = []SSHConfig{sshConfig}
+	ins = &SSH{}
+	ins.close = make(chan bool, 1)
+	ins.config = sshConfig
 
-	err = ssh.Dial(sshConfig)
+	err = ins.Dial(sshConfig)
 
-	if err == nil {
-		go func() {
-			t := time.NewTimer(sshConfig.Timeout * time.Second)
-			for {
-				select {
-				case <-ssh.close:
-					t.Stop()
-					return
-				case <-t.C:
-					go func() {
-						_ = ssh.keepalive()
-					}()
-				}
-			}
-		}()
-	}
-
-	return ssh, err
+	return
 }
 
 func (this *SSH) Dial(sshConfig SSHConfig) (err error) {
@@ -65,36 +47,50 @@ func (this *SSH) Dial(sshConfig SSHConfig) (err error) {
 
 	this.c, err = ssh.Dial("tcp", sshConfig.Addr, this.getSshClientConfig(sshConfig))
 
+	if err == nil {
+		this.Keepalive()
+	}
+
 	return
 }
 
 //DialRemote 通过跳板连接其他服务器
-func (this *SSH) DialRemote(sshConfig SSHConfig) (err error) {
+func (this *SSH) DialRemote(sshConfig SSHConfig) (ins *SSH, err error) {
 
 	if sshConfig.Addr == "" {
-		return errors.New("err sshConfig")
+		return nil, errors.New("err sshConfig")
 	}
 
-	this.configs = append(this.configs, sshConfig)
+	ins = &SSH{}
+	ins.close = make(chan bool, 1)
+	ins.config = sshConfig
 
 	rc, err := this.c.Dial("tcp", sshConfig.Addr)
 	if err != nil {
-		return err
+		return
 	}
 
 	conn, nc, req, err := ssh.NewClientConn(rc, "", this.getSshClientConfig(sshConfig))
 	if err != nil {
-		return err
+		return
 	}
 
-	this.l = this.c
-	this.c = ssh.NewClient(conn, nc, req)
+	ins.c = ssh.NewClient(conn, nc, req)
+
+	if err == nil {
+		ins.Keepalive()
+	}
 
 	return
 }
 
-func (this *SSH) Configs() []SSHConfig {
-	return this.configs
+func (this *SSH) Close() {
+	this.close <- true
+	_ = this.c.Close()
+}
+
+func (this *SSH) Config() SSHConfig {
+	return this.config
 }
 
 func (this *SSH) getSshClientConfig(sshConfig SSHConfig) *ssh.ClientConfig {
@@ -145,7 +141,7 @@ func (this *SSH) getAuth(sshConfig SSHConfig) ssh.AuthMethod {
 //一个Session只能执行一次
 func (this *SSH) Exec(cmd string) (string, error) {
 
-	logger.Info("ssh Exec ", this.configs[0].Id, cmd)
+	logger.Info("ssh Exec ", this.config.Id, cmd)
 
 	sess, err := this.c.NewSession()
 	if err != nil {
@@ -158,48 +154,53 @@ func (this *SSH) Exec(cmd string) (string, error) {
 	c, err := sess.CombinedOutput(cmd)
 
 	if err != nil {
-		logger.Warn(this.configs[0].Id, "Exec:", cmd, "Return:", string(c), "Err:", err)
+		logger.Warn(this.config.Id, "Exec:", cmd, "Return:", string(c), "Err:", err)
 	}
 
 	return string(c), err
 }
 
-func (this *SSH) Close() {
-	this.close <- true
-	_ = this.c.Close()
-	if this.l != nil {
-		_ = this.l.Close()
+func (this *SSH) Keepalive() {
+	if this.c == nil {
+		return
 	}
+	go func() {
+		t := time.NewTimer(this.config.Timeout * time.Second)
+		for {
+			select {
+			case <-this.close:
+				t.Stop()
+				return
+			case <-t.C:
+				go func() {
+					_ = this.keepalive()
+				}()
+			}
+		}
+	}()
 }
 
 func (this *SSH) keepalive() (err error) {
-	logger.Info("keepalive", this.configs[0].Id)
+	logger.Info("keepalive", this.config.Id)
 	defer func() {
 		if e := recover(); e != nil {
-			logger.Warn("keepalive error")
 			err = errors.New("keepalive error")
 		}
 	}()
 	if this.c == nil {
-		return errors.New("ssh Client is nil")
+		return
 	}
 
 	sess, err := this.c.NewSession()
 	if err != nil {
-		logger.Warn("keepalive NewSession error")
-		return err
+		return
 	}
 	defer func() {
 		_ = sess.Close()
 	}()
 	if err = sess.Shell(); err != nil {
-		logger.Warn("keepalive shell error")
-		return err
-	}
-	err = sess.Wait()
-	if err != nil {
-		logger.Warn("keepalive wait", err)
+		return
 	}
 
-	return
+	return sess.Wait()
 }
