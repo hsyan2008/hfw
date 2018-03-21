@@ -25,10 +25,6 @@ var shutdowned = make(chan bool, 3)
 
 var isHttp = false
 
-func init() {
-	go listenSignal()
-}
-
 //通知业务方
 func sendNotice() {
 	for {

@@ -129,6 +129,7 @@ func Run() {
 	logger.Debug("Start to run, Config ENVIRONMENT is", ENVIRONMENT, "APPNAME is", APPNAME, "APPPATH is", APPPATH)
 
 	//等待工作完成
+	go listenSignal()
 	defer Shutdowned()
 
 	if randPortListener != nil {
