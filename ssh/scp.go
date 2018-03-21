@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -52,7 +54,7 @@ func (this *SSH) scpDir(src, des string, excludes map[string]string, fm os.FileM
 		return
 	}
 	if fileinfo.Mode().IsDir() {
-		des := des + "/" + filepath.Base(src)
+		des := filepath.Join(des, filepath.Base(src))
 		for {
 			files, err := file.Readdir(3)
 			if err == io.EOF {
@@ -114,10 +116,14 @@ func (this *SSH) scpFile(src, des string, fm os.FileMode, isDir bool) (err error
 	var b bytes.Buffer
 	sess.Stdout = &b
 	var cmd string
+	if runtime.GOOS == "windows" {
+		des = strings.Replace(des, "\\", "/", -1)
+	}
 	if isDir {
 		cmd = fmt.Sprintf("mkdir -m %#o -p %s; /usr/bin/scp -qrt %s", fm, des, des)
 	} else {
-		cmd = fmt.Sprintf("/usr/bin/scp -qrt %s", des)
+		//filepath在win下会转换/为\，所以用path
+		cmd = fmt.Sprintf("mkdir -m %#o -p %s; /usr/bin/scp -qrt %s", fm, path.Dir(des), des)
 	}
 	if err := sess.Run(cmd); err != nil {
 		if err.Error() != "Process exited with status 1" {
