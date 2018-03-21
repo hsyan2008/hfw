@@ -77,14 +77,16 @@ func setLog() {
 
 func loadConfig() {
 
-	flag.StringVar(&ENVIRONMENT, "e", "dev", "set env, e.g dev test prod")
-	flag.Parse()
+	if IsExist(filepath.Join(APPPATH, "config")) {
+		flag.StringVar(&ENVIRONMENT, "e", "dev", "set env, e.g dev test prod")
+		flag.Parse()
 
-	configPath := filepath.Join(APPPATH, "config", ENVIRONMENT, "config.toml")
-	if IsExist(configPath) {
-		_, err := toml.DecodeFile(configPath, &Config)
-		if err != nil {
-			panic(err)
+		configPath := filepath.Join(APPPATH, "config", ENVIRONMENT, "config.toml")
+		if IsExist(configPath) {
+			_, err := toml.DecodeFile(configPath, &Config)
+			if err != nil {
+				panic(err)
+			}
 		}
 	}
 
