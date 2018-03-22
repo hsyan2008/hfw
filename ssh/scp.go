@@ -110,8 +110,6 @@ func (this *SSH) scpFile(src, des string, fileinfo os.FileInfo) (err error) {
 		fmt.Fprint(w, "\x00")
 	}()
 
-	// var b bytes.Buffer
-	// sess.Stdout = &b
 	des = pathConvertToUnix(des)
 	//filepath在win下会转换/为\，所以用path
 	cmd := fmt.Sprintf("mkdir -m %#o -p %s; /usr/bin/scp -qrt %s", fileinfo.Mode().Perm(), path.Dir(des), des)

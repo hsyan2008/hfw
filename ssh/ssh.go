@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 //SSHConfig ..
@@ -153,6 +154,11 @@ func (this *SSH) Exec(cmd string) (string, error) {
 //一个Session只能执行一次
 func (this *SSH) ExecOutput(cmd string) error {
 
+	termWidth, termHeight, err := terminal.GetSize(0)
+	if err != nil {
+		return err
+	}
+
 	sess, err := this.c.NewSession()
 	if err != nil {
 		return err
@@ -161,8 +167,20 @@ func (this *SSH) ExecOutput(cmd string) error {
 		_ = sess.Close()
 	}()
 
+	//如果没有stdin，top之类的命令无法操作
+	sess.Stdin = os.Stdin
 	sess.Stdout = os.Stdout
 	sess.Stderr = os.Stderr
+
+	modes := ssh.TerminalModes{
+		ssh.ECHO:          0,
+		ssh.TTY_OP_ISPEED: 14400,
+		ssh.TTY_OP_OSPEED: 14400,
+	}
+
+	if err := sess.RequestPty("xterm", termHeight, termWidth, modes); err != nil {
+		return err
+	}
 
 	return sess.Run(cmd)
 }
