@@ -6,7 +6,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/hsyan2008/go-logger/logger"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -117,7 +116,6 @@ func (this *SSH) getAuth(sshConfig SSHConfig) ssh.AuthMethod {
 	//密码
 	if len(key) == 0 {
 		if len(sshConfig.Auth) < 50 {
-			logger.Info("ssh password")
 			return ssh.Password(sshConfig.Auth)
 		} else {
 			key = []byte(sshConfig.Auth)
@@ -126,10 +124,8 @@ func (this *SSH) getAuth(sshConfig SSHConfig) ssh.AuthMethod {
 
 	var signer ssh.Signer
 	if sshConfig.Phrase != "" {
-		logger.Info("ssh phrase")
 		signer, err = ssh.ParsePrivateKeyWithPassphrase(key, []byte(sshConfig.Phrase))
 	} else {
-		logger.Info("ssh private key")
 		signer, err = ssh.ParsePrivateKey(key)
 	}
 	if err != nil {
@@ -141,8 +137,6 @@ func (this *SSH) getAuth(sshConfig SSHConfig) ssh.AuthMethod {
 //一个Session只能执行一次
 func (this *SSH) Exec(cmd string) (string, error) {
 
-	logger.Info("ssh Exec ", this.config.Id, cmd)
-
 	sess, err := this.c.NewSession()
 	if err != nil {
 		return "", err
@@ -153,11 +147,24 @@ func (this *SSH) Exec(cmd string) (string, error) {
 
 	c, err := sess.CombinedOutput(cmd)
 
-	if err != nil {
-		logger.Warn(this.config.Id, "Exec:", cmd, "Return:", string(c), "Err:", err)
-	}
-
 	return string(c), err
+}
+
+//一个Session只能执行一次
+func (this *SSH) ExecOutput(cmd string) error {
+
+	sess, err := this.c.NewSession()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = sess.Close()
+	}()
+
+	sess.Stdout = os.Stdout
+	sess.Stderr = os.Stderr
+
+	return sess.Run(cmd)
 }
 
 func (this *SSH) Keepalive() {
@@ -181,7 +188,6 @@ func (this *SSH) Keepalive() {
 }
 
 func (this *SSH) keepalive() (err error) {
-	logger.Info("keepalive", this.config.Id)
 	defer func() {
 		if e := recover(); e != nil {
 			err = errors.New("keepalive error")
