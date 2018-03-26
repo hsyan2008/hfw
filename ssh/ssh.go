@@ -153,7 +153,7 @@ func (this *SSH) Exec(cmd string) (string, error) {
 
 //一个Session只能执行一次，直接把结果输出到终端
 //不允许超过3s
-func (this *SSH) ExecWithPty(cmd string) error {
+func (this *SSH) ExecWithPty(cmd string, timeout time.Duration) error {
 
 	fd := 0
 	if terminal.IsTerminal(fd) {
@@ -197,15 +197,17 @@ func (this *SSH) ExecWithPty(cmd string) error {
 
 		_ = sess.Start(cmd)
 		done := false
-		go func(sess *ssh.Session) {
-			select {
-			case <-time.After(3 * time.Second):
-				if !done {
-					_ = sess.Close()
+		if timeout > 0 {
+			go func(sess *ssh.Session) {
+				select {
+				case <-time.After(timeout * time.Second):
+					if !done {
+						_ = sess.Close()
+					}
 				}
-			}
 
-		}(sess)
+			}(sess)
+		}
 		err = sess.Wait()
 		done = true
 
