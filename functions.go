@@ -4,6 +4,9 @@ import (
 	"crypto/md5"
 	"fmt"
 	"os"
+	"runtime"
+
+	"github.com/axgle/mahonia"
 )
 
 //Result ..
@@ -45,4 +48,16 @@ func IsExist(filepath string) bool {
 		return true
 	}
 	return !os.IsNotExist(err)
+}
+
+//转换为当前操作系统支持的编码
+//linux和mac为utf8
+//win为GBK
+func ToOsCode(text string) string {
+	if runtime.GOOS == "windows" {
+		enc := mahonia.NewEncoder(("gbk"))
+		return enc.ConvertString(text)
+	}
+
+	return text
 }

@@ -135,7 +135,7 @@ func (this *SSH) getAuth(sshConfig SSHConfig) ssh.AuthMethod {
 	return ssh.PublicKeys(signer)
 }
 
-//一个Session只能执行一次
+//一个Session只能执行一次，获取ssh执行命令的结果
 func (this *SSH) Exec(cmd string) (string, error) {
 
 	sess, err := this.c.NewSession()
@@ -151,38 +151,116 @@ func (this *SSH) Exec(cmd string) (string, error) {
 	return string(c), err
 }
 
-//一个Session只能执行一次
-func (this *SSH) ExecOutput(cmd string) error {
+//一个Session只能执行一次，直接把结果输出到终端
+//不允许超过3s
+func (this *SSH) ExecWithPty(cmd string) error {
 
-	termWidth, termHeight, err := terminal.GetSize(0)
-	if err != nil {
+	fd := 0
+	if terminal.IsTerminal(fd) {
+		termWidth, termHeight, err := terminal.GetSize(fd)
+		if err != nil {
+			return err
+		}
+
+		oldState, err := terminal.MakeRaw(fd)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			_ = terminal.Restore(fd, oldState)
+		}()
+
+		sess, err := this.c.NewSession()
+		if err != nil {
+			return err
+		}
+		defer func() {
+			_ = sess.Close()
+		}()
+
+		//如果没有stdin，top之类的命令无法操作
+		// sess.Stdin = os.Stdin
+		sess.Stdout = os.Stdout
+		sess.Stderr = os.Stderr
+
+		modes := ssh.TerminalModes{
+			ssh.ECHO:          0,
+			ssh.TTY_OP_ISPEED: 14400,
+			ssh.TTY_OP_OSPEED: 14400,
+		}
+
+		if err := sess.RequestPty("xterm", termHeight, termWidth, modes); err != nil {
+			return err
+		}
+
+		// return sess.Run(cmd)
+
+		_ = sess.Start(cmd)
+		done := false
+		go func(sess *ssh.Session) {
+			select {
+			case <-time.After(3 * time.Second):
+				if !done {
+					_ = sess.Close()
+				}
+			}
+
+		}(sess)
+		err = sess.Wait()
+		done = true
+
 		return err
+	} else {
+		return errors.New("no terminal")
 	}
+}
 
-	sess, err := this.c.NewSession()
-	if err != nil {
-		return err
+//一个Session只能执行一次，进入ssh模式
+func (this *SSH) Shell() error {
+
+	fd := 0
+	if terminal.IsTerminal(fd) {
+		termWidth, termHeight, err := terminal.GetSize(fd)
+		if err != nil {
+			return err
+		}
+
+		oldState, err := terminal.MakeRaw(fd)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			_ = terminal.Restore(fd, oldState)
+		}()
+
+		sess, err := this.c.NewSession()
+		if err != nil {
+			return err
+		}
+		defer func() {
+			_ = sess.Close()
+		}()
+
+		sess.Stdin = os.Stdin
+		sess.Stdout = os.Stdout
+		sess.Stderr = os.Stderr
+
+		modes := ssh.TerminalModes{
+			ssh.ECHO: 1,
+		}
+
+		if err := sess.RequestPty("xterm", termHeight, termWidth, modes); err != nil {
+			return err
+		}
+
+		if err := sess.Shell(); err != nil {
+			return err
+		}
+
+		return sess.Wait()
+	} else {
+		return errors.New("no terminal")
 	}
-	defer func() {
-		_ = sess.Close()
-	}()
-
-	//如果没有stdin，top之类的命令无法操作
-	sess.Stdin = os.Stdin
-	sess.Stdout = os.Stdout
-	sess.Stderr = os.Stderr
-
-	modes := ssh.TerminalModes{
-		ssh.ECHO:          0,
-		ssh.TTY_OP_ISPEED: 14400,
-		ssh.TTY_OP_OSPEED: 14400,
-	}
-
-	if err := sess.RequestPty("xterm", termHeight, termWidth, modes); err != nil {
-		return err
-	}
-
-	return sess.Run(cmd)
 }
 
 func (this *SSH) Keepalive() {
