@@ -2,6 +2,7 @@ package hfw
 
 import (
 	"flag"
+	"fmt"
 	"net"
 	"os"
 	"runtime"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/hsyan2008/go-logger/logger"
+	"github.com/zserge/webview"
 )
 
 //APPPATH 项目路径
@@ -23,6 +25,8 @@ var isGoRun bool
 
 //APPNAME 项目名称
 var APPNAME string
+
+var PID = os.Getpid()
 
 func init() {
 	initAPPPATH()
@@ -73,6 +77,8 @@ func setLog() {
 		logger.SetLevelStr("debug")
 		logger.SetRollingDaily(filepath.Join(APPPATH, APPNAME+".log"))
 	}
+
+	logger.SetPrefix(fmt.Sprintf("Pid:%d", PID))
 }
 
 func loadConfig() {
@@ -135,7 +141,7 @@ func Run() {
 	defer Shutdowned()
 
 	if randPortListener != nil {
-		RunRandPort()
+		runRandPort()
 		return
 	}
 
@@ -173,11 +179,24 @@ func Run() {
 
 var randPortListener net.Listener
 
-func GetRandPort() string {
+func getRandPort() string {
 	randPortListener, _ = net.Listen("tcp", "127.0.0.1:0")
 	return randPortListener.Addr().String()
 }
 
-func RunRandPort() {
+func runRandPort() {
 	_ = http.Serve(randPortListener, nil)
+}
+
+func RunWebView(title string, width, height int, resize bool) {
+	addr := getRandPort()
+	go Run()
+
+	logger.Warn("监听端口:", addr)
+
+	err := webview.Open(ToOsCode(title),
+		"http://"+addr, width, height, resize)
+	if err != nil {
+		panic(err)
+	}
 }
