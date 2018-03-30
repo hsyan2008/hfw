@@ -22,7 +22,7 @@ func NewSessRedisStore() (*sessRedisStore, error) {
 			return nil, errors.New("session config error")
 		}
 		sessRedisStoreIns = &sessRedisStore{
-			redisIns:   NewRedis(redisConfig),
+			redisIns:   DefaultRedisIns,
 			prefix:     "sess_",
 			expiration: redisConfig.Expiration,
 		}
