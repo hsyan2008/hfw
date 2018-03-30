@@ -8,14 +8,6 @@ import (
 	"github.com/hsyan2008/go-logger/logger"
 )
 
-var DefaultRedisIns *Redis
-
-func init() {
-	if Config.Redis.Server != "" {
-		DefaultRedisIns = NewRedis(Config.Redis)
-	}
-}
-
 func redisPool(redisConfig RedisConfig) *redis.Pool {
 	return &redis.Pool{
 		MaxIdle:     3,

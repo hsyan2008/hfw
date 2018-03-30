@@ -28,6 +28,8 @@ var APPNAME string
 
 var PID = os.Getpid()
 
+var DefaultRedisIns *Redis
+
 func init() {
 	initAPPPATH()
 	initAPPNAME()
@@ -123,6 +125,10 @@ func loadConfig() {
 	}
 	if Config.Server.WriteTimeout == 0 {
 		Config.Server.WriteTimeout = 60
+	}
+
+	if Config.Redis.Server != "" {
+		DefaultRedisIns = NewRedis(Config.Redis)
 	}
 }
 
