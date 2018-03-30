@@ -14,7 +14,6 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/hsyan2008/go-logger/logger"
-	"github.com/zserge/webview"
 )
 
 //APPPATH 项目路径
@@ -147,7 +146,7 @@ func Run() {
 	defer Shutdowned()
 
 	if randPortListener != nil {
-		runRandPort()
+		RunRandPort()
 		return
 	}
 
@@ -185,24 +184,11 @@ func Run() {
 
 var randPortListener net.Listener
 
-func getRandPort() string {
+func GetRandPort() string {
 	randPortListener, _ = net.Listen("tcp", "127.0.0.1:0")
 	return randPortListener.Addr().String()
 }
 
-func runRandPort() {
+func RunRandPort() {
 	_ = http.Serve(randPortListener, nil)
-}
-
-func RunWebView(title string, width, height int, resize bool) {
-	addr := getRandPort()
-	go Run()
-
-	logger.Warn("监听端口:", addr)
-
-	err := webview.Open(ToOsCode(title),
-		"http://"+addr, width, height, resize)
-	if err != nil {
-		panic(err)
-	}
 }
