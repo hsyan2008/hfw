@@ -72,11 +72,11 @@ func (l *Local) Close() {
 type Remote struct {
 }
 
-func multiCopy(src, des net.Conn) {
+func multiCopy(des, src net.Conn) {
 	defer func() {
 		_ = src.Close()
 		_ = des.Close()
 	}()
 
-	_, _ = io.Copy(src, des)
+	_, _ = io.Copy(des, src)
 }
