@@ -3,9 +3,11 @@ package ssh
 import (
 	"errors"
 	"io/ioutil"
+	"net"
 	"os"
 	"time"
 
+	"github.com/hsyan2008/go-logger/logger"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -20,8 +22,18 @@ type SSHConfig struct {
 	Timeout time.Duration
 }
 
+type mode uint
+
+const (
+	//直连
+	NormalMode = iota
+	//通过跳板机
+	RemoteMode
+)
+
 //SSH ..
 type SSH struct {
+	m      mode
 	c      *ssh.Client
 	close  chan bool
 	config SSHConfig
@@ -32,20 +44,23 @@ func NewSSH(sshConfig SSHConfig) (ins *SSH, err error) {
 
 	ins = &SSH{}
 	ins.close = make(chan bool, 1)
-	ins.config = sshConfig
+	ins.m = NormalMode
+	ins.SetConfig(sshConfig)
 
-	err = ins.Dial(sshConfig)
+	err = ins.Dial()
 
 	return
 }
 
-func (this *SSH) Dial(sshConfig SSHConfig) (err error) {
+func (this *SSH) Dial() (err error) {
 
-	if sshConfig.Addr == "" {
+	if this.config.Addr == "" {
 		return errors.New("err sshConfig")
 	}
 
-	this.c, err = ssh.Dial("tcp", sshConfig.Addr, this.getSshClientConfig(sshConfig))
+	logger.Warn(this.config.Addr)
+
+	this.c, err = ssh.Dial("tcp", this.config.Addr, this.getSshClientConfig())
 
 	if err == nil {
 		this.Keepalive()
@@ -63,14 +78,15 @@ func (this *SSH) DialRemote(sshConfig SSHConfig) (ins *SSH, err error) {
 
 	ins = &SSH{}
 	ins.close = make(chan bool, 1)
-	ins.config = sshConfig
+	ins.m = RemoteMode
+	ins.SetConfig(sshConfig)
 
-	rc, err := this.c.Dial("tcp", sshConfig.Addr)
+	rc, err := this.Connect(sshConfig.Addr)
 	if err != nil {
 		return
 	}
 
-	conn, nc, req, err := ssh.NewClientConn(rc, "", this.getSshClientConfig(sshConfig))
+	conn, nc, req, err := ssh.NewClientConn(rc, "", ins.getSshClientConfig())
 	if err != nil {
 		return
 	}
@@ -84,6 +100,10 @@ func (this *SSH) DialRemote(sshConfig SSHConfig) (ins *SSH, err error) {
 	return
 }
 
+func (this *SSH) Connect(addr string) (conn net.Conn, err error) {
+	return this.c.Dial("tcp", addr)
+}
+
 func (this *SSH) Close() {
 	this.close <- true
 	_ = this.c.Close()
@@ -93,39 +113,49 @@ func (this *SSH) Config() SSHConfig {
 	return this.config
 }
 
-func (this *SSH) getSshClientConfig(sshConfig SSHConfig) *ssh.ClientConfig {
+func (this *SSH) SetConfig(sshConfig SSHConfig) {
+	if sshConfig.Timeout == 0 {
+		sshConfig.Timeout = 10
+	}
+
+	this.config = sshConfig
+}
+
+func (this *SSH) getSshClientConfig() *ssh.ClientConfig {
 	return &ssh.ClientConfig{
-		User: sshConfig.User,
+		User: this.config.User,
 		Auth: []ssh.AuthMethod{
-			this.getAuth(sshConfig),
+			this.getAuth(),
 		},
-		//如果没有这个，会说需要know_host文件
+		//如果没有这个，会提示需要know_hosts文件
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-		Timeout:         sshConfig.Timeout * time.Second,
+		Timeout:         this.config.Timeout * time.Second,
 	}
 }
 
-func (this *SSH) getAuth(sshConfig SSHConfig) ssh.AuthMethod {
+func (this *SSH) getAuth() ssh.AuthMethod {
 	//是文件
 	var key []byte
 	var err error
+	auth := this.config.Auth
+	phrase := this.config.Phrase
 
-	if _, err = os.Stat(sshConfig.Auth); err == nil {
-		key, _ = ioutil.ReadFile(sshConfig.Auth)
+	if _, err = os.Stat(auth); err == nil {
+		key, _ = ioutil.ReadFile(auth)
 	}
 
 	//密码
 	if len(key) == 0 {
-		if len(sshConfig.Auth) < 50 {
-			return ssh.Password(sshConfig.Auth)
+		if len(auth) < 50 {
+			return ssh.Password(auth)
 		} else {
-			key = []byte(sshConfig.Auth)
+			key = []byte(auth)
 		}
 	}
 
 	var signer ssh.Signer
-	if sshConfig.Phrase != "" {
-		signer, err = ssh.ParsePrivateKeyWithPassphrase(key, []byte(sshConfig.Phrase))
+	if phrase != "" {
+		signer, err = ssh.ParsePrivateKeyWithPassphrase(key, []byte(phrase))
 	} else {
 		signer, err = ssh.ParsePrivateKey(key)
 	}
@@ -269,8 +299,9 @@ func (this *SSH) Keepalive() {
 	if this.c == nil {
 		return
 	}
+
 	go func() {
-		t := time.NewTimer(this.config.Timeout * time.Second)
+		t := time.NewTicker(this.config.Timeout * time.Second)
 		for {
 			select {
 			case <-this.close:
@@ -292,7 +323,7 @@ func (this *SSH) keepalive() (err error) {
 		}
 	}()
 	if this.c == nil {
-		return
+		return errors.New("keepalive no ins")
 	}
 
 	sess, err := this.c.NewSession()
