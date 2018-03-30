@@ -11,13 +11,21 @@ var Config struct {
 	Cache    CacheConfig
 	Template TemplateConfig
 	Route    RouteConfig
-	Redis    struct {
-		Server     string
-		Prefix     string
-		Expiration int32
-		Db         int
-		Password   string
-	}
+	Redis    RedisConfig
+	Session  SessionConfig
+}
+
+type RedisConfig struct {
+	Server     string
+	Prefix     string
+	Expiration int32
+	Db         int
+	Password   string
+}
+
+type SessionConfig struct {
+	SessID    string
+	CacheType string
 }
 
 //ServerConfig ..
