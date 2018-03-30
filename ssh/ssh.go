@@ -7,7 +7,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/hsyan2008/go-logger/logger"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -57,8 +56,6 @@ func (this *SSH) Dial() (err error) {
 	if this.config.Addr == "" {
 		return errors.New("err sshConfig")
 	}
-
-	logger.Warn(this.config.Addr)
 
 	this.c, err = ssh.Dial("tcp", this.config.Addr, this.getSshClientConfig())
 
