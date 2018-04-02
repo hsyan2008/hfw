@@ -1,5 +1,6 @@
 // 信号处理
-// 只支持USR1和QUIT
+//kill -INT pid 终止
+//kill -TERM pid 重启
 //需要调用Wg.Add()
 //需要监听Shutdown通道
 package hfw

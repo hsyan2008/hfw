@@ -17,6 +17,7 @@ import (
 	"github.com/hsyan2008/hfw2/common"
 	"github.com/hsyan2008/hfw2/configs"
 	"github.com/hsyan2008/hfw2/redis"
+	"github.com/hsyan2008/hfw2/serve"
 )
 
 //ENVIRONMENT ..
@@ -107,6 +108,55 @@ func loadConfig() {
 
 	// logger.Info(Config)
 
+	initConfig()
+
+	if Config.Redis.Server != "" {
+		DefaultRedisIns = redis.NewRedis(Config.Redis)
+	}
+}
+
+//Run start
+func Run() (err error) {
+	//防止被挂起，若webview
+	defer os.Exit(0)
+
+	logger.Debug("Pid:", os.Getpid(), "Starting ...")
+	defer logger.Debug("Pid:", os.Getpid(), "Shutdown complete!")
+
+	logger.Debug("Start to run, Config ENVIRONMENT is", ENVIRONMENT, "APPNAME is", APPNAME, "APPPATH is", APPPATH)
+
+	//监听信号
+	go listenSignal()
+
+	//等待工作完成
+	defer Shutdowned()
+
+	if randPortListener == nil {
+		if Config.Server.Address == "" {
+			return
+		}
+
+		isHttp = true
+
+		err = serve.Start(Config)
+	} else {
+		err = http.Serve(randPortListener, nil)
+	}
+
+	return
+}
+
+var randPortListener net.Listener
+
+func RunRandPort() string {
+	randPortListener, _ = net.Listen("tcp", "127.0.0.1:0")
+	go func() {
+		_ = Run()
+	}()
+	return randPortListener.Addr().String()
+}
+
+func initConfig() {
 	//设置默认路由
 	if Config.Route.DefaultController == "" {
 		Config.Route.DefaultController = "index"
@@ -127,48 +177,8 @@ func loadConfig() {
 		Config.Server.Address = Config.Server.Port
 	}
 
-	if Config.Server.ReadTimeout == 0 {
-		Config.Server.ReadTimeout = 60
-	}
-	if Config.Server.WriteTimeout == 0 {
-		Config.Server.WriteTimeout = 60
-	}
-
-	if Config.Redis.Server != "" {
-		DefaultRedisIns = redis.NewRedis(Config.Redis)
-	}
-}
-
-//Run start
-func Run() {
-	//防止被挂起，若webview
-	defer os.Exit(0)
-
-	logger.Debug("Pid:", os.Getpid(), "Starting ...")
-	defer logger.Debug("Pid:", os.Getpid(), "Shutdown complete!")
-
-	logger.Debug("Start to run, Config ENVIRONMENT is", ENVIRONMENT, "APPNAME is", APPNAME, "APPPATH is", APPPATH)
-
-	//等待工作完成
-	go listenSignal()
-	defer Shutdowned()
-
-	if randPortListener != nil {
-		RunRandPort()
-		return
-	}
-
-	if Config.Server.Address == "" {
-		return
-	}
-
-	isHttp = true
-
 	certFile := Config.Server.HTTPSCertFile
 	keyFile := Config.Server.HTTPSKeyFile
-
-	logger.Info("started server listen to ", Config.Server.Address)
-
 	if certFile != "" && keyFile != "" {
 		if !filepath.IsAbs(certFile) {
 			certFile = filepath.Join(APPPATH, certFile)
@@ -177,26 +187,12 @@ func Run() {
 		if !filepath.IsAbs(keyFile) {
 			keyFile = filepath.Join(APPPATH, keyFile)
 		}
-
-		logger.Info("https key is:", certFile, keyFile)
-
-		if common.IsExist(certFile) && common.IsExist(keyFile) {
-			startHTTPSServe(certFile, keyFile, Config.Server.HTTPSPhrase)
-		} else {
-			logger.Error("HTTPSCertFile and HTTPSKeyFile is not exist")
-		}
-	} else {
-		startServe()
 	}
-}
 
-var randPortListener net.Listener
-
-func GetRandPort() string {
-	randPortListener, _ = net.Listen("tcp", "127.0.0.1:0")
-	return randPortListener.Addr().String()
-}
-
-func RunRandPort() {
-	_ = http.Serve(randPortListener, nil)
+	if Config.Server.ReadTimeout == 0 {
+		Config.Server.ReadTimeout = 60
+	}
+	if Config.Server.WriteTimeout == 0 {
+		Config.Server.WriteTimeout = 60
+	}
 }

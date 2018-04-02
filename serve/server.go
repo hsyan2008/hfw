@@ -1,7 +1,6 @@
-//kill -USR2 pid 重启
 //kill -INT pid 终止
-//kill -TERM pid 终止
-package hfw
+//kill -TERM pid 重启
+package serve
 
 import (
 	"crypto/tls"
@@ -11,54 +10,66 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/hsyan2008/go-logger/logger"
 	"github.com/hsyan2008/grace/gracehttp"
+	"github.com/hsyan2008/hfw2/common"
+	"github.com/hsyan2008/hfw2/configs"
 )
 
-func startServe() {
+func Start(config configs.AllConfig) (err error) {
+
+	if common.IsExist(config.Server.HTTPSCertFile) && common.IsExist(config.Server.HTTPSKeyFile) {
+		err = startHTTPS(config)
+	} else {
+		err = startHTTP(config)
+	}
+
+	return
+}
+
+func startHTTP(config configs.AllConfig) (err error) {
 
 	s := &http.Server{
-		Addr: Config.Server.Address,
+		Addr: config.Server.Address,
 		// Handler:      controllers,
-		ReadTimeout:  time.Duration(Config.Server.ReadTimeout) * time.Second,
-		WriteTimeout: time.Duration(Config.Server.WriteTimeout+Config.Server.ReadTimeout) * time.Second,
+		ReadTimeout:  time.Duration(config.Server.ReadTimeout) * time.Second,
+		WriteTimeout: time.Duration(config.Server.WriteTimeout+config.Server.ReadTimeout) * time.Second,
 		// MaxHeaderBytes: 1 << 20,
 	}
 
-	err := gracehttp.Serve(s)
-	// err:= s.ListenAndServe()
+	err = gracehttp.Serve(s)
+	// err = s.ListenAndServe()
 
-	if err != nil {
-		logger.Fatal("ListenAndServe: ", err)
-	}
+	return
 }
 
 //支持https、grace
-func startHTTPSServe(certFile, keyFile, phrase string) {
+func startHTTPS(config configs.AllConfig) (err error) {
+	certFile := config.Server.HTTPSCertFile
+	keyFile := config.Server.HTTPSKeyFile
+	phrase := config.Server.HTTPSPhrase
 
-	var err error
 	var cert tls.Certificate
 
 	if phrase != "" {
 		//通过密码解密证书，暂时两个文件都是加密过的，如果有个文件没有加密，去掉pem.Decode和x509.DecryptPEMBlock即可
 		certByte, err := ioutil.ReadFile(certFile)
 		if err != nil {
-			logger.Fatal("load cert file error:", err)
+			return err
 		}
 		certBlock, _ := pem.Decode(certByte)
 		certDeBlock, err := x509.DecryptPEMBlock(certBlock, []byte(phrase))
 		if err != nil {
-			logger.Fatal("Decrypt cert file error:", err)
+			return err
 		}
 
 		keyByte, err := ioutil.ReadFile(keyFile)
 		if err != nil {
-			logger.Fatal("load key file error:", err)
+			return err
 		}
 		keyBlock, _ := pem.Decode(keyByte)
 		keyDeBlock, err := x509.DecryptPEMBlock(keyBlock, []byte(phrase))
 		if err != nil {
-			logger.Fatal("Decrypt key file error:", err)
+			return err
 		}
 
 		cert, err = tls.X509KeyPair(certDeBlock, keyDeBlock)
@@ -67,14 +78,14 @@ func startHTTPSServe(certFile, keyFile, phrase string) {
 	}
 
 	if err != nil {
-		logger.Fatal("X509KeyPair cert file error:", err)
+		return
 	}
 
 	s := &http.Server{
-		Addr: Config.Server.Address,
+		Addr: config.Server.Address,
 		// Handler:      controllers,
-		ReadTimeout:  time.Duration(Config.Server.ReadTimeout) * time.Second,
-		WriteTimeout: time.Duration(Config.Server.WriteTimeout+Config.Server.ReadTimeout) * time.Second,
+		ReadTimeout:  time.Duration(config.Server.ReadTimeout) * time.Second,
+		WriteTimeout: time.Duration(config.Server.WriteTimeout+config.Server.ReadTimeout) * time.Second,
 		// MaxHeaderBytes: 1 << 20,
 		TLSConfig: &tls.Config{
 			// NextProtos: []string{"http/1.1", "h2"}, //去掉1.1才支持h2
@@ -87,7 +98,5 @@ func startHTTPSServe(certFile, keyFile, phrase string) {
 
 	err = gracehttp.Serve(s)
 
-	if err != nil {
-		logger.Fatal("ListenAndServeTls: ", err)
-	}
+	return
 }
