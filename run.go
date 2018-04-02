@@ -14,7 +14,13 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/hsyan2008/go-logger/logger"
+	"github.com/hsyan2008/hfw2/common"
+	"github.com/hsyan2008/hfw2/configs"
+	"github.com/hsyan2008/hfw2/redis"
 )
+
+//ENVIRONMENT ..
+var ENVIRONMENT string
 
 //APPPATH 项目路径
 var APPPATH string
@@ -27,7 +33,9 @@ var APPNAME string
 
 var PID = os.Getpid()
 
-var DefaultRedisIns *Redis
+var Config configs.AllConfig
+
+var DefaultRedisIns *redis.Redis
 
 func init() {
 	initAPPPATH()
@@ -84,12 +92,12 @@ func setLog() {
 
 func loadConfig() {
 
-	if IsExist(filepath.Join(APPPATH, "config")) {
+	if common.IsExist(filepath.Join(APPPATH, "config")) {
 		flag.StringVar(&ENVIRONMENT, "e", "dev", "set env, e.g dev test prod")
 		flag.Parse()
 
 		configPath := filepath.Join(APPPATH, "config", ENVIRONMENT, "config.toml")
-		if IsExist(configPath) {
+		if common.IsExist(configPath) {
 			_, err := toml.DecodeFile(configPath, &Config)
 			if err != nil {
 				panic(err)
@@ -127,7 +135,7 @@ func loadConfig() {
 	}
 
 	if Config.Redis.Server != "" {
-		DefaultRedisIns = NewRedis(Config.Redis)
+		DefaultRedisIns = redis.NewRedis(Config.Redis)
 	}
 }
 
@@ -172,7 +180,7 @@ func Run() {
 
 		logger.Info("https key is:", certFile, keyFile)
 
-		if IsExist(certFile) && IsExist(keyFile) {
+		if common.IsExist(certFile) && common.IsExist(keyFile) {
 			startHTTPSServe(certFile, keyFile, Config.Server.HTTPSPhrase)
 		} else {
 			logger.Error("HTTPSCertFile and HTTPSKeyFile is not exist")

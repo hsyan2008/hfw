@@ -1,4 +1,4 @@
-package hfw
+package database
 
 import (
 	"fmt"
@@ -13,6 +13,7 @@ import (
 	"github.com/go-xorm/core"
 	"github.com/go-xorm/xorm"
 	"github.com/hsyan2008/go-logger/logger"
+	"github.com/hsyan2008/hfw2/configs"
 )
 
 type engineCache struct {
@@ -25,7 +26,15 @@ var ec = &engineCache{
 	mtx:     new(sync.Mutex),
 }
 
-func ConnectDb(dbConfig DbConfig) *xorm.Engine {
+func ConnectDb(config configs.AllConfig, dbConfigs ...configs.DbConfig) *xorm.Engine {
+
+	var dbConfig configs.DbConfig
+
+	if len(dbConfigs) > 0 {
+		dbConfig = dbConfigs[0]
+	} else {
+		dbConfig = config.Db
+	}
 
 	if dbConfig.Driver == "" {
 		panic("dbConfig Driver is nil")
@@ -69,7 +78,7 @@ func ConnectDb(dbConfig DbConfig) *xorm.Engine {
 		// go keepalive(engine, time.Duration(dbConfig.KeepAlive))
 	}
 
-	openCache(engine, dbConfig)
+	openCache(engine, config)
 
 	ec.engines[dbDsn] = engine
 	ec.mtx.Unlock()
@@ -77,7 +86,7 @@ func ConnectDb(dbConfig DbConfig) *xorm.Engine {
 	return engine
 }
 
-func getDbDsn(dbConfig DbConfig) string {
+func getDbDsn(dbConfig configs.DbConfig) string {
 	switch strings.ToLower(dbConfig.Driver) {
 	case "mysql":
 		if dbConfig.Port != "" {
@@ -96,26 +105,26 @@ func getDbDsn(dbConfig DbConfig) string {
 
 }
 
-func openCache(engine *xorm.Engine, dbConfig DbConfig) {
+func openCache(engine *xorm.Engine, config configs.AllConfig) {
 	var cacher *xorm.LRUCacher
 
 	//开启缓存
-	switch dbConfig.CacheType {
+	switch config.Db.CacheType {
 	case "memory":
 		cacher = xorm.NewLRUCacher(xorm.NewMemoryStore(), 1000)
 	case "memcache":
-		if len(Config.Cache.Servers) == 0 {
+		if len(config.Cache.Servers) == 0 {
 			return
 		}
-		cacher = xorm.NewLRUCacher(cachestore.NewMemCache(Config.Cache.Servers), 999999999)
+		cacher = xorm.NewLRUCacher(cachestore.NewMemCache(config.Cache.Servers), 999999999)
 	case "redis":
-		if Config.Redis.Server == "" {
+		if config.Redis.Server == "" {
 			return
 		}
 		cf := make(map[string]string)
-		cf["key"] = Config.Redis.Prefix + "mysqlCache"
-		cf["password"] = Config.Redis.Password
-		cf["conn"] = Config.Redis.Server
+		cf["key"] = config.Redis.Prefix + "mysqlCache"
+		cf["password"] = config.Redis.Password
+		cf["conn"] = config.Redis.Server
 		cacher = xorm.NewLRUCacher(cachestore.NewRedisCache(cf), 999999999)
 		// case "leveldb":
 		// 	cacher = xorm.NewLRUCacher(cachestore.NewLevelDBStore(cacheServers), 999999999)

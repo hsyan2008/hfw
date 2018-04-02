@@ -18,18 +18,16 @@ import (
 var Wg = new(sync.WaitGroup)
 
 //Shutdown 业务方监听此通道获知通知
-var Shutdown = make(chan bool, 3)
+var Shutdown = make(chan bool)
 
 //shutdowned 业务方调用Shutdowned函数获取已经完成shutdown的通知
-var shutdowned = make(chan bool, 3)
+var shutdowned = make(chan bool)
 
 var isHttp = false
 
 //通知业务方
 func sendNotice() {
-	for {
-		Shutdown <- true
-	}
+	close(Shutdown)
 }
 
 //gracehttp外，增加两个信号支持
@@ -77,7 +75,7 @@ func waitShutdownDone() {
 	case <-c:
 	}
 
-	shutdowned <- true
+	close(shutdowned)
 }
 
 //等待业务方结束

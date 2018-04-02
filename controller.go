@@ -13,6 +13,8 @@ import (
 	"text/template"
 
 	"github.com/hsyan2008/go-logger/logger"
+	"github.com/hsyan2008/hfw2/common"
+	"github.com/hsyan2008/hfw2/session"
 )
 
 //ControllerInterface ..
@@ -63,7 +65,7 @@ func (ctl *Controller) init(ctx *HTTPContext) {
 		if err == nil {
 			sessId = cookie.Value
 		}
-		ctx.Session, err = NewSession(sessId)
+		ctx.Session, err = session.NewSession(DefaultRedisIns, Config, sessId)
 		ctx.CheckErr(err)
 	}
 }
@@ -121,7 +123,7 @@ func (ctl *Controller) ServerError(ctx *HTTPContext) {
 type HTTPContext struct {
 	ResponseWriter http.ResponseWriter
 	Request        *http.Request
-	Session        *Session
+	Session        *session.Session
 	Layout         string
 	Controll       string
 	Action         string
@@ -134,7 +136,7 @@ type HTTPContext struct {
 	IsError bool
 	Data    map[string]interface{}
 	FuncMap map[string]interface{}
-	Result
+	common.Result
 }
 
 //GetForm 优先post和put,然后get

@@ -1,4 +1,4 @@
-package hfw
+package common
 
 import (
 	"crypto/md5"

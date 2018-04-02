@@ -1,11 +1,14 @@
-package hfw
+package session
 
 import (
 	"errors"
+
+	"github.com/hsyan2008/hfw2/configs"
+	"github.com/hsyan2008/hfw2/redis"
 )
 
 type sessRedisStore struct {
-	redisIns   *Redis
+	redisIns   *redis.Redis
 	prefix     string
 	expiration int32
 }
@@ -14,15 +17,15 @@ var _ sessionStoreInterface = &sessRedisStore{}
 
 var sessRedisStoreIns *sessRedisStore
 
-func NewSessRedisStore() (*sessRedisStore, error) {
+func NewSessRedisStore(redisIns *redis.Redis, config configs.AllConfig) (*sessRedisStore, error) {
 	if sessRedisStoreIns == nil {
-		redisConfig := Config.Redis
-		sessConfig := Config.Session
+		redisConfig := config.Redis
+		sessConfig := config.Session
 		if sessConfig.SessID != "" && redisConfig.Server == "" {
 			return nil, errors.New("session config error")
 		}
 		sessRedisStoreIns = &sessRedisStore{
-			redisIns:   DefaultRedisIns,
+			redisIns:   redisIns,
 			prefix:     "sess_",
 			expiration: redisConfig.Expiration,
 		}

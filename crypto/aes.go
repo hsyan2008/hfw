@@ -1,9 +1,11 @@
-package hfw
+package crypto
 
 import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+
+	"github.com/hsyan2008/hfw2/encoding"
 )
 
 //AesCrypt aes加解密
@@ -54,7 +56,7 @@ func (aesCrypt *AesCrypt) Encrypt2Base64(plantText string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return Base64Encode(ac), nil
+	return encoding.Base64Encode(ac), nil
 }
 
 //PKCS7Padding ..
@@ -85,7 +87,7 @@ func (aesCrypt *AesCrypt) Decrypt(ciphertext []byte) ([]byte, error) {
 
 //Baes642Decrypt 解密base64格式的密文
 func (aesCrypt *AesCrypt) Baes642Decrypt(ciphertext string) (string, error) {
-	ubase, err := Base64Decode(ciphertext)
+	ubase, err := encoding.Base64Decode(ciphertext)
 	if err != nil {
 		return "", err
 	}

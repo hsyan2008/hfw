@@ -1,4 +1,4 @@
-package hfw
+package encoding
 
 import "encoding/base64"
 

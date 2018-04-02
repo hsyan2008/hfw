@@ -1,9 +1,11 @@
-package hfw
+package session
 
 import (
 	"errors"
 	"sync"
 
+	"github.com/hsyan2008/hfw2/configs"
+	"github.com/hsyan2008/hfw2/redis"
 	"github.com/pborman/uuid"
 )
 
@@ -28,7 +30,7 @@ var sessPool = sync.Pool{
 	},
 }
 
-func NewSession(sessId string) (s *Session, err error) {
+func NewSession(redisIns *redis.Redis, config configs.AllConfig, sessId string) (s *Session, err error) {
 	// s := sessPool.Get().(*Session)
 	s = new(Session)
 
@@ -36,9 +38,9 @@ func NewSession(sessId string) (s *Session, err error) {
 
 	s.id = sessId
 
-	switch Config.Session.CacheType {
+	switch config.Session.CacheType {
 	case "redis":
-		s.store, err = NewSessRedisStore()
+		s.store, err = NewSessRedisStore(redisIns, config)
 	default:
 		err = errors.New("session config error")
 	}

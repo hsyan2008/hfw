@@ -1,4 +1,4 @@
-package hfw
+package database
 
 import (
 	"errors"
@@ -8,9 +8,11 @@ import (
 
 	"github.com/go-xorm/xorm"
 	"github.com/hsyan2008/go-logger/logger"
+	"github.com/hsyan2008/hfw2/common"
+	"github.com/hsyan2008/hfw2/configs"
 )
 
-const PageSize = 1000
+const DefaultPageSize = 1000
 
 type Dao interface {
 	UpdateById(interface{}) error
@@ -25,8 +27,8 @@ type Dao interface {
 
 var _ Dao = &NoCacheDao{}
 
-func NewNoCacheDao(dbConfigs ...DbConfig) *NoCacheDao {
-	dbConfig := Config.Db
+func NewNoCacheDao(config configs.AllConfig, dbConfigs ...configs.DbConfig) *NoCacheDao {
+	dbConfig := config.Db
 
 	instance := &NoCacheDao{}
 
@@ -38,7 +40,7 @@ func NewNoCacheDao(dbConfigs ...DbConfig) *NoCacheDao {
 	if len(dbConfigs) > 0 {
 		dbConfig = dbConfigs[0]
 	}
-	instance.engine = ConnectDb(dbConfig)
+	instance.engine = ConnectDb(config, dbConfig)
 
 	return instance
 }
@@ -134,7 +136,7 @@ func (d *NoCacheDao) Search(t interface{}, cond map[string]interface{}) (err err
 		args     []interface{}
 		orderby  = "id desc"
 		page     = 1
-		pageSize = PageSize
+		pageSize = DefaultPageSize
 		where    string
 	)
 	for k, v := range cond {
@@ -144,11 +146,13 @@ func (d *NoCacheDao) Search(t interface{}, cond map[string]interface{}) (err err
 			continue
 		}
 		if k == "page" {
-			page = Max(v.(int), page)
+			page = common.Max(v.(int), page)
 			continue
 		}
 		if k == "pagesize" {
-			pageSize = Max(v.(int), 1)
+			if v.(int) > 0 {
+				pageSize = v.(int)
+			}
 			continue
 		}
 		if k == "where" {

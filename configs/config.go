@@ -1,10 +1,7 @@
-package hfw
-
-//ENVIRONMENT ..
-var ENVIRONMENT string
+package configs
 
 //Config 项目配置
-var Config struct {
+type AllConfig struct {
 	Server   ServerConfig
 	Logger   LoggerConfig
 	Db       DbConfig

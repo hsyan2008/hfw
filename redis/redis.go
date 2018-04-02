@@ -1,4 +1,4 @@
-package hfw
+package redis
 
 import (
 	"errors"
@@ -6,9 +6,11 @@ import (
 
 	"github.com/garyburd/redigo/redis"
 	"github.com/hsyan2008/go-logger/logger"
+	"github.com/hsyan2008/hfw2/configs"
+	"github.com/hsyan2008/hfw2/encoding"
 )
 
-func redisPool(redisConfig RedisConfig) *redis.Pool {
+func redisPool(redisConfig configs.RedisConfig) *redis.Pool {
 	return &redis.Pool{
 		MaxIdle:     3,
 		IdleTimeout: 240 * time.Second,
@@ -44,7 +46,7 @@ func redisPool(redisConfig RedisConfig) *redis.Pool {
 	}
 }
 
-func NewRedis(redisConfig RedisConfig) *Redis {
+func NewRedis(redisConfig configs.RedisConfig) *Redis {
 
 	return &Redis{
 		p:      redisPool(redisConfig),
@@ -80,7 +82,7 @@ func (this *Redis) Set(key string, value interface{}) (err error) {
 	// key = fmt.Sprintf("%x", md5.Sum([]byte(key)))
 	// Debug("Put cache key:", sessid, key, value)
 
-	v, err := Gob.Marshal(&value)
+	v, err := encoding.Gob.Marshal(&value)
 	if err != nil {
 		logger.Debug("Set cache Gob Marshal key:", key, value, err)
 	} else {
@@ -106,7 +108,7 @@ func (this *Redis) Get(key string) (value interface{}, err error) {
 	if err != nil {
 		logger.Debug("Get cache key:", key, err)
 	} else {
-		err = Gob.Unmarshal(v.([]byte), &value)
+		err = encoding.Gob.Unmarshal(v.([]byte), &value)
 		if err != nil {
 			logger.Debug("Get cache Gob Unmarshal key:", key, err)
 		}
@@ -133,7 +135,7 @@ func (this *Redis) Setnx(key string, value interface{}) (isExist bool, err error
 	// key = fmt.Sprintf("%x", md5.Sum([]byte(key)))
 	// Debug("Put cache key:", sessid, key, value)
 
-	v, err := Gob.Marshal(&value)
+	v, err := encoding.Gob.Marshal(&value)
 	if err != nil {
 		logger.Debug("Setnx cache Gob Marshal key:", key, value, err)
 	} else {
@@ -152,7 +154,7 @@ func (this *Redis) SetEx(key string, value interface{}, expiration int) (err err
 	// key = fmt.Sprintf("%x", md5.Sum([]byte(key)))
 	// Debug("Put cache key:", sessid, key, value)
 
-	v, err := Gob.Marshal(&value)
+	v, err := encoding.Gob.Marshal(&value)
 	if err != nil {
 		logger.Debug("SetEx cache Gob Marshal key:", key, value, err)
 	} else {
@@ -175,7 +177,7 @@ func (this *Redis) SetNxEx(key string, value interface{}, expiration int) (err e
 	// key = fmt.Sprintf("%x", md5.Sum([]byte(key)))
 	// Debug("Put cache key:", sessid, key, value)
 
-	v, err := Gob.Marshal(&value)
+	v, err := encoding.Gob.Marshal(&value)
 	if err != nil {
 		logger.Debug("SetNxEx cache Gob Marshal key:", key, value, err)
 	} else {
@@ -202,7 +204,7 @@ func (this *Redis) Hexists(key, field string) (value bool, err error) {
 func (this *Redis) Hset(key, field string, value interface{}) (err error) {
 	key = this.prefix + key
 
-	v, err := Gob.Marshal(&value)
+	v, err := encoding.Gob.Marshal(&value)
 	if err != nil {
 		logger.Warn("Hset cache Gob Marshal key:", key, field, value, err)
 	} else {
@@ -222,7 +224,7 @@ func (this *Redis) Hget(key, field string) (value interface{}, err error) {
 	if err != nil {
 		logger.Warn("HGet cache key:", key, field, err)
 	} else {
-		err = Gob.Unmarshal(v.([]byte), &value)
+		err = encoding.Gob.Unmarshal(v.([]byte), &value)
 		if err != nil {
 			logger.Warn("HGet cache Gob Unmarshal key:", key, field, err)
 		}
