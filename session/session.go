@@ -2,6 +2,7 @@ package session
 
 import (
 	"errors"
+	"net/http"
 	"sync"
 
 	"github.com/hsyan2008/hfw2/configs"
@@ -19,9 +20,12 @@ type sessionStoreInterface interface {
 }
 
 type Session struct {
-	id    string
-	newid string
-	store sessionStoreInterface
+	id         string
+	newid      string
+	isNew      bool
+	store      sessionStoreInterface
+	cookieName string
+	reName     bool
 }
 
 var sessPool = sync.Pool{
@@ -30,13 +34,28 @@ var sessPool = sync.Pool{
 	},
 }
 
-func NewSession(redisIns *redis.Redis, config configs.AllConfig, sessId string) (s *Session, err error) {
+func NewSession(request *http.Request, redisIns *redis.Redis, config configs.AllConfig) (s *Session, err error) {
 	// s := sessPool.Get().(*Session)
+	if config.Session.CookieName == "" {
+		return
+	}
+
 	s = new(Session)
-
 	s.newid = uuid.New()
+	s.cookieName = config.Session.CookieName
+	s.reName = config.Session.ReName
 
-	s.id = sessId
+	var sessId string
+	cookie, err := request.Cookie(s.cookieName)
+	if err == nil {
+		sessId = cookie.Value
+	}
+	if sessId == "" {
+		s.id = s.newid
+		s.isNew = true
+	} else {
+		s.id = sessId
+	}
 
 	switch config.Session.CacheType {
 	case "redis":
@@ -46,6 +65,26 @@ func NewSession(redisIns *redis.Redis, config configs.AllConfig, sessId string) 
 	}
 
 	return
+}
+
+func (s *Session) Close(request *http.Request, response http.ResponseWriter) {
+	if s.cookieName != "" {
+		if !s.isNew && s.reName {
+			s.Rename()
+			s.id = s.newid
+			s.isNew = true
+		}
+		if s.isNew {
+			cookie := &http.Cookie{
+				Name:     s.cookieName,
+				Value:    s.id,
+				Path:     "/",
+				HttpOnly: true,
+				Secure:   request.URL.Scheme == "https",
+			}
+			http.SetCookie(response, cookie)
+		}
+	}
 }
 
 func (s *Session) IsExist(k string) bool {
@@ -71,5 +110,7 @@ func (s *Session) Destroy() {
 }
 
 func (s *Session) Rename() {
-	_ = s.store.Rename(s.id, s.newid)
+	if s.id != s.newid {
+		_ = s.store.Rename(s.id, s.newid)
+	}
 }

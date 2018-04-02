@@ -21,8 +21,9 @@ type RedisConfig struct {
 }
 
 type SessionConfig struct {
-	SessID    string
-	CacheType string
+	CookieName string
+	ReName     bool
+	CacheType  string
 }
 
 //ServerConfig ..

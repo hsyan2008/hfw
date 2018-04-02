@@ -44,6 +44,7 @@ type Controller struct {
 func (ctl *Controller) init(ctx *HTTPContext) {
 
 	Wg.Add(1)
+	var err error
 
 	// logger.Debug("Controller init")
 
@@ -59,15 +60,8 @@ func (ctl *Controller) init(ctx *HTTPContext) {
 
 	_ = ctx.Request.ParseMultipartForm(2 * 1024 * 1024)
 
-	if Config.Session.SessID != "" {
-		var sessId string
-		cookie, err := ctx.Request.Cookie(Config.Session.SessID)
-		if err == nil {
-			sessId = cookie.Value
-		}
-		ctx.Session, err = session.NewSession(DefaultRedisIns, Config, sessId)
-		ctx.CheckErr(err)
-	}
+	ctx.Session, err = session.NewSession(ctx.Request, DefaultRedisIns, Config)
+	ctx.CheckErr(err)
 }
 
 //Finish ..
@@ -75,12 +69,7 @@ func (ctl *Controller) finish(ctx *HTTPContext) {
 
 	defer Wg.Done()
 
-	// if Config.Session.SessID != "" {
-	// 	cookie := http.Cookie{Name: Config.Session.SessID, Value: ctx.Session.newid, Path: "/", HttpOnly: true}
-	// 	http.SetCookie(ctx.ResponseWriter, &cookie)
-	// 	ctx.Session.Rename()
-	// }
-
+	ctx.Session.Close(ctx.Request, ctx.ResponseWriter)
 	ctx.Output()
 }
 

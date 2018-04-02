@@ -21,7 +21,7 @@ func NewSessRedisStore(redisIns *redis.Redis, config configs.AllConfig) (*sessRe
 	if sessRedisStoreIns == nil {
 		redisConfig := config.Redis
 		sessConfig := config.Session
-		if sessConfig.SessID != "" && redisConfig.Server == "" {
+		if sessConfig.CookieName != "" && redisConfig.Server == "" {
 			return nil, errors.New("session config error")
 		}
 		sessRedisStoreIns = &sessRedisStore{
@@ -39,36 +39,26 @@ func (s *sessRedisStore) SetExpiration(expiration int32) {
 }
 
 func (s *sessRedisStore) IsExist(sessid, key string) (value bool, err error) {
-	// key = fmt.Sprintf("%x", md5.Sum([]byte(key)))
-	// Debug("IsExist cache key:", sessid, key)
 
 	return s.redisIns.Hexists(s.prefix+sessid, key)
 }
 
 func (s *sessRedisStore) Put(sessid, key string, value interface{}) (err error) {
-	// key = fmt.Sprintf("%x", md5.Sum([]byte(key)))
-	// Debug("Put cache key:", sessid, key, value)
 
 	return s.redisIns.Hset(s.prefix+sessid, key, value)
 }
 
 func (s *sessRedisStore) Get(sessid, key string) (value interface{}, err error) {
-	// key = fmt.Sprintf("%x", md5.Sum([]byte(key)))
-	// Debug("Get cache key:", sessid, key)
 
 	return s.redisIns.Hget(s.prefix+sessid, key)
 }
 
 func (s *sessRedisStore) Del(sessid, key string) (err error) {
-	// key = fmt.Sprintf("%x", md5.Sum([]byte(key)))
-	// Debug("Del cache key:", sessid, key)
 
 	return s.redisIns.Hdel(s.prefix+sessid, key)
 }
 
 func (s *sessRedisStore) Destroy(sessid string) (err error) {
-	// key = fmt.Sprintf("%x", md5.Sum([]byte(key)))
-	// Debug("Del cache key:", sessid)
 
 	_, err = s.redisIns.Del(s.prefix + sessid)
 
@@ -76,8 +66,6 @@ func (s *sessRedisStore) Destroy(sessid string) (err error) {
 }
 
 func (s *sessRedisStore) Rename(sessid, newid string) (err error) {
-	// key = fmt.Sprintf("%x", md5.Sum([]byte(key)))
-	// Debug("Rename cache key:", sessid, "to key:", newid)
 
 	err = s.redisIns.Rename(s.prefix+sessid, s.prefix+newid)
 	if err != nil {
