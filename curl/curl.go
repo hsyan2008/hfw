@@ -25,7 +25,7 @@ type Response struct {
 	Cookie     string            `json:"cookie"`
 	Url        string            `json:"url"`
 	FollowUrls []string          `json:"follow_urls"`
-	Body       string            `json:"body"`
+	Body       []byte            `json:"body"`
 }
 
 var stopRedirect = errors.New("no redirects allowed")
@@ -233,17 +233,15 @@ func (curls *Curl) curlResponse(resp *http.Response) (response Response, err err
 	return response, nil
 }
 
-func (curls *Curl) getBody(resp *http.Response) (utf8body string, err error) {
-	var (
-		body []byte
-	)
+func (curls *Curl) getBody(resp *http.Response) (body []byte, err error) {
 
 	//如果出现302或301，已经表示是不自动重定向 或者出现200才读
 	if resp.StatusCode == http.StatusOK || resp.StatusCode == 299 {
 		if strings.Contains(resp.Header.Get("Content-Encoding"), "gzip") {
-			reader, err := gzip.NewReader(resp.Body)
+			var reader *gzip.Reader
+			reader, err = gzip.NewReader(resp.Body)
 			if err != nil {
-				return "", err
+				return
 			}
 			body, err = ioutil.ReadAll(reader)
 		} else if strings.Contains(resp.Header.Get("Content-Encoding"), "deflate") {
@@ -260,7 +258,7 @@ func (curls *Curl) getBody(resp *http.Response) (utf8body string, err error) {
 		}
 	}
 
-	return strings.TrimSpace(string(body)), nil
+	return bytes.TrimSpace(body), nil
 }
 
 func (curl *Curl) toUtf8(body string) string {
