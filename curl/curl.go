@@ -18,7 +18,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/axgle/mahonia"
-	"github.com/hsyan2008/go-logger/logger"
 )
 
 type Response struct {
@@ -242,15 +241,12 @@ func (curls *Curl) getBody(resp *http.Response) (utf8body string, err error) {
 	//如果出现302或301，已经表示是不自动重定向 或者出现200才读
 	if resp.StatusCode == http.StatusOK || resp.StatusCode == 299 {
 		if strings.Contains(resp.Header.Get("Content-Encoding"), "gzip") {
-			logger.Warn("gzip")
 			reader, err := gzip.NewReader(resp.Body)
 			if err != nil {
 				return "", err
 			}
 			body, err = ioutil.ReadAll(reader)
 		} else if strings.Contains(resp.Header.Get("Content-Encoding"), "deflate") {
-			logger.Warn("deflate")
-			//http://baike.baidu.com/view/1591.htm
 			reader := flate.NewReader(resp.Body)
 			defer func() {
 				_ = reader.Close()
