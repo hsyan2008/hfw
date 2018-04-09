@@ -31,11 +31,7 @@ func (this *SSH) Scp(src, des, exclude string) (err error) {
 		}
 	}
 
-	file, err := os.Open(src)
-	if err != nil {
-		return
-	}
-	fileinfo, err := file.Stat()
+	fileinfo, err := os.Stat(src)
 	if err != nil {
 		return
 	}
