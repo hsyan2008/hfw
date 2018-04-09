@@ -101,6 +101,7 @@ func (p *Proxy) HandHTTP(conn net.Conn) (err error) {
 		_ = conn.Close()
 		return
 	}
+	logger.Info(conn.RemoteAddr().String(), p.isSSH(req.Host), req.Host)
 	if req.Method == "CONNECT" {
 		_, err = io.WriteString(conn, "HTTP/1.0 200 Connection Established\r\n\r\n")
 		if err != nil {
@@ -188,12 +189,14 @@ func (p *Proxy) HandSocks5(conn net.Conn) (err error) {
 		return
 	}
 
-	con, err := p.dial(host + ":" + strconv.Itoa(int(port)))
+	host = host + ":" + strconv.Itoa(int(port))
+	con, err := p.dial(host)
 	if err != nil {
 		// _, _ = conn.Write([]byte{0x05, 0x06, 0x00, atyp})
 		_ = conn.Close()
 		return
 	}
+	logger.Info(conn.RemoteAddr().String(), p.isSSH(host), host)
 
 	_, err = conn.Write([]byte{0x05, 0x00, 0x00, atyp})
 	if err != nil {
