@@ -2,8 +2,10 @@ package pac
 
 import (
 	"io/ioutil"
+	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/hsyan2008/hfw2/curl"
 )
@@ -11,6 +13,8 @@ import (
 var pac = make(map[string]bool)
 var isLoaded bool
 var mt = new(sync.Mutex)
+var pacUrl = "https://pac.itzmx.com/abc.pac"
+var pacFile = "abc.pac"
 
 func parseDefault(body string) (err error) {
 	lines := strings.Split(body, "\n")
@@ -26,30 +30,52 @@ func parseDefault(body string) (err error) {
 	return err
 }
 
+func updatePacFile() (err error) {
+	c := curl.NewCurl(pacUrl)
+	res, err := c.Request()
+	if err != nil {
+		return
+	}
+	err = ioutil.WriteFile(pacFile, res.Body, 0600)
+
+	return
+}
+
 func LoadDefault() (err error) {
 	mt.Lock()
 	defer mt.Unlock()
 	if isLoaded {
 		return
 	}
-	c := curl.NewCurl("https://pac.itzmx.com/abc.pac")
-	res, err := c.Request()
+
+	fileInfo, err := os.Stat(pacFile)
 	if err != nil {
-		res.Body, err = ioutil.ReadFile("abc.pac")
+		err = updatePacFile()
+		if err != nil {
+			return err
+		}
+	} else if time.Now().Unix()-fileInfo.ModTime().Unix() > 86400 {
+		//超过一天就更新一下
+		go func() {
+			_ = updatePacFile()
+		}()
 	}
 
+	body, err := ioutil.ReadFile(pacFile)
 	if err != nil {
 		return err
 	}
 
 	isLoaded = true
 
-	return parseDefault(string(res.Body))
+	return parseDefault(string(body))
 }
 
 func Add(key string, val bool) {
 	mt.Lock()
 	defer mt.Unlock()
+	//一旦调用，就认为已经加载过
+	isLoaded = true
 	add(key, val)
 }
 func add(key string, val bool) {
