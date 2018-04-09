@@ -41,7 +41,8 @@ func NewProxy(sshConfig SSHConfig, pi ProxyIni) (p *Proxy, err error) {
 		_ = pac.LoadDefault()
 	}
 	p = &Proxy{
-		pi: pi,
+		pi:    pi,
+		close: make(chan bool),
 	}
 
 	p.c, err = NewSSH(sshConfig)

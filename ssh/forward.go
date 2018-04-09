@@ -29,7 +29,8 @@ func NewLocalForward(sshConfig SSHConfig, fi ForwardIni) (l *LocalForward, err e
 		fi.Bind = ":" + fi.Bind
 	}
 	l = &LocalForward{
-		fi: fi,
+		fi:    fi,
+		close: make(chan bool),
 	}
 
 	l.c, err = NewSSH(sshConfig)
