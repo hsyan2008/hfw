@@ -85,7 +85,11 @@ func setLog() {
 		}
 	} else {
 		logger.SetLevelStr("debug")
-		logger.SetRollingDaily(filepath.Join(APPPATH, APPNAME+".log"))
+		if common.IsExist("/opt/log") {
+			logger.SetRollingDaily(filepath.Join("/opt/log", APPNAME+".log"))
+		} else {
+			logger.SetRollingDaily(filepath.Join(APPPATH, APPNAME+".log"))
+		}
 	}
 
 	logger.SetPrefix(fmt.Sprintf("Pid:%d", PID))
