@@ -1,40 +1,56 @@
 package ssh
 
 import (
+	"errors"
 	"io"
 	"net"
+	"strings"
 
 	"github.com/hsyan2008/go-logger/logger"
 )
 
-type Local struct {
-	close chan bool
-	//本地地址端口
-	bind string
-	//远程地址端口
-	action string
-	c      *SSH
+type ForwardIni struct {
+	Addr string `toml:"addr"`
+	Bind string `toml:"bind"`
 }
 
-func NewLocal(sshConfig SSHConfig, bind, action string) (l *Local, err error) {
-	l = &Local{
-		bind:   bind,
-		action: action,
+type LocalForward struct {
+	fi     ForwardIni
+	c      *SSH
+	close  chan bool
+	lister net.Listener
+}
+
+func NewLocalForward(sshConfig SSHConfig, fi ForwardIni) (l *LocalForward, err error) {
+	if fi.Bind == "" || fi.Addr == "" {
+		return nil, errors.New("err ini")
+	}
+	if !strings.Contains(fi.Bind, ":") {
+		fi.Bind = ":" + fi.Bind
+	}
+	l = &LocalForward{
+		fi: fi,
 	}
 
 	l.c, err = NewSSH(sshConfig)
 
+	if err == nil {
+		err = l.Bind()
+		if err == nil {
+			go l.Accept()
+		}
+	}
+
 	return
 }
 
-func (l *Local) Do() (err error) {
-	lister, err := net.Listen("tcp", l.bind)
-	if err != nil {
-		logger.Error(err)
-		return err
-	}
+func (l *LocalForward) Bind() (err error) {
+	l.lister, err = net.Listen("tcp", l.fi.Bind)
+	return
+}
+func (l *LocalForward) Accept() {
 	defer func() {
-		_ = lister.Close()
+		_ = l.lister.Close()
 		l.c.Close()
 	}()
 
@@ -43,19 +59,18 @@ func (l *Local) Do() (err error) {
 		case <-l.close:
 			return
 		default:
-			conn, err := lister.Accept()
+			conn, err := l.lister.Accept()
 			if err != nil {
 				logger.Error(err)
-				return err
+				continue
 			}
-
 			go l.Hand(conn)
 		}
 	}
 }
 
-func (l *Local) Hand(conn net.Conn) {
-	con, err := l.c.Connect(l.action)
+func (l *LocalForward) Hand(conn net.Conn) {
+	con, err := l.c.Connect(l.fi.Addr)
 	if err != nil {
 		logger.Error(err)
 		return
@@ -65,11 +80,11 @@ func (l *Local) Hand(conn net.Conn) {
 	go multiCopy(con, conn)
 }
 
-func (l *Local) Close() {
-	l.close <- true
+func (l *LocalForward) Close() {
+	close(l.close)
 }
 
-type Remote struct {
+type RemoteForward struct {
 }
 
 func multiCopy(des, src net.Conn) {
