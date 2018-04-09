@@ -5,8 +5,12 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"sync"
 	"time"
 
+	"github.com/hsyan2008/go-logger/logger"
+	"github.com/hsyan2008/hfw2/common"
+	"github.com/hsyan2008/hfw2/encoding"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -35,17 +39,39 @@ type SSH struct {
 	c      *ssh.Client
 	close  chan bool
 	config SSHConfig
+	ref    int
 }
+
+var mt = new(sync.Mutex)
+
+var sshIns = make(map[string]*SSH)
 
 //NewSSH 建立第一个ssh连接，一般是跳板机
 func NewSSH(sshConfig SSHConfig) (ins *SSH, err error) {
+	mt.Lock()
+	defer mt.Unlock()
 
-	ins = &SSH{}
-	ins.close = make(chan bool, 1)
-	ins.m = NormalMode
+	gb, err := encoding.Gob.Marshal(sshConfig)
+	if err != nil {
+		return
+	}
+	key := common.Md5(string(gb))
+	if ins, ok := sshIns[key]; ok {
+		sshIns[key].ref += 1
+		return ins, err
+	}
+
+	ins = &SSH{
+		ref:   1,
+		close: make(chan bool),
+		m:     NormalMode,
+	}
 	ins.SetConfig(sshConfig)
 
 	err = ins.Dial()
+	if err == nil {
+		sshIns[key] = ins
+	}
 
 	return
 }
@@ -72,9 +98,11 @@ func (this *SSH) DialRemote(sshConfig SSHConfig) (ins *SSH, err error) {
 		return nil, errors.New("err sshConfig")
 	}
 
-	ins = &SSH{}
-	ins.close = make(chan bool, 1)
-	ins.m = RemoteMode
+	ins = &SSH{
+		ref:   1,
+		close: make(chan bool),
+		m:     RemoteMode,
+	}
 	ins.SetConfig(sshConfig)
 
 	rc, err := this.Connect(sshConfig.Addr)
@@ -101,7 +129,16 @@ func (this *SSH) Connect(addr string) (conn net.Conn, err error) {
 }
 
 func (this *SSH) Close() {
-	this.close <- true
+	mt.Lock()
+	defer mt.Unlock()
+
+	logger.Warn(this.config, this.ref)
+	if this.ref > 1 {
+		this.ref -= 1
+		return
+	}
+
+	close(this.close)
 	_ = this.c.Close()
 }
 
