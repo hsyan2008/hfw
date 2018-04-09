@@ -96,12 +96,14 @@ func (p *Proxy) HandHTTP(conn net.Conn) (err error) {
 	//否则远程连接不会关闭，导致Copy卡住
 	req.Header.Set("Connection", "close")
 
+	logger.Info(conn.RemoteAddr().String(), p.isSSH(req.Host), req.Host, " connecting...")
 	con, err := p.dial(req.Host)
 	if err != nil {
+		logger.Info(conn.RemoteAddr().String(), p.isSSH(req.Host), req.Host, "connected faild", err)
 		_ = conn.Close()
 		return
 	}
-	logger.Info(conn.RemoteAddr().String(), p.isSSH(req.Host), req.Host)
+	logger.Info(conn.RemoteAddr().String(), p.isSSH(req.Host), req.Host, "connected.")
 	if req.Method == "CONNECT" {
 		_, err = io.WriteString(conn, "HTTP/1.0 200 Connection Established\r\n\r\n")
 		if err != nil {
@@ -189,14 +191,16 @@ func (p *Proxy) HandSocks5(conn net.Conn) (err error) {
 		return
 	}
 
+	logger.Info(conn.RemoteAddr().String(), p.isSSH(host), host, "connecting...")
 	host = host + ":" + strconv.Itoa(int(port))
 	con, err := p.dial(host)
 	if err != nil {
 		// _, _ = conn.Write([]byte{0x05, 0x06, 0x00, atyp})
 		_ = conn.Close()
+		logger.Info(conn.RemoteAddr().String(), p.isSSH(host), host, "connected faild", err)
 		return
 	}
-	logger.Info(conn.RemoteAddr().String(), p.isSSH(host), host)
+	logger.Info(conn.RemoteAddr().String(), p.isSSH(host), host, "connected.")
 
 	_, err = conn.Write([]byte{0x05, 0x00, 0x00, atyp})
 	if err != nil {
@@ -254,7 +258,7 @@ func (p *Proxy) dial(addr string) (con net.Conn, err error) {
 	if isSSH {
 		con, err = p.c.Connect(addr)
 	} else {
-		con, err = net.DialTimeout("tcp", addr, 5*time.Second)
+		con, err = net.DialTimeout("tcp", addr, 30*time.Second)
 	}
 
 	return
