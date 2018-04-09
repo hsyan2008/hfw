@@ -118,7 +118,9 @@ func loadConfig() {
 //Run start
 func Run() (err error) {
 	//防止被挂起，若webview
-	defer os.Exit(0)
+	if randPortListener != nil {
+		defer os.Exit(0)
+	}
 
 	logger.Debug("Pid:", os.Getpid(), "Starting ...")
 	defer logger.Debug("Pid:", os.Getpid(), "Shutdown complete!")
