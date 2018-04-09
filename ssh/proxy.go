@@ -239,6 +239,8 @@ func (p *Proxy) isSSH(addr string) bool {
 	if p.pi.IsSSH == false {
 		if p.pi.IsPac {
 			return pac.Check(addr)
+		} else {
+			return false
 		}
 	}
 
