@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hsyan2008/go-logger/logger"
 	"github.com/hsyan2008/hfw2/common"
 	"github.com/hsyan2008/hfw2/encoding"
 	"golang.org/x/crypto/ssh"
@@ -132,7 +131,6 @@ func (this *SSH) Close() {
 	mt.Lock()
 	defer mt.Unlock()
 
-	logger.Warn(this.config, this.ref)
 	if this.ref > 1 {
 		this.ref -= 1
 		return

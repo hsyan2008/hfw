@@ -26,7 +26,6 @@ type ProxyIni struct {
 type Proxy struct {
 	pi     ProxyIni
 	c      *SSH
-	close  chan bool
 	lister net.Listener
 }
 
@@ -41,8 +40,7 @@ func NewProxy(sshConfig SSHConfig, pi ProxyIni) (p *Proxy, err error) {
 		_ = pac.LoadDefault()
 	}
 	p = &Proxy{
-		pi:    pi,
-		close: make(chan bool),
+		pi: pi,
 	}
 
 	p.c, err = NewSSH(sshConfig)
@@ -62,31 +60,24 @@ func (p *Proxy) Bind() (err error) {
 	return
 }
 func (p *Proxy) Accept() {
-	defer func() {
-		_ = p.lister.Close()
-		p.c.Close()
-	}()
-
 	for {
-		select {
-		case <-p.close:
-			return
-		default:
-			conn, err := p.lister.Accept()
-			if err != nil {
-				logger.Error(err)
-				continue
+		conn, err := p.lister.Accept()
+		if err != nil {
+			if strings.Contains(err.Error(), "use of closed network connection") {
+				return
 			}
+			logger.Error(err)
+			continue
+		}
 
-			if p.pi.IsHTTP {
-				go func() {
-					_ = p.HandHTTP(conn)
-				}()
-			} else {
-				go func() {
-					_ = p.HandSocks5(conn)
-				}()
-			}
+		if p.pi.IsHTTP {
+			go func() {
+				_ = p.HandHTTP(conn)
+			}()
+		} else {
+			go func() {
+				_ = p.HandSocks5(conn)
+			}()
 		}
 	}
 }
@@ -248,7 +239,8 @@ func (p *Proxy) isSSH(addr string) bool {
 }
 
 func (p *Proxy) Close() {
-	close(p.close)
+	_ = p.lister.Close()
+	p.c.Close()
 }
 
 func (p *Proxy) dial(addr string) (con net.Conn, err error) {
