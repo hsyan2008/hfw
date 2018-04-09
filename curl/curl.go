@@ -45,13 +45,13 @@ type Curl struct {
 
 var tr = &http.Transport{
 	Dial: (&net.Dialer{
-		Timeout:   4 * time.Second,
+		Timeout:   3 * time.Second,
 		KeepAlive: 3600 * time.Second,
 	}).Dial,
 	TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	// DisableKeepAlives:     true,
-	TLSHandshakeTimeout:   4 * time.Second,
-	ResponseHeaderTimeout: 10 * time.Second,
+	TLSHandshakeTimeout:   3 * time.Second,
+	ResponseHeaderTimeout: 3 * time.Second,
 }
 
 func NewCurl(url string) *Curl {
@@ -116,48 +116,36 @@ func (curls *Curl) Post() (rs Response, err error) {
 
 	httpclient = &http.Client{tr, func(_ *http.Request, via []*http.Request) error { return stopRedirect }, nil, curls.Timeout}
 
-	start_time := time.Now().UnixNano()
-	num := 0
-	for {
-		if "" != curls.PostFields || curls.Method == "post" {
-			httprequest, _ = curls.postForm()
-		} else {
-			httprequest, _ = http.NewRequest("GET", curls.Url, nil)
-		}
-
-		// curls.hosttoip(httprequest)
-
-		if curls.Headers != nil {
-			for key, value := range curls.Headers {
-				httprequest.Header.Add(key, value)
-			}
-		}
-
-		if curls.Cookie != "" {
-			httprequest.Header.Add("Cookie", curls.Cookie)
-		}
-		if curls.Referer != "" {
-			httprequest.Header.Add("Referer", curls.Referer)
-		}
-
-		//使用过一次后，post的内容被读走了，直接重试执行Do无用
-		httpresponse, err = httpclient.Do(httprequest)
-		if nil != err {
-			//不是重定向里抛出的错误
-			if urlError, ok := err.(*neturl.Error); !ok || urlError.Err != stopRedirect {
-				if time.Now().UnixNano()-start_time >= int64(2*time.Second) {
-					return rs, err
-				}
-				num++
-				if num == 5 {
-					//TODO
-					// RestartLink("重试达到5次")
-				}
-				continue
-			}
-		}
-		break
+	if "" != curls.PostFields || curls.Method == "post" {
+		httprequest, _ = curls.postForm()
+	} else {
+		httprequest, _ = http.NewRequest("GET", curls.Url, nil)
 	}
+
+	// curls.hosttoip(httprequest)
+
+	if curls.Headers != nil {
+		for key, value := range curls.Headers {
+			httprequest.Header.Add(key, value)
+		}
+	}
+
+	if curls.Cookie != "" {
+		httprequest.Header.Add("Cookie", curls.Cookie)
+	}
+	if curls.Referer != "" {
+		httprequest.Header.Add("Referer", curls.Referer)
+	}
+
+	//使用过一次后，post的内容被读走了，直接重试执行Do无用
+	httpresponse, err = httpclient.Do(httprequest)
+	if nil != err {
+		//不是重定向里抛出的错误
+		if urlError, ok := err.(*neturl.Error); !ok || urlError.Err != stopRedirect {
+			return rs, err
+		}
+	}
+
 	defer func() {
 		_ = httpresponse.Body.Close()
 	}()
