@@ -18,10 +18,15 @@ import (
 )
 
 type ProxyIni struct {
-	Bind   string `toml:"bind"`
-	IsHTTP bool   `toml:"is_http"`
-	IsSSH  bool   `toml:"is_ssh"`
-	IsPac  bool   `toml:"is_pac"`
+	Bind string `toml:"bind"`
+	//区分是http还是socks5
+	IsHTTP bool `toml:"is_http"`
+	//是否所有请求通过ssh访问
+	IsSSH bool `toml:"is_ssh"`
+	//是否根据pac决定是否通过ssh访问，如果IsSSH=true，此配置无效
+	IsPac bool `toml:"is_pac"`
+	//如果不在pac列表里，是否中断，IsPac=true才生效
+	IsBreak bool `toml:"is_break"`
 }
 type Proxy struct {
 	pi     ProxyIni
@@ -96,14 +101,14 @@ func (p *Proxy) HandHTTP(conn net.Conn) (err error) {
 	//否则远程连接不会关闭，导致Copy卡住
 	req.Header.Set("Connection", "close")
 
-	logger.Info(conn.RemoteAddr().String(), p.isSSH(req.Host), req.Host, " connecting...")
+	logger.Info(p.pi.Bind, conn.RemoteAddr().String(), p.isSSH(req.Host), req.Host, " connecting...")
 	con, err := p.dial(req.Host)
 	if err != nil {
-		logger.Info(conn.RemoteAddr().String(), p.isSSH(req.Host), req.Host, "connected faild", err)
+		logger.Info(p.pi.Bind, conn.RemoteAddr().String(), p.isSSH(req.Host), req.Host, "connected faild", err)
 		_ = conn.Close()
 		return
 	}
-	logger.Info(conn.RemoteAddr().String(), p.isSSH(req.Host), req.Host, "connected.")
+	logger.Info(p.pi.Bind, conn.RemoteAddr().String(), p.isSSH(req.Host), req.Host, "connected.")
 	if req.Method == "CONNECT" {
 		_, err = io.WriteString(conn, "HTTP/1.0 200 Connection Established\r\n\r\n")
 		if err != nil {
@@ -191,16 +196,16 @@ func (p *Proxy) HandSocks5(conn net.Conn) (err error) {
 		return
 	}
 
-	logger.Info(conn.RemoteAddr().String(), p.isSSH(host), host, "connecting...")
+	logger.Info(p.pi.Bind, conn.RemoteAddr().String(), p.isSSH(host), host, "connecting...")
 	host = host + ":" + strconv.Itoa(int(port))
 	con, err := p.dial(host)
 	if err != nil {
 		// _, _ = conn.Write([]byte{0x05, 0x06, 0x00, atyp})
 		_ = conn.Close()
-		logger.Info(conn.RemoteAddr().String(), p.isSSH(host), host, "connected faild", err)
+		logger.Info(p.pi.Bind, conn.RemoteAddr().String(), p.isSSH(host), host, "connected faild", err)
 		return
 	}
-	logger.Info(conn.RemoteAddr().String(), p.isSSH(host), host, "connected.")
+	logger.Info(p.pi.Bind, conn.RemoteAddr().String(), p.isSSH(host), host, "connected.")
 
 	_, err = conn.Write([]byte{0x05, 0x00, 0x00, atyp})
 	if err != nil {
@@ -252,6 +257,9 @@ func (p *Proxy) Close() {
 
 func (p *Proxy) dial(addr string) (con net.Conn, err error) {
 	isSSH := p.isSSH(addr)
+	if !isSSH && p.pi.IsPac && p.pi.IsBreak {
+		return nil, errors.New("不在Pac名单")
+	}
 	if !strings.Contains(addr, ":") {
 		addr = fmt.Sprintf("%s:80", addr)
 	}
