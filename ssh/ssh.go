@@ -52,15 +52,17 @@ var sshIns = make(map[string]*SSH)
 
 //NewSSH 建立第一个ssh连接，一般是跳板机
 func NewSSH(sshConfig SSHConfig) (ins *SSH, err error) {
-	mt.Lock()
-	defer mt.Unlock()
 
-	gb, err := encoding.Gob.Marshal(sshConfig)
+	key, err := key(sshConfig)
 	if err != nil {
 		return
 	}
-	key := common.Md5(string(gb))
+
+	mt.Lock()
 	if ins, ok := sshIns[key]; ok {
+		defer mt.Unlock()
+		ins.mt.Lock()
+		defer ins.mt.Unlock()
 		sshIns[key].ref += 1
 		return ins, err
 	}
@@ -72,11 +74,26 @@ func NewSSH(sshConfig SSHConfig) (ins *SSH, err error) {
 		mt:    new(sync.Mutex),
 	}
 	ins.SetConfig(sshConfig)
+	sshIns[key] = ins
+
+	ins.mt.Lock()
+	defer ins.mt.Unlock()
+	mt.Unlock()
 
 	err = ins.Dial()
-	if err == nil {
-		sshIns[key] = ins
+	if err != nil {
+		delete(sshIns, key)
 	}
+
+	return
+}
+
+func key(sshConfig SSHConfig) (key string, err error) {
+	gb, err := encoding.Gob.Marshal(sshConfig)
+	if err != nil {
+		return
+	}
+	key = common.Md5(string(gb))
 
 	return
 }
@@ -144,8 +161,9 @@ func (this *SSH) Connect(addr string) (conn net.Conn, err error) {
 }
 
 func (this *SSH) Close() {
-	mt.Lock()
-	defer mt.Unlock()
+
+	this.mt.Lock()
+	defer this.mt.Unlock()
 
 	if this.ref > 1 {
 		this.ref -= 1
@@ -154,6 +172,13 @@ func (this *SSH) Close() {
 
 	close(this.close)
 	_ = this.c.Close()
+
+	if this.m == NormalMode {
+		key, _ := key(this.config)
+		mt.Lock()
+		defer mt.Unlock()
+		delete(sshIns, key)
+	}
 }
 
 func (this *SSH) Config() SSHConfig {
