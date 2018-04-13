@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/hsyan2008/go-logger/logger"
 	"github.com/hsyan2008/hfw2/common"
 	"github.com/hsyan2008/hfw2/encoding"
 	"golang.org/x/crypto/ssh"
@@ -39,6 +40,10 @@ type SSH struct {
 	close  chan bool
 	config SSHConfig
 	ref    int
+	preIns *SSH
+
+	mt          *sync.Mutex
+	keepaliving bool
 }
 
 var mt = new(sync.Mutex)
@@ -64,6 +69,7 @@ func NewSSH(sshConfig SSHConfig) (ins *SSH, err error) {
 		ref:   1,
 		close: make(chan bool),
 		m:     NormalMode,
+		mt:    new(sync.Mutex),
 	}
 	ins.SetConfig(sshConfig)
 
@@ -81,13 +87,17 @@ func (this *SSH) Dial() (err error) {
 		return errors.New("err sshConfig")
 	}
 
-	this.c, err = ssh.Dial("tcp", this.config.Addr, this.getSshClientConfig())
+	this.c, err = this.dial()
 
 	if err == nil {
 		this.keepalive()
 	}
 
 	return
+}
+
+func (this *SSH) dial() (c *ssh.Client, err error) {
+	return ssh.Dial("tcp", this.config.Addr, this.getSshClientConfig())
 }
 
 //DialRemote 通过跳板连接其他服务器
@@ -98,29 +108,35 @@ func (this *SSH) DialRemote(sshConfig SSHConfig) (ins *SSH, err error) {
 	}
 
 	ins = &SSH{
-		ref:   1,
-		close: make(chan bool),
-		m:     RemoteMode,
+		ref:    1,
+		close:  make(chan bool),
+		m:      RemoteMode,
+		mt:     new(sync.Mutex),
+		preIns: this,
 	}
 	ins.SetConfig(sshConfig)
 
-	rc, err := this.Connect(sshConfig.Addr)
-	if err != nil {
-		return
-	}
-
-	conn, nc, req, err := ssh.NewClientConn(rc, "", ins.getSshClientConfig())
-	if err != nil {
-		return
-	}
-
-	ins.c = ssh.NewClient(conn, nc, req)
+	ins.c, err = ins.dialRemote()
 
 	if err == nil {
 		ins.keepalive()
 	}
 
 	return
+}
+
+func (this *SSH) dialRemote() (c *ssh.Client, err error) {
+	rc, err := this.preIns.Connect(this.config.Addr)
+	if err != nil {
+		return
+	}
+
+	conn, nc, req, err := ssh.NewClientConn(rc, "", this.getSshClientConfig())
+	if err != nil {
+		return
+	}
+
+	return ssh.NewClient(conn, nc, req), nil
 }
 
 func (this *SSH) Connect(addr string) (conn net.Conn, err error) {
@@ -209,8 +225,29 @@ func (this *SSH) keepalive() {
 				t.Stop()
 				return
 			case <-t.C:
+				if this.keepaliving {
+					continue
+				}
 				go func() {
-					_ = this.Keepalive()
+					this.mt.Lock()
+					this.keepaliving = true
+					defer func() {
+						this.mt.Unlock()
+						this.keepaliving = false
+					}()
+					err := this.Keepalive()
+					if err != nil {
+						switch this.m {
+						case NormalMode:
+							_ = this.c.Close()
+							this.c, err = this.dial()
+						case RemoteMode:
+							_ = this.c.Close()
+							this.c, err = this.dialRemote()
+						default:
+							logger.Debug("error mode")
+						}
+					}
 				}()
 			}
 		}
