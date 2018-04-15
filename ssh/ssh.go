@@ -76,9 +76,9 @@ func NewSSH(sshConfig SSHConfig) (ins *SSH, err error) {
 	ins.SetConfig(sshConfig)
 	sshIns[key] = ins
 
+	defer mt.Unlock()
 	ins.mt.Lock()
 	defer ins.mt.Unlock()
-	mt.Unlock()
 
 	err = ins.Dial()
 	if err != nil {
