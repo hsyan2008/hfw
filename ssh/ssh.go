@@ -59,33 +59,65 @@ func NewSSH(sshConfig SSHConfig) (ins *SSH, err error) {
 	}
 
 	mt.Lock()
-	if ins, ok := sshIns[key]; ok {
-		defer mt.Unlock()
+	var ok bool
+	if ins, ok = sshIns[key]; ok {
 		ins.mt.Lock()
 		defer ins.mt.Unlock()
-		sshIns[key].ref += 1
-		return ins, err
+		if ins.ref > 0 {
+			defer mt.Unlock()
+			ins.ref += 1
+			return ins, err
+		}
+	} else {
+		ins = &SSH{
+			ref:   0,
+			close: make(chan bool),
+			m:     NormalMode,
+			mt:    new(sync.Mutex),
+		}
+		ins.SetConfig(sshConfig)
+		sshIns[key] = ins
+
+		ins.mt.Lock()
+		defer ins.mt.Unlock()
 	}
 
-	ins = &SSH{
-		ref:   1,
-		close: make(chan bool),
-		m:     NormalMode,
-		mt:    new(sync.Mutex),
-	}
-	ins.SetConfig(sshConfig)
-	sshIns[key] = ins
+	//不用defer，是防止Dial阻塞并发
+	mt.Unlock()
 
-	defer mt.Unlock()
-	ins.mt.Lock()
-	defer ins.mt.Unlock()
+	if ins.ref > 0 {
+		ins.ref += 1
+		return
+	}
 
 	err = ins.Dial()
-	if err != nil {
-		delete(sshIns, key)
+	if err == nil {
+		ins.ref += 1
 	}
 
 	return
+}
+
+//到0后，保留连接
+func (this *SSH) Close() {
+
+	//delete必须要加锁
+	// mt.Lock()
+	// defer mt.Unlock()
+
+	this.mt.Lock()
+	defer this.mt.Unlock()
+
+	this.ref -= 1
+
+	// if this.ref <= 0 {
+	// 	close(this.close)
+	//
+	// 		if this.m == NormalMode {
+	// 			key, _ := key(this.config)
+	// 			delete(sshIns, key)
+	// 		}
+	// }
 }
 
 func key(sshConfig SSHConfig) (key string, err error) {
@@ -160,27 +192,6 @@ func (this *SSH) Connect(addr string) (conn net.Conn, err error) {
 	return this.c.Dial("tcp", addr)
 }
 
-func (this *SSH) Close() {
-
-	this.mt.Lock()
-	defer this.mt.Unlock()
-
-	if this.ref > 1 {
-		this.ref -= 1
-		return
-	}
-
-	close(this.close)
-	_ = this.c.Close()
-
-	if this.m == NormalMode {
-		key, _ := key(this.config)
-		mt.Lock()
-		defer mt.Unlock()
-		delete(sshIns, key)
-	}
-}
-
 func (this *SSH) Config() SSHConfig {
 	return this.config
 }
@@ -247,6 +258,7 @@ func (this *SSH) keepalive() {
 		for {
 			select {
 			case <-this.close:
+				_ = this.c.Close()
 				t.Stop()
 				return
 			case <-t.C:
