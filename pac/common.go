@@ -35,14 +35,10 @@ func Check(addr string) bool {
 	}
 	host := strings.Split(addr, ":")[0]
 	hosts := strings.Split(host, ".")
-	pos := 1
-	for pos <= len(hosts) {
-		tmp := hosts[len(hosts)-pos:]
-		tmp1 := strings.Join(tmp, ".")
-		if isAllow, ok := pac[tmp1]; ok {
+	for pos := 0; pos < len(hosts); pos++ {
+		key := strings.Join(hosts[pos:], ".")
+		if isAllow, ok := pac[key]; ok {
 			return isAllow
-		} else {
-			pos++
 		}
 	}
 
