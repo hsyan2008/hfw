@@ -16,12 +16,12 @@ import (
 
 //SSHConfig ..
 type SSHConfig struct {
-	Id      string `toml:"id"`
-	Addr    string `toml:"addr"`
-	User    string `toml:"user"`
-	Auth    string `toml:"auth"`
-	Phrase  string `toml:"phrase"`
-	Timeout time.Duration
+	Id      string        `toml:"id"`
+	Addr    string        `toml:"addr"`
+	User    string        `toml:"user"`
+	Auth    string        `toml:"auth"`
+	Phrase  string        `toml:"phrase"`
+	Timeout time.Duration `toml:"timeout"`
 }
 
 type mode uint
