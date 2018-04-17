@@ -36,8 +36,6 @@ type Curl struct {
 	Headers map[string]string
 	Options map[string]bool
 
-	Timeout time.Duration
-
 	RedirectCount int
 
 	followUrls []string
@@ -52,6 +50,13 @@ var tr = &http.Transport{
 	// DisableKeepAlives:     true,
 	TLSHandshakeTimeout:   3 * time.Second,
 	ResponseHeaderTimeout: 3 * time.Second,
+}
+
+var httpclient = &http.Client{
+	tr,
+	func(_ *http.Request, via []*http.Request) error { return stopRedirect },
+	nil,
+	0,
 }
 
 func NewCurl(url string) *Curl {
@@ -75,54 +80,31 @@ func (curls *Curl) SetHeaders(headers map[string]string) {
 	curls.Headers["Expect"] = ""
 
 	for k, v := range headers {
-		curls.Headers[k] = v
+		curls.SetHeader(k, v)
 	}
+}
+func (curls *Curl) SetHeader(key, val string) {
+	curls.Headers[key] = val
 }
 
 func (curls *Curl) SetOptions(options map[string]bool) {
 	for k, v := range options {
-		curls.Options[k] = v
+		curls.SetOption(k, v)
 	}
+}
+func (curls *Curl) SetOption(key string, val bool) {
+	curls.Options[key] = val
 }
 
 func (curls *Curl) Request() (rs Response, err error) {
-	if len(curls.Options) == 0 && len(curls.Headers) == 0 {
-		rs, err = curls.SimpleGet()
-	} else {
-		rs, err = curls.Post()
-	}
-
-	return
-}
-
-//不设置header、cookie的请求
-func (curls *Curl) SimpleGet() (response Response, err error) {
-	var resp *http.Response
-	resp, err = http.Get(curls.Url)
-	if err != nil {
-		return
-	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-
-	return curls.curlResponse(resp)
-}
-
-func (curls *Curl) Post() (rs Response, err error) {
 	var httprequest *http.Request
-	var httpclient *http.Client
 	var httpresponse *http.Response
 
-	httpclient = &http.Client{tr, func(_ *http.Request, via []*http.Request) error { return stopRedirect }, nil, curls.Timeout}
-
-	if "" != curls.PostFields || curls.Method == "post" {
+	if curls.Method == "post" || "" != curls.PostFields {
 		httprequest, _ = curls.postForm()
 	} else {
 		httprequest, _ = http.NewRequest("GET", curls.Url, nil)
 	}
-
-	// curls.hosttoip(httprequest)
 
 	if curls.Headers != nil {
 		for key, value := range curls.Headers {
@@ -137,11 +119,11 @@ func (curls *Curl) Post() (rs Response, err error) {
 		httprequest.Header.Add("Referer", curls.Referer)
 	}
 
-	//使用过一次后，post的内容被读走了，直接重试执行Do无用
 	httpresponse, err = httpclient.Do(httprequest)
 	if nil != err {
 		//不是重定向里抛出的错误
-		if urlError, ok := err.(*neturl.Error); !ok || urlError.Err != stopRedirect {
+		urlError, ok := err.(*neturl.Error)
+		if !ok || urlError.Err != stopRedirect {
 			return rs, err
 		}
 	}
@@ -204,7 +186,7 @@ func (curls *Curl) curlResponse(resp *http.Response) (response Response, err err
 				curls.PostFields = ""
 				curls.Cookie = curls.afterCookie(resp)
 
-				return curls.Post()
+				return curls.Request()
 			} else {
 				return response, errors.New("重定向次数过多")
 			}
