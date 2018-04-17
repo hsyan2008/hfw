@@ -101,23 +101,15 @@ func NewSSH(sshConfig SSHConfig) (ins *SSH, err error) {
 //到0后，保留连接
 func (this *SSH) Close() {
 
-	//delete必须要加锁
-	// mt.Lock()
-	// defer mt.Unlock()
-
 	this.mt.Lock()
 	defer this.mt.Unlock()
 
 	this.ref -= 1
 
-	// if this.ref <= 0 {
-	// 	close(this.close)
-	//
-	// 		if this.m == NormalMode {
-	// 			key, _ := key(this.config)
-	// 			delete(sshIns, key)
-	// 		}
-	// }
+	if this.ref <= 0 {
+		this.close <- true
+		_ = this.c.Close()
+	}
 }
 
 func key(sshConfig SSHConfig) (key string, err error) {
@@ -139,7 +131,7 @@ func (this *SSH) Dial() (err error) {
 	this.c, err = this.dial()
 
 	if err == nil {
-		this.keepalive()
+		go this.keepalive()
 	}
 
 	return
@@ -168,7 +160,7 @@ func (this *SSH) DialRemote(sshConfig SSHConfig) (ins *SSH, err error) {
 	ins.c, err = ins.dialRemote()
 
 	if err == nil {
-		ins.keepalive()
+		go ins.keepalive()
 	}
 
 	return
@@ -198,7 +190,7 @@ func (this *SSH) Config() SSHConfig {
 
 func (this *SSH) SetConfig(sshConfig SSHConfig) {
 	if sshConfig.Timeout == 0 {
-		sshConfig.Timeout = 10
+		sshConfig.Timeout = 30
 	}
 
 	this.config = sshConfig
@@ -249,46 +241,39 @@ func (this *SSH) getAuth() ssh.AuthMethod {
 }
 
 func (this *SSH) keepalive() {
-	if this.c == nil {
-		return
-	}
-
-	go func() {
-		t := time.NewTicker(this.config.Timeout * time.Second)
-		for {
-			select {
-			case <-this.close:
-				_ = this.c.Close()
-				t.Stop()
-				return
-			case <-t.C:
-				if this.keepaliving {
-					continue
-				}
-				go func() {
-					this.mt.Lock()
-					this.keepaliving = true
-					defer func() {
-						this.mt.Unlock()
-						this.keepaliving = false
-					}()
-					err := this.Keepalive()
-					if err != nil {
-						switch this.m {
-						case NormalMode:
-							_ = this.c.Close()
-							this.c, err = this.dial()
-						case RemoteMode:
-							_ = this.c.Close()
-							this.c, err = this.dialRemote()
-						default:
-							logger.Debug("error mode")
-						}
-					}
-				}()
+	t := time.NewTicker(this.config.Timeout * time.Second)
+	for {
+		select {
+		case <-this.close:
+			t.Stop()
+			return
+		case <-t.C:
+			if this.keepaliving {
+				continue
 			}
+			go func() {
+				this.mt.Lock()
+				this.keepaliving = true
+				defer func() {
+					this.keepaliving = false
+					this.mt.Unlock()
+				}()
+				err := this.Keepalive()
+				if err != nil {
+					switch this.m {
+					case NormalMode:
+						_ = this.c.Close()
+						this.c, err = this.dial()
+					case RemoteMode:
+						_ = this.c.Close()
+						this.c, err = this.dialRemote()
+					default:
+						logger.Debug("error mode")
+					}
+				}
+			}()
 		}
-	}()
+	}
 }
 
 func (this *SSH) Keepalive() (err error) {
