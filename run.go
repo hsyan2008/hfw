@@ -18,6 +18,7 @@ import (
 	"github.com/hsyan2008/hfw2/configs"
 	"github.com/hsyan2008/hfw2/redis"
 	"github.com/hsyan2008/hfw2/serve"
+	"github.com/hsyan2008/hfw2/stack"
 )
 
 //ENVIRONMENT ..
@@ -130,6 +131,12 @@ func Run() (err error) {
 	defer logger.Debug("Pid:", os.Getpid(), "Shutdown complete!")
 
 	logger.Debug("Start to run, Config ENVIRONMENT is", ENVIRONMENT, "APPNAME is", APPNAME, "APPPATH is", APPPATH)
+
+	if common.IsExist("/opt/log") {
+		stack.SetupStack(filepath.Join("/opt/log", APPNAME+"_stack.log"))
+	} else {
+		stack.SetupStack(filepath.Join(APPPATH, APPNAME+"_stack.log"))
+	}
 
 	//监听信号
 	go listenSignal()
