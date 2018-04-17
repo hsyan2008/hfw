@@ -24,18 +24,18 @@ type SSHConfig struct {
 	Timeout time.Duration `toml:"timeout"`
 }
 
-type mode uint
+type sshMode uint
 
 const (
 	//直连
-	NormalMode = iota
+	NormalSSHMode sshMode = iota
 	//通过跳板机
-	RemoteMode
+	RemoteSSHMode
 )
 
 //SSH ..
 type SSH struct {
-	m      mode
+	m      sshMode
 	c      *ssh.Client
 	close  chan bool
 	config SSHConfig
@@ -72,7 +72,7 @@ func NewSSH(sshConfig SSHConfig) (ins *SSH, err error) {
 		ins = &SSH{
 			ref:   0,
 			close: make(chan bool),
-			m:     NormalMode,
+			m:     NormalSSHMode,
 			mt:    new(sync.Mutex),
 		}
 		ins.SetConfig(sshConfig)
@@ -151,7 +151,7 @@ func (this *SSH) DialRemote(sshConfig SSHConfig) (ins *SSH, err error) {
 	ins = &SSH{
 		ref:    1,
 		close:  make(chan bool),
-		m:      RemoteMode,
+		m:      RemoteSSHMode,
 		mt:     new(sync.Mutex),
 		preIns: this,
 	}
@@ -261,14 +261,14 @@ func (this *SSH) keepalive() {
 				err := this.Keepalive()
 				if err != nil {
 					switch this.m {
-					case NormalMode:
+					case NormalSSHMode:
 						_ = this.c.Close()
 						this.c, err = this.dial()
-					case RemoteMode:
+					case RemoteSSHMode:
 						_ = this.c.Close()
 						this.c, err = this.dialRemote()
 					default:
-						logger.Debug("error mode")
+						logger.Debug("error sshMode")
 					}
 				}
 			}()
