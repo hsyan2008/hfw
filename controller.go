@@ -69,7 +69,9 @@ func (ctl *Controller) finish(ctx *HTTPContext) {
 
 	defer Wg.Done()
 
-	ctx.Session.Close(ctx.Request, ctx.ResponseWriter)
+	if ctx.Session != nil {
+		ctx.Session.Close(ctx.Request, ctx.ResponseWriter)
+	}
 	ctx.Output()
 }
 
