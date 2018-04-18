@@ -35,15 +35,18 @@ const (
 
 //SSH ..
 type SSH struct {
-	m      sshMode
-	c      *ssh.Client
-	close  chan bool
 	config SSHConfig
 	ref    int
+
+	m sshMode
+	c *ssh.Client
+
 	preIns *SSH
 
-	mt          *sync.Mutex
-	keepaliving bool
+	close chan bool
+	timer *time.Timer
+
+	mt *sync.Mutex
 }
 
 var mt = new(sync.Mutex)
@@ -76,6 +79,7 @@ func NewSSH(sshConfig SSHConfig) (ins *SSH, err error) {
 			mt:    new(sync.Mutex),
 		}
 		ins.SetConfig(sshConfig)
+		ins.timer = time.NewTimer(ins.config.Timeout * time.Second)
 		sshIns[key] = ins
 
 		ins.mt.Lock()
@@ -156,6 +160,7 @@ func (this *SSH) DialRemote(sshConfig SSHConfig) (ins *SSH, err error) {
 		preIns: this,
 	}
 	ins.SetConfig(sshConfig)
+	ins.timer = time.NewTimer(ins.config.Timeout * time.Second)
 
 	ins.c, err = ins.dialRemote()
 
@@ -241,44 +246,44 @@ func (this *SSH) getAuth() ssh.AuthMethod {
 }
 
 func (this *SSH) keepalive() {
-	t := time.NewTicker(this.config.Timeout * time.Second)
 	for {
+		this.timer.Reset(this.config.Timeout * time.Second)
 		select {
 		case <-this.close:
-			t.Stop()
+			this.timer.Stop()
 			return
-		case <-t.C:
-			if this.keepaliving {
-				continue
-			}
-			go func() {
-				this.mt.Lock()
-				this.keepaliving = true
-				defer func() {
-					this.keepaliving = false
-					this.mt.Unlock()
-				}()
-				err := this.Keepalive()
-				if err != nil {
-					switch this.m {
-					case NormalSSHMode:
-						_ = this.c.Close()
-						this.c, err = this.dial()
-					case RemoteSSHMode:
-						_ = this.c.Close()
-						this.c, err = this.dialRemote()
-					default:
-						logger.Debug("error sshMode")
-					}
-				}
-			}()
+		case <-this.timer.C:
+			go this.keep()
 		}
 	}
 }
 
-func (this *SSH) Keepalive() (err error) {
+func (this *SSH) keep() {
+	err := this.Check()
+	if err != nil {
+		this.mt.Lock()
+		defer this.mt.Unlock()
+		if this.ref <= 0 {
+			//已关闭,退出
+			return
+		}
+
+		switch this.m {
+		case NormalSSHMode:
+			_ = this.c.Close()
+			this.c, err = this.dial()
+		case RemoteSSHMode:
+			_ = this.c.Close()
+			this.c, err = this.dialRemote()
+		default:
+			logger.Debug("error sshMode")
+		}
+	}
+}
+
+func (this *SSH) Check() (err error) {
 	if this.c == nil {
-		return errors.New("keepalive no ins")
+		return errors.New("Check no ins")
 	}
 
 	sess, err := this.c.NewSession()
