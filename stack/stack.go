@@ -27,16 +27,17 @@ func SetupStack(file string) {
 
 	stdFile = file
 
-	logger.Info("Stack is enable, you can do `kill -USR1", os.Getpid(), "; tail", stdFile, "` to view")
+	logger.Info("Stack is enable, you can do `kill -TRAP", os.Getpid(), "; tail -f", stdFile, "` to view")
 
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGUSR1)
+	//win支持的信号参考/usr/lib64/go/src/syscall/types_windows.go
+	signal.Notify(c, syscall.SIGTRAP)
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 	FOR:
 		for s := range c {
 			switch s {
-			case syscall.SIGUSR1:
+			case syscall.SIGTRAP:
 				dumpStacks()
 			default:
 				break FOR
