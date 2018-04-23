@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"runtime"
 	"strings"
 	//pprof
 	"net/http"
@@ -25,13 +24,10 @@ import (
 var ENVIRONMENT string
 
 //APPPATH 项目路径
-var APPPATH string
-
-//是否go run执行
-var isGoRun bool
+var APPPATH = common.GetAppPath()
 
 //APPNAME 项目名称
-var APPNAME string
+var APPNAME = common.GetAppName()
 
 var PID = os.Getpid()
 
@@ -40,33 +36,8 @@ var Config configs.AllConfig
 var DefaultRedisIns *redis.Redis
 
 func init() {
-	initAPPPATH()
-	initAPPNAME()
 	loadConfig()
 	setLog()
-}
-
-//初始化项目路径
-func initAPPPATH() {
-	pwd, _ := filepath.Abs(os.Args[0])
-	if strings.Contains(pwd, "go-build") {
-		APPPATH, _ = os.Getwd()
-		isGoRun = true
-	} else {
-		APPPATH = filepath.Dir(pwd)
-	}
-}
-
-func initAPPNAME() {
-	if isGoRun {
-		APPNAME = filepath.Base(APPPATH)
-	} else {
-		pwd, _ := filepath.Abs(os.Args[0])
-		APPNAME = strings.ToLower(filepath.Base(pwd))
-		if runtime.GOOS == "windows" {
-			APPNAME = strings.TrimSuffix(APPNAME, ".exe")
-		}
-	}
 }
 
 //setLog 初始化log写入文件

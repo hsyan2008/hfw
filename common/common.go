@@ -4,10 +4,49 @@ import (
 	"crypto/md5"
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/axgle/mahonia"
 )
+
+var (
+	appPath string
+	appName string
+	//是否go run执行
+	isGoRun bool
+)
+
+func GetAppPath() string {
+	if appPath == "" {
+		pwd, _ := filepath.Abs(os.Args[0])
+		if strings.Contains(pwd, "go-build") {
+			appPath, _ = os.Getwd()
+			isGoRun = true
+		} else {
+			appPath = filepath.Dir(pwd)
+		}
+	}
+
+	return appPath
+}
+
+func GetAppName() string {
+	if appName == "" {
+		GetAppPath()
+		if isGoRun {
+			appName = filepath.Base(appPath)
+		} else {
+			pwd, _ := filepath.Abs(os.Args[0])
+			appName = strings.ToLower(filepath.Base(pwd))
+			if runtime.GOOS == "windows" {
+				appName = strings.TrimSuffix(appName, ".exe")
+			}
+		}
+	}
+	return appName
+}
 
 //Result ..
 type Result struct {
