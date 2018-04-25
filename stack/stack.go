@@ -39,6 +39,7 @@ func SetupStack(file string) {
 			switch s {
 			case syscall.SIGTRAP:
 				dumpStacks()
+				logger.Info("Stack already dumped to", stdFile)
 			default:
 				break FOR
 			}
