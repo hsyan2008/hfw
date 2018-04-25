@@ -278,6 +278,10 @@ func (this *SSH) keep() {
 		default:
 			logger.Debug("error sshMode")
 		}
+		if err != nil {
+			logger.Warn(err)
+			this.timer.Reset(0)
+		}
 	}
 }
 
