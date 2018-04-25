@@ -42,7 +42,10 @@ func NewProxy(sshConfig SSHConfig, pi ProxyIni) (p *Proxy, err error) {
 		pi.Bind = ":" + pi.Bind
 	}
 	if pi.IsPac {
-		_ = pac.LoadDefault()
+		err = pac.LoadDefault()
+		if err != nil {
+			return
+		}
 	}
 	p = &Proxy{
 		pi: pi,
