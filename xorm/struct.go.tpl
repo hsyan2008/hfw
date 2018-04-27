@@ -15,7 +15,7 @@ import (
 {{end}}
 
 {{range .Tables}}
-var {{Mapper .Name}}Model = &{{Mapper .Name}}{Dao: hfw.NewNoCacheDao()}
+var {{Mapper .Name}}Model = &{{Mapper .Name}}{Dao: hfw.NewNoCacheDao(hfw.Config)}
 {{end}}
 
 func init() {
