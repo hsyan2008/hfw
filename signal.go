@@ -35,6 +35,10 @@ func sendNotice() {
 func listenSignal() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM)
+	logger.Info("You can run `kill -INT", os.Getpid(), "`to graceful exit this process")
+	if isHttp {
+		logger.Info("You can run `kill -TERM", os.Getpid(), "`to graceful restart this process")
+	}
 	s := <-c
 	logger.Info("recv signal:", s)
 	go waitShutdownDone()
