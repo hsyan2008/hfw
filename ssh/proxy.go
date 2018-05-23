@@ -104,7 +104,7 @@ func (p *Proxy) HandHTTP(conn net.Conn) (err error) {
 	//否则远程连接不会关闭，导致Copy卡住
 	req.Header.Set("Connection", "close")
 
-	logger.Info(p.pi.Bind, conn.RemoteAddr().String(), p.isSSH(req.Host), req.Host, " connecting...")
+	logger.Info(p.pi.Bind, conn.RemoteAddr().String(), p.isSSH(req.Host), req.Host, "connecting...")
 	con, err := p.dial(req.Host)
 	if err != nil {
 		logger.Info(p.pi.Bind, conn.RemoteAddr().String(), p.isSSH(req.Host), req.Host, "connected faild", err)

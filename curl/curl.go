@@ -6,11 +6,13 @@ import (
 	"compress/gzip"
 	"crypto/tls"
 	"errors"
+	"io"
 	"io/ioutil"
 	"mime/multipart"
 	"net"
 	"net/http"
 	neturl "net/url"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -31,12 +33,16 @@ type Response struct {
 var stopRedirect = errors.New("no redirects allowed")
 
 type Curl struct {
-	Url, Method, PostFields, Cookie, Referer string
+	Url, Method, Cookie, Referer string
 
 	Headers map[string]string
 	Options map[string]bool
 
 	RedirectCount int
+
+	PostString string
+	PostData   neturl.Values
+	PostFiles  map[string]string
 
 	followUrls []string
 }
@@ -53,10 +59,10 @@ var tr = &http.Transport{
 }
 
 var httpclient = &http.Client{
-	tr,
-	func(_ *http.Request, via []*http.Request) error { return stopRedirect },
-	nil,
-	0,
+	Transport:     tr,
+	CheckRedirect: func(_ *http.Request, via []*http.Request) error { return stopRedirect },
+	Jar:           nil,
+	Timeout:       0,
 }
 
 func NewCurl(url string) *Curl {
@@ -65,6 +71,8 @@ func NewCurl(url string) *Curl {
 		Options:    make(map[string]bool),
 		followUrls: make([]string, 0),
 		Url:        url,
+		PostData:   neturl.Values{},
+		PostFiles:  make(map[string]string),
 	}
 }
 
@@ -100,7 +108,11 @@ func (curls *Curl) Request() (rs Response, err error) {
 	var httprequest *http.Request
 	var httpresponse *http.Response
 
-	if curls.Method == "post" || "" != curls.PostFields {
+	if "" != curls.PostString || len(curls.PostData) > 0 || len(curls.PostFiles) > 0 {
+		curls.Method = "post"
+	}
+
+	if curls.Method == "post" {
 		httprequest, _ = curls.postForm()
 	} else {
 		httprequest, _ = http.NewRequest("GET", curls.Url, nil)
@@ -136,25 +148,46 @@ func (curls *Curl) Request() (rs Response, err error) {
 }
 
 func (curls *Curl) postForm() (httprequest *http.Request, err error) {
-	if curls.Headers["Content-Type"] == "multipart/form-data" {
-		postValues, err := neturl.ParseQuery(curls.PostFields)
-		if err != nil {
-			return nil, err
-		}
 
-		var b bytes.Buffer
-		w := multipart.NewWriter(&b)
-
-		for k, _ := range postValues {
-			_ = w.WriteField(k, postValues.Get(k))
-		}
-		_ = w.Close()
-		httprequest, _ = http.NewRequest("POST", curls.Url, &b)
-		httprequest.Header.Add("Content-Type", w.FormDataContentType())
-	} else {
-		b := strings.NewReader(curls.PostFields)
+	if curls.PostString != "" {
+		b := strings.NewReader(curls.PostString)
 		httprequest, _ = http.NewRequest("POST", curls.Url, b)
 		httprequest.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	} else {
+		var b = &bytes.Buffer{}
+		bodyWriter := multipart.NewWriter(b)
+
+		for key, val := range curls.PostData {
+			for _, v := range val {
+				_ = bodyWriter.WriteField(key, v)
+			}
+		}
+
+		//文件
+		for key, val := range curls.PostFiles {
+			fileWriter, err := bodyWriter.CreateFormFile(key, val)
+			if err != nil {
+				return nil, err
+			}
+
+			fh, err := os.Open(val)
+			if err != nil {
+				return nil, err
+			}
+			defer func() {
+				_ = fh.Close()
+			}()
+
+			_, err = io.Copy(fileWriter, fh)
+			if err != nil {
+				return nil, err
+			}
+		}
+		//必须在这里，不能defer
+		_ = bodyWriter.Close()
+
+		httprequest, _ = http.NewRequest("POST", curls.Url, b)
+		httprequest.Header.Add("Content-Type", bodyWriter.FormDataContentType())
 	}
 
 	delete(curls.Headers, "Content-Type")
@@ -183,7 +216,9 @@ func (curls *Curl) curlResponse(resp *http.Response) (response Response, err err
 				curls.followUrls = append(curls.followUrls, curls.Url)
 				curls.Url = location_url
 				curls.Method = "get"
-				curls.PostFields = ""
+				curls.PostString = ""
+				curls.PostData = nil
+				curls.PostFiles = nil
 				curls.Cookie = curls.afterCookie(resp)
 
 				return curls.Request()
