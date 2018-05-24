@@ -152,7 +152,11 @@ func (curls *Curl) postForm() (httprequest *http.Request, err error) {
 	if curls.PostString != "" {
 		b := strings.NewReader(curls.PostString)
 		httprequest, _ = http.NewRequest("POST", curls.Url, b)
-		httprequest.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		if v, ok := curls.Headers["Content-Type"]; ok {
+			httprequest.Header.Add("Content-Type", v)
+		} else {
+			httprequest.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		}
 	} else {
 		var b = &bytes.Buffer{}
 		bodyWriter := multipart.NewWriter(b)
