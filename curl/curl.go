@@ -6,6 +6,7 @@ import (
 	"compress/gzip"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -20,6 +21,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/axgle/mahonia"
+	"github.com/hsyan2008/hfw2/common"
 )
 
 type Response struct {
@@ -113,7 +115,10 @@ func (curls *Curl) Request() (rs Response, err error) {
 	}
 
 	if curls.Method == "post" {
-		httprequest, _ = curls.postForm()
+		httprequest, err = curls.postForm()
+		if err != nil {
+			return
+		}
 	} else {
 		httprequest, _ = http.NewRequest("GET", curls.Url, nil)
 	}
@@ -169,6 +174,9 @@ func (curls *Curl) postForm() (httprequest *http.Request, err error) {
 
 		//文件
 		for key, val := range curls.PostFiles {
+			if !common.IsExist(val) {
+				return nil, errors.New(fmt.Sprintf("PostFiles %s => %s not exist", key, val))
+			}
 			fileWriter, err := bodyWriter.CreateFormFile(key, val)
 			if err != nil {
 				return nil, err
