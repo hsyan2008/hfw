@@ -74,9 +74,10 @@ func waitShutdownDone() {
 		}
 	}()
 
+	timeout := 30
 	select {
-	case <-time.After(30 * time.Second):
-		logger.Warn("waitShutdownDone 10s timeout")
+	case <-time.After(time.Duration(timeout) * time.Second):
+		logger.Warnf("waitShutdownDone %ds timeout", timeout)
 	case <-c:
 	}
 
