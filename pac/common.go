@@ -6,8 +6,13 @@ import (
 )
 
 var pac = make(map[string]bool)
-var isLoaded bool
 var mt = new(sync.Mutex)
+
+func Reset() (err error) {
+	pac = make(map[string]bool)
+
+	return LoadDefault()
+}
 
 func LoadDefault() (err error) {
 	err = LoadGwflist()
@@ -21,8 +26,6 @@ func LoadDefault() (err error) {
 func Add(key string, val bool) {
 	mt.Lock()
 	defer mt.Unlock()
-	//一旦调用，就认为已经加载过
-	isLoaded = true
 	add(key, val)
 }
 func add(key string, val bool) {

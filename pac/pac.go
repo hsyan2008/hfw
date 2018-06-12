@@ -13,12 +13,6 @@ var pacUrl = "https://pac.itzmx.com/abc.pac"
 var pacFile = "abc.pac"
 
 func LoadFromPac() (err error) {
-	mt.Lock()
-	defer mt.Unlock()
-	if isLoaded {
-		return
-	}
-
 	fileInfo, err := os.Stat(pacFile)
 	if err != nil {
 		err = updatePacFile()
@@ -36,8 +30,6 @@ func LoadFromPac() (err error) {
 	if err != nil {
 		return err
 	}
-
-	isLoaded = true
 
 	return parsePac(string(body))
 }
