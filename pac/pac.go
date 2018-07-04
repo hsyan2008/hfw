@@ -40,7 +40,7 @@ func parsePac(body string) (err error) {
 		if strings.Contains(line, "\": 1") {
 			fileds := strings.Split(line, "\"")
 			if len(fileds) == 3 {
-				add(fileds[1], true)
+				Add(fileds[1], true)
 			}
 		}
 	}
