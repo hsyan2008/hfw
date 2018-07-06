@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"strings"
+
 	//pprof
 	"net/http"
 	_ "net/http/pprof"
@@ -110,17 +111,17 @@ func Run() (err error) {
 	}
 
 	//监听信号
-	go listenSignal()
+	go Ctx.listenSignal()
 
 	//等待工作完成
-	defer Shutdowned()
+	defer Ctx.Shutdowned()
 
 	if randPortListener == nil {
 		if Config.Server.Address == "" {
 			return
 		}
 
-		isHttp = true
+		Ctx.IsHTTP = true
 
 		err = serve.Start(Config)
 	} else {

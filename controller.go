@@ -43,7 +43,6 @@ type Controller struct {
 //Init ..
 func (ctl *Controller) init(ctx *HTTPContext) {
 
-	Wg.Add(1)
 	var err error
 
 	// logger.Debug("Controller init")
@@ -66,8 +65,6 @@ func (ctl *Controller) init(ctx *HTTPContext) {
 
 //Finish ..
 func (ctl *Controller) finish(ctx *HTTPContext) {
-
-	defer Wg.Done()
 
 	if ctx.Session != nil {
 		ctx.Session.Close(ctx.Request, ctx.ResponseWriter)

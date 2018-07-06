@@ -29,6 +29,9 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	logger.Debug(r.Method, r.URL.String(), "start")
 	defer logger.Debug(r.Method, r.URL.String(), "end")
 
+	Wg.Add(1)
+	defer Wg.Done()
+
 	//把url补全为2段
 	trimURL := strings.Trim(strings.ToLower(r.URL.Path), "/")
 	//如果url为/，切分后为1个空元素
