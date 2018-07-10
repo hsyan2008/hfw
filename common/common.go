@@ -48,11 +48,11 @@ func GetAppName() string {
 	return appName
 }
 
-//Result ..
-type Result struct {
-	ErrNo   int64       `json:"code"`
-	ErrMsg  string      `json:"msg"`
-	Results interface{} `json:"result"`
+//Response ..
+type Response struct {
+	ErrNo   int64       `json:"err_no"`
+	ErrMsg  string      `json:"err_msg"`
+	Results interface{} `json:"results"`
 }
 
 //Max ..

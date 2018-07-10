@@ -83,14 +83,29 @@ func (ctx *context) waitShutdownDone() {
 	}
 }
 
-//等待业务方结束
+//通知业务方，并等待业务方结束
 func (ctx *context) waitDone() {
+	//通知业务方
 	close(ctx.Shutdown)
+	//等待业务方完成退出
 	ctx.Wg.Wait()
+	//表示全部完成
 	close(ctx.Done)
 }
 
-//Shutdowned 获取是否已经结束
+//Shutdowned 获取是否已经结束，暂时只有run.go里用到
 func (ctx *context) Shutdowned() {
 	<-ctx.Done
+}
+
+func (ctx *context) WgAdd() {
+	ctx.Wg.Add(1)
+}
+
+func (ctx *context) WgDone() {
+	ctx.Wg.Done()
+}
+
+func (ctx *context) WgWait() {
+	ctx.Wg.Wait()
 }

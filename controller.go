@@ -106,7 +106,7 @@ func (ctl *Controller) ServerError(ctx *HTTPContext) {
 
 //HTTPContext ..
 //渲染模板的数据放Data
-//Json里的数据放Result
+//Json里的数据放Response
 //Layout的功能未实现 TODO
 type HTTPContext struct {
 	ResponseWriter http.ResponseWriter
@@ -124,7 +124,7 @@ type HTTPContext struct {
 	IsError bool
 	Data    map[string]interface{}
 	FuncMap map[string]interface{}
-	common.Result
+	common.Response
 }
 
 //GetForm 优先post和put,然后get
@@ -294,7 +294,7 @@ func (ctx *HTTPContext) ReturnJSON() {
 		ctx.Results = ctx.Data
 	}
 
-	b, err := json.Marshal(ctx.Result)
+	b, err := json.Marshal(ctx.Response)
 	ctx.CheckErr(err)
 
 	if !ctx.IsError && ctx.IsZip {
