@@ -117,6 +117,10 @@ func (curls *Curl) SetOption(key string, val bool) {
 }
 
 func (curls *Curl) Request() (rs Response, err error) {
+	if curls.timeout <= 0 {
+		curls.SetTimeout(5)
+	}
+
 	var httprequest *http.Request
 	var httpresponse *http.Response
 
