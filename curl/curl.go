@@ -42,14 +42,20 @@ type Curl struct {
 
 	RedirectCount int
 
+	//string格式
 	PostString string
-	PostData   neturl.Values
-	PostFiles  map[string]string
+	//key=>value格式
+	PostFields neturl.Values
+	//文件
+	PostFiles map[string]string
+
+	timeout time.Duration
 
 	followUrls []string
 }
 
 var tr = &http.Transport{
+	Proxy: http.ProxyFromEnvironment,
 	Dial: (&net.Dialer{
 		Timeout:   3 * time.Second,
 		KeepAlive: 3600 * time.Second,
@@ -73,7 +79,7 @@ func NewCurl(url string) *Curl {
 		Options:    make(map[string]bool),
 		followUrls: make([]string, 0),
 		Url:        url,
-		PostData:   neturl.Values{},
+		PostFields: neturl.Values{},
 		PostFiles:  make(map[string]string),
 	}
 }
@@ -97,6 +103,10 @@ func (curls *Curl) SetHeader(key, val string) {
 	curls.Headers[key] = val
 }
 
+func (curls *Curl) SetTimeout(t int) {
+	curls.timeout = time.Duration(t)
+}
+
 func (curls *Curl) SetOptions(options map[string]bool) {
 	for k, v := range options {
 		curls.SetOption(k, v)
@@ -110,7 +120,7 @@ func (curls *Curl) Request() (rs Response, err error) {
 	var httprequest *http.Request
 	var httpresponse *http.Response
 
-	if "" != curls.PostString || len(curls.PostData) > 0 || len(curls.PostFiles) > 0 {
+	if "" != curls.PostString || len(curls.PostFields) > 0 || len(curls.PostFiles) > 0 {
 		curls.Method = "post"
 	}
 
@@ -136,7 +146,19 @@ func (curls *Curl) Request() (rs Response, err error) {
 		httprequest.Header.Add("Referer", curls.Referer)
 	}
 
-	httpresponse, err = httpclient.Do(httprequest)
+	c := make(chan bool, 1)
+	go func() {
+		httpresponse, err = httpclient.Do(httprequest)
+		c <- true
+	}()
+
+	select {
+	case <-time.After(curls.timeout * time.Second):
+		tr.CancelRequest(httprequest)
+		err = errors.New("request time out")
+	case <-c:
+	}
+
 	if nil != err {
 		//不是重定向里抛出的错误
 		urlError, ok := err.(*neturl.Error)
@@ -166,7 +188,7 @@ func (curls *Curl) postForm() (httprequest *http.Request, err error) {
 		var b = &bytes.Buffer{}
 		bodyWriter := multipart.NewWriter(b)
 
-		for key, val := range curls.PostData {
+		for key, val := range curls.PostFields {
 			for _, v := range val {
 				_ = bodyWriter.WriteField(key, v)
 			}
@@ -229,7 +251,7 @@ func (curls *Curl) curlResponse(resp *http.Response) (response Response, err err
 				curls.Url = location_url
 				curls.Method = "get"
 				curls.PostString = ""
-				curls.PostData = nil
+				curls.PostFields = nil
 				curls.PostFiles = nil
 				curls.Cookie = curls.afterCookie(resp)
 
