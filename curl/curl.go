@@ -67,7 +67,7 @@ var tr = &http.Transport{
 }
 
 var httpclient = &http.Client{
-	Transport:     tr,
+	// Transport:     tr,
 	CheckRedirect: func(_ *http.Request, via []*http.Request) error { return stopRedirect },
 	Jar:           nil,
 	Timeout:       0,
