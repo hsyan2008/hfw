@@ -39,6 +39,12 @@ var DefaultRedisIns *redis.Redis
 func init() {
 	loadConfig()
 	setLog()
+
+	if common.IsExist("/opt/log") {
+		stack.SetupStack(filepath.Join("/opt/log", APPNAME+"_stack.log"))
+	} else {
+		stack.SetupStack(filepath.Join(APPPATH, APPNAME+"_stack.log"))
+	}
 }
 
 //setLog 初始化log写入文件
@@ -103,12 +109,6 @@ func Run() (err error) {
 	defer logger.Debug("Pid:", os.Getpid(), "Shutdown complete!")
 
 	logger.Debug("Start to run, Config ENVIRONMENT is", ENVIRONMENT, "APPNAME is", APPNAME, "APPPATH is", APPPATH)
-
-	if common.IsExist("/opt/log") {
-		stack.SetupStack(filepath.Join("/opt/log", APPNAME+"_stack.log"))
-	} else {
-		stack.SetupStack(filepath.Join(APPPATH, APPNAME+"_stack.log"))
-	}
 
 	//监听信号
 	go Ctx.listenSignal()
