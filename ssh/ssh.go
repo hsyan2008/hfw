@@ -4,7 +4,6 @@ import (
 	"errors"
 	"io/ioutil"
 	"net"
-	"os"
 	"sync"
 	"time"
 
@@ -220,7 +219,7 @@ func (this *SSH) getAuth() ssh.AuthMethod {
 	auth := this.config.Auth
 	phrase := this.config.Phrase
 
-	if _, err = os.Stat(auth); err == nil {
+	if common.IsExist(auth) {
 		key, _ = ioutil.ReadFile(auth)
 	}
 
@@ -228,9 +227,8 @@ func (this *SSH) getAuth() ssh.AuthMethod {
 	if len(key) == 0 {
 		if len(auth) < 50 {
 			return ssh.Password(auth)
-		} else {
-			key = []byte(auth)
 		}
+		key = []byte(auth)
 	}
 
 	var signer ssh.Signer
@@ -246,6 +244,10 @@ func (this *SSH) getAuth() ssh.AuthMethod {
 }
 
 func (this *SSH) keepalive() {
+	//因为jumpserver.org的问题，无法检测，所以不检测
+	if this.config.Timeout < 0 {
+		return
+	}
 	for {
 		this.timer.Reset(this.config.Timeout * time.Second)
 		select {
