@@ -15,12 +15,13 @@ import (
 
 //SSHConfig ..
 type SSHConfig struct {
-	Id      string        `toml:"id"`
-	Addr    string        `toml:"addr"`
-	User    string        `toml:"user"`
-	Auth    string        `toml:"auth"`
-	Phrase  string        `toml:"phrase"`
-	Timeout time.Duration `toml:"timeout"`
+	Id       string        `toml:"id"`
+	Addr     string        `toml:"addr"`
+	User     string        `toml:"user"`
+	Auth     string        `toml:"auth"`
+	Phrase   string        `toml:"phrase"`
+	Timeout  time.Duration `toml:"timeout"`
+	SkipKeep bool          `toml:"skipKeep"`
 }
 
 type sshMode uint
@@ -245,7 +246,7 @@ func (this *SSH) getAuth() ssh.AuthMethod {
 
 func (this *SSH) keepalive() {
 	//因为jumpserver.org的问题，无法检测，所以不检测
-	if this.config.Timeout < 0 {
+	if this.config.SkipKeep {
 		return
 	}
 	for {
