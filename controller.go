@@ -88,7 +88,7 @@ func (ctl *Controller) NotFound(ctx *HTTPContext) {
 	ctx.ResponseWriter.WriteHeader(http.StatusNotFound)
 	ctx.IsError = true
 
-	ctx.ErrNo = 99404
+	ctx.ErrNo = 404
 	ctx.ErrMsg = "NotFound"
 }
 
@@ -100,7 +100,7 @@ func (ctl *Controller) ServerError(ctx *HTTPContext) {
 	ctx.ResponseWriter.WriteHeader(http.StatusInternalServerError)
 	ctx.IsError = true
 
-	ctx.ErrNo = 99500
+	ctx.ErrNo = 500
 	ctx.ErrMsg = "ServerError"
 }
 
@@ -164,7 +164,7 @@ func (ctx *HTTPContext) ThrowException(code int64, msg string) {
 func (ctx *HTTPContext) CheckErr(err error) {
 	if nil != err {
 		logger.Error(err)
-		ctx.ThrowException(99500, "系统错误")
+		ctx.ThrowException(500, "系统错误")
 	}
 }
 
