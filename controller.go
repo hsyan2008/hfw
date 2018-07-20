@@ -57,7 +57,7 @@ func (ctl *Controller) init(ctx *HTTPContext) {
 		ctx.IsZip = true
 	}
 
-	_ = ctx.Request.ParseMultipartForm(2 * 1024 * 1024)
+	// _ = ctx.Request.ParseMultipartForm(2 * 1024 * 1024)
 
 	ctx.Session, err = session.NewSession(ctx.Request, DefaultRedisIns, Config)
 	ctx.CheckErr(err)
