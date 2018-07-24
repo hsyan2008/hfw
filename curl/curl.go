@@ -66,7 +66,7 @@ var tr = &http.Transport{
 	ResponseHeaderTimeout: 3 * time.Second,
 }
 
-var httpclient = &http.Client{
+var httpClient = &http.Client{
 	// Transport:     tr,
 	CheckRedirect: func(_ *http.Request, via []*http.Request) error { return stopRedirect },
 	Jar:           nil,
@@ -121,44 +121,44 @@ func (curls *Curl) Request() (rs Response, err error) {
 		curls.SetTimeout(5)
 	}
 
-	var httprequest *http.Request
-	var httpresponse *http.Response
+	var httpRequest *http.Request
+	var httpResponse *http.Response
 
 	if "" != curls.PostString || len(curls.PostFields) > 0 || len(curls.PostFiles) > 0 {
 		curls.Method = "post"
 	}
 
 	if curls.Method == "post" {
-		httprequest, err = curls.postForm()
+		httpRequest, err = curls.postForm()
 		if err != nil {
 			return
 		}
 	} else {
-		httprequest, _ = http.NewRequest("GET", curls.Url, nil)
+		httpRequest, _ = http.NewRequest("GET", curls.Url, nil)
 	}
 
 	if curls.Headers != nil {
 		for key, value := range curls.Headers {
-			httprequest.Header.Add(key, value)
+			httpRequest.Header.Add(key, value)
 		}
 	}
 
 	if curls.Cookie != "" {
-		httprequest.Header.Add("Cookie", curls.Cookie)
+		httpRequest.Header.Add("Cookie", curls.Cookie)
 	}
 	if curls.Referer != "" {
-		httprequest.Header.Add("Referer", curls.Referer)
+		httpRequest.Header.Add("Referer", curls.Referer)
 	}
 
 	c := make(chan bool, 1)
 	go func() {
-		httpresponse, err = httpclient.Do(httprequest)
+		httpResponse, err = httpClient.Do(httpRequest)
 		c <- true
 	}()
 
 	select {
 	case <-time.After(curls.timeout * time.Second):
-		tr.CancelRequest(httprequest)
+		tr.CancelRequest(httpRequest)
 		err = errors.New("request time out")
 	case <-c:
 	}
@@ -172,21 +172,21 @@ func (curls *Curl) Request() (rs Response, err error) {
 	}
 
 	defer func() {
-		_ = httpresponse.Body.Close()
+		_ = httpResponse.Body.Close()
 	}()
 
-	return curls.curlResponse(httpresponse)
+	return curls.curlResponse(httpResponse)
 }
 
-func (curls *Curl) postForm() (httprequest *http.Request, err error) {
+func (curls *Curl) postForm() (httpRequest *http.Request, err error) {
 
 	if curls.PostString != "" {
 		b := strings.NewReader(curls.PostString)
-		httprequest, _ = http.NewRequest("POST", curls.Url, b)
+		httpRequest, _ = http.NewRequest("POST", curls.Url, b)
 		if v, ok := curls.Headers["Content-Type"]; ok {
-			httprequest.Header.Add("Content-Type", v)
+			httpRequest.Header.Add("Content-Type", v)
 		} else {
-			httprequest.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+			httpRequest.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		}
 	} else {
 		var b = &bytes.Buffer{}
@@ -224,13 +224,13 @@ func (curls *Curl) postForm() (httprequest *http.Request, err error) {
 		//必须在这里，不能defer
 		_ = bodyWriter.Close()
 
-		httprequest, _ = http.NewRequest("POST", curls.Url, b)
-		httprequest.Header.Add("Content-Type", bodyWriter.FormDataContentType())
+		httpRequest, _ = http.NewRequest("POST", curls.Url, b)
+		httpRequest.Header.Add("Content-Type", bodyWriter.FormDataContentType())
 	}
 
 	delete(curls.Headers, "Content-Type")
 
-	return httprequest, nil
+	return httpRequest, nil
 }
 
 //处理获取的页面
