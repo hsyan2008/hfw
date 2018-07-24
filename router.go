@@ -32,8 +32,11 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	Ctx.WgAdd()
 	defer Ctx.WgDone()
 
-	//把url补全为2段
+	//去掉前缀并把url补全为2段
 	trimURL := strings.Trim(strings.ToLower(r.URL.Path), "/")
+	if urlPrefix != "" {
+		trimURL = strings.TrimPrefix(trimURL, urlPrefix)
+	}
 	//如果url为/，切分后为1个空元素
 	if trimURL == "" {
 		trimURL = Config.Route.DefaultController
@@ -55,6 +58,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx.Controll = urls[0]
 	ctx.Action = urls[1]
 	ctx.Path = fmt.Sprintf("%s/%s", ctx.Controll, ctx.Action)
+	logger.Infof("Parse Result: Controll:%s, Action:%s", ctx.Controll, ctx.Action)
 	// ctx.TemplateFile = fmt.Sprintf("%s.html", ctx.Path)
 	ctx.Layout = ""
 	ctx.TemplateFile = ""
@@ -80,10 +84,6 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	router.C.init(ctx)
 	defer router.C.finish(ctx)
 
-	//第一个方法不生效，2、3数据无法传递
-	// defer reflectVal.MethodByName("ServerError").Call(initValue)
-	// defer router.C.ServerError() //C里没有初始化ResponseWriter，报nil指针
-	// defer ctx.ServerError()
 	defer func() {
 		//注意recover只能执行一次
 		if err := recover(); err != nil {
@@ -127,6 +127,16 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	logger.Debugf("Query Path: %s -> Call: %s/%s", ctx.Path, ct.Name(), action)
 	reflectVal.MethodByName(action).Call(initValue)
 	router.C.After(ctx)
+}
+
+var urlPrefix string
+
+func SetUrlPrefix(str string) {
+	urlPrefix = strings.Trim(str, "/")
+	if urlPrefix == "" {
+		return
+	}
+	urlPrefix += "/"
 }
 
 //RegisterRoute ..
