@@ -7,6 +7,7 @@ import (
 
 var pac = make(map[string]bool)
 var mt = new(sync.Mutex)
+var isLoad bool
 
 func Reset() (err error) {
 	pac = make(map[string]bool)
@@ -15,7 +16,13 @@ func Reset() (err error) {
 }
 
 func LoadDefault() (err error) {
+	if isLoad {
+		return
+	}
 	err = LoadGwflist()
+	defer func() {
+		isLoad = true
+	}()
 	if err == nil {
 		return
 	}

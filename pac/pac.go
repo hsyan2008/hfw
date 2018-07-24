@@ -3,14 +3,16 @@ package pac
 import (
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
+	hfw "github.com/hsyan2008/hfw2"
 	"github.com/hsyan2008/hfw2/curl"
 )
 
 var pacUrl = "https://pac.itzmx.com/abc.pac"
-var pacFile = "abc.pac"
+var pacFile = filepath.Join(hfw.APPPATH, "abc.pac")
 
 func LoadFromPac() (err error) {
 	fileInfo, err := os.Stat(pacFile)
