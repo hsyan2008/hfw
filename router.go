@@ -67,6 +67,9 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx.IsError = false
 	ctx.Data = make(map[string]interface{})
 	ctx.FuncMap = make(map[string]interface{})
+
+	ctx.HasHeader = false
+	ctx.Header = nil
 	ctx.ErrNo = 0
 	ctx.ErrMsg = ""
 	ctx.Results = nil

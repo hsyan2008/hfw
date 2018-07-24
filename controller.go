@@ -3,7 +3,6 @@ package hfw
 //手动匹配路由
 import (
 	"compress/gzip"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"path/filepath"
@@ -14,6 +13,7 @@ import (
 
 	"github.com/hsyan2008/go-logger/logger"
 	"github.com/hsyan2008/hfw2/common"
+	"github.com/hsyan2008/hfw2/encoding"
 	"github.com/hsyan2008/hfw2/session"
 )
 
@@ -109,22 +109,25 @@ func (ctl *Controller) ServerError(ctx *HTTPContext) {
 //Json里的数据放Response
 //Layout的功能未实现 TODO
 type HTTPContext struct {
-	ResponseWriter http.ResponseWriter
-	Request        *http.Request
-	Session        *session.Session
-	Layout         string
-	Controll       string
-	Action         string
-	Path           string
-	Template       string
-	TemplateFile   string
-	IsJSON         bool
-	IsZip          bool
+	ResponseWriter http.ResponseWriter `json:"-"`
+	Request        *http.Request       `json:"-"`
+	Session        *session.Session    `json:"-"`
+	Layout         string              `json:"-"`
+	Controll       string              `json:"-"`
+	Action         string              `json:"-"`
+	Path           string              `json:"-"`
+	Template       string              `json:"-"`
+	TemplateFile   string              `json:"-"`
+	IsJSON         bool                `json:"-"`
+	IsZip          bool                `json:"-"`
 	//404和500页面被自动更改content-type，导致压缩后有问题，暂时不压缩
-	IsError bool
-	Data    map[string]interface{}
-	FuncMap map[string]interface{}
-	common.Response
+	IsError bool                   `json:"-"`
+	Data    map[string]interface{} `json:"-"`
+	FuncMap map[string]interface{} `json:"-"`
+
+	HasHeader       bool `json:"-"`
+	common.Response `json:"response"`
+	Header          interface{} `json:"header"`
 }
 
 //GetForm 优先post和put,然后get
@@ -294,7 +297,15 @@ func (ctx *HTTPContext) ReturnJSON() {
 		ctx.Results = ctx.Data
 	}
 
-	b, err := json.Marshal(ctx.Response)
+	var b []byte
+	var err error
+	if ctx.HasHeader {
+		//header + response(err_no + err_msg)
+		b, err = encoding.JSON.Marshal(ctx)
+	} else {
+		//err_no + err_msg
+		b, err = encoding.JSON.Marshal(ctx.Response)
+	}
 	ctx.CheckErr(err)
 
 	if !ctx.IsError && ctx.IsZip {
