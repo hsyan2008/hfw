@@ -107,10 +107,10 @@ func Run() (err error) {
 		defer os.Exit(0)
 	}
 
-	logger.Debug("Pid:", os.Getpid(), "Starting ...")
-	defer logger.Debug("Pid:", os.Getpid(), "Shutdown complete!")
+	logger.Info("Starting ...")
+	defer logger.Info("Shutdown complete!")
 
-	logger.Debug("Start to run, Config ENVIRONMENT is", ENVIRONMENT, "APPNAME is", APPNAME, "APPPATH is", APPPATH)
+	logger.Infof("Start to run, Config ENVIRONMENT is %s, APPNAME is %s, APPPATH is %s", ENVIRONMENT, APPNAME, APPPATH)
 
 	//监听信号
 	go Ctx.listenSignal()
@@ -122,6 +122,8 @@ func Run() (err error) {
 		if Config.Server.Address == "" {
 			return
 		}
+
+		logger.Info("Listen on", Config.Server.Address)
 
 		Ctx.IsHTTP = true
 
