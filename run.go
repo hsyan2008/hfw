@@ -36,7 +36,8 @@ var Config configs.AllConfig
 
 var DefaultRedisIns *redis.Redis
 
-func init() {
+//Init 必须手动Init，方便手动设置ENVIRONMENT
+func Init() {
 	loadConfig()
 	setLog()
 
