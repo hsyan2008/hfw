@@ -78,8 +78,11 @@ func setLog() {
 func loadConfig() {
 
 	if common.IsExist(filepath.Join(APPPATH, "config")) {
-		flag.StringVar(&ENVIRONMENT, "e", "dev", "set env, e.g dev test prod")
-		flag.Parse()
+		ENVIRONMENT = os.Getenv("ENVIRONMENT")
+		if ENVIRONMENT == "" {
+			flag.StringVar(&ENVIRONMENT, "e", "dev", "set env, e.g dev test prod")
+			flag.Parse()
+		}
 
 		configPath := filepath.Join(APPPATH, "config", ENVIRONMENT, "config.toml")
 		if common.IsExist(configPath) {
@@ -89,8 +92,6 @@ func loadConfig() {
 			}
 		}
 	}
-
-	// logger.Info(Config)
 
 	initConfig()
 
