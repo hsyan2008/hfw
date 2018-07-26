@@ -4,6 +4,7 @@ package hfw
 import (
 	"compress/gzip"
 	"errors"
+	"fmt"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -22,10 +23,10 @@ import (
 // Before和After之间是业务逻辑，所有Before也是必定会执行
 //用户手动StopRun()后，中止业务逻辑，跳过After，继续Finish
 type ControllerInterface interface {
-	init(*HTTPContext)
+	Init(*HTTPContext)
 	Before(*HTTPContext)
 	After(*HTTPContext)
-	finish(*HTTPContext)
+	Finish(*HTTPContext)
 	NotFound(*HTTPContext)
 	ServerError(*HTTPContext)
 }
@@ -41,7 +42,7 @@ type Controller struct {
 }
 
 //Init ..
-func (ctl *Controller) init(ctx *HTTPContext) {
+func (ctl *Controller) Init(ctx *HTTPContext) {
 
 	var err error
 
@@ -64,7 +65,7 @@ func (ctl *Controller) init(ctx *HTTPContext) {
 }
 
 //Finish ..
-func (ctl *Controller) finish(ctx *HTTPContext) {
+func (ctl *Controller) Finish(ctx *HTTPContext) {
 
 	if ctx.Session != nil {
 		ctx.Session.Close(ctx.Request, ctx.ResponseWriter)
@@ -128,6 +129,29 @@ type HTTPContext struct {
 	HasHeader       bool `json:"-"`
 	common.Response `json:"response"`
 	Header          interface{} `json:"header"`
+}
+
+func (ctx *HTTPContext) Init(w http.ResponseWriter, r *http.Request) {
+	ctx.ResponseWriter = w
+	ctx.Request = r
+	ctx.Layout = ""
+	ctx.TemplateFile = ""
+	ctx.IsJSON = false
+	ctx.IsZip = false
+	ctx.IsError = false
+	ctx.Data = make(map[string]interface{})
+	ctx.FuncMap = make(map[string]interface{})
+
+	ctx.HasHeader = false
+	ctx.Header = nil
+	ctx.ErrNo = 0
+	ctx.ErrMsg = ""
+	ctx.Results = nil
+
+	ctx.Controll, ctx.Action, _ = formatURL(r.URL.Path)
+	ctx.Path = fmt.Sprintf("%s/%s", ctx.Controll, ctx.Action)
+	logger.Infof("Parse Result: Controll:%s, Action:%s", ctx.Controll, ctx.Action)
+	// ctx.TemplateFile = fmt.Sprintf("%s.html", ctx.Path)
 }
 
 //GetForm 优先post和put,然后get
