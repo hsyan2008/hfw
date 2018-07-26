@@ -39,17 +39,11 @@ var DefaultRedisIns *redis.Redis
 //Init 必须手动Init，方便手动设置ENVIRONMENT
 func Init() {
 	loadConfig()
-	setLog()
-
-	if common.IsExist("/opt/log") {
-		stack.SetupStack(filepath.Join("/opt/log", APPNAME+"_stack.log"))
-	} else {
-		stack.SetupStack(filepath.Join(APPPATH, APPNAME+"_stack.log"))
-	}
+	initLog()
 }
 
 //setLog 初始化log写入文件
-func setLog() {
+func initLog() {
 	lc := Config.Logger
 	logger.SetLogGoID(lc.LogGoID)
 
@@ -112,6 +106,12 @@ func Run() (err error) {
 
 	logger.Infof("Start to run, Config ENVIRONMENT is %s, APPNAME is %s, APPPATH is %s", ENVIRONMENT, APPNAME, APPPATH)
 
+	if common.IsExist("/opt/log") {
+		stack.SetupStack(filepath.Join("/opt/log", APPNAME+"_stack.log"))
+	} else {
+		stack.SetupStack(filepath.Join(APPPATH, APPNAME+"_stack.log"))
+	}
+
 	//监听信号
 	go Ctx.listenSignal()
 
@@ -130,6 +130,10 @@ func Run() (err error) {
 		err = serve.Start(Config)
 	} else {
 		err = http.Serve(randPortListener, nil)
+	}
+	//如果未启动服务，就触发退出
+	if err != nil {
+		Ctx.waitShutdownDone()
 	}
 
 	return

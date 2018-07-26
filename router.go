@@ -143,7 +143,11 @@ func RegHandler(pattern string, handler ControllerInterface) (err error) {
 	//注意方法必须是大写开头，否则无法调用
 	for i := 0; i < numMethod; i++ {
 		path := fmt.Sprintf("%s/%s", controller, strings.ToLower(rt.Method(i).Name))
-		routeMap[path] = instance{reflectVal, controllerName, rt.Method(i).Name}
+		routeMap[path] = instance{
+			reflectVal:     reflectVal,
+			controllerName: controllerName,
+			methodName:     rt.Method(i).Name,
+		}
 	}
 
 	return
