@@ -2,7 +2,6 @@ package hfw
 
 import (
 	"flag"
-	"fmt"
 	"net"
 	"os"
 	"strings"
@@ -66,7 +65,7 @@ func initLog() {
 		}
 	}
 
-	logger.SetPrefix(fmt.Sprintf("Pid:%d", PID))
+	// logger.SetPrefix(fmt.Sprintf("Pid:%d", PID))
 }
 
 func loadConfig() {
@@ -104,7 +103,7 @@ func Run() (err error) {
 	logger.Info("Starting ...")
 	defer logger.Info("Shutdown complete!")
 
-	logger.Infof("Start to run, Config ENVIRONMENT is %s, APPNAME is %s, APPPATH is %s", ENVIRONMENT, APPNAME, APPPATH)
+	logger.Infof("Running, ENVIRONMENT=%s, APPNAME=%s, APPPATH=%s", ENVIRONMENT, APPNAME, APPPATH)
 
 	if common.IsExist("/opt/log") {
 		stack.SetupStack(filepath.Join("/opt/log", APPNAME+"_stack.log"))
