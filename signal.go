@@ -40,9 +40,9 @@ func (ctx *context) listenSignal() {
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM)
-	logger.Infof("Do `kill -INT %d` will graceful exit", PID)
+	logger.Infof("Exec `kill -INT %d` will graceful exit", PID)
 	if ctx.IsHTTP {
-		logger.Infof("Do `kill -TERM %d` will graceful restart", PID)
+		logger.Infof("Exec `kill -TERM %d` will graceful restart", PID)
 	}
 	s := <-c
 	logger.Info("recv signal:", s)

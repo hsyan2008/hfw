@@ -27,7 +27,7 @@ func SetupStack(file string) {
 
 	stdFile = file
 
-	logger.Infof("Stack is enable, you can do `kill -TRAP %d; tail -f %s` to view", os.Getpid(), stdFile)
+	logger.Infof("Stack enable, Exec `kill -TRAP %d; tail -f %s` to view", os.Getpid(), stdFile)
 
 	c := make(chan os.Signal, 1)
 	//win支持的信号参考/usr/lib64/go/src/syscall/types_windows.go
