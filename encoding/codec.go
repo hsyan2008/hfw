@@ -3,6 +3,7 @@ package encoding
 import (
 	"bytes"
 	"encoding/gob"
+	"io"
 
 	jsoniter "github.com/json-iterator/go"
 )
@@ -31,4 +32,13 @@ func gobMarshal(v interface{}) ([]byte, error) {
 
 func gobUnmarshal(data []byte, v interface{}) error {
 	return gob.NewDecoder(bytes.NewBuffer(data)).Decode(v)
+}
+
+func JSONReaderUnmarshal(r io.Reader, d interface{}) (err error) {
+	return jsoniter.NewDecoder(r).Decode(d)
+}
+func JSONWriterMarshal(w io.Writer, d interface{}) (err error) {
+	enc := jsoniter.NewEncoder(w)
+	enc.SetEscapeHTML(false)
+	return enc.Encode(d)
 }
