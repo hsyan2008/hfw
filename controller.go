@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -218,14 +219,11 @@ var templatesCache = struct {
 
 //Render ..
 func (ctx *HTTPContext) Render() {
-
 	ctx.ResponseWriter.Header().Set("Content-Type", "text/html; charset=utf-8")
-
 	var (
 		t   *template.Template
 		err error
 	)
-
 	t = ctx.render()
 
 	if !ctx.IsError && ctx.IsZip {
@@ -236,18 +234,10 @@ func (ctx *HTTPContext) Render() {
 			_ = writer.Close()
 		}()
 		err = t.Execute(writer, ctx)
-		if err != nil {
-			logger.Warn(err)
-		}
-		ctx.CheckErr(err)
 	} else {
 		err = t.Execute(ctx.ResponseWriter, ctx)
-		if err != nil {
-			logger.Warn(err)
-		}
-		ctx.CheckErr(err)
 	}
-
+	ctx.CheckErr(err)
 }
 
 func (ctx *HTTPContext) render() (t *template.Template) {
@@ -260,7 +250,6 @@ func (ctx *HTTPContext) render() (t *template.Template) {
 		render = ctx.renderHtml
 	} else if ctx.TemplateFile != "" {
 		key = ctx.TemplateFile
-		// return ctx.renderFile()
 		render = ctx.renderFile
 	}
 
@@ -314,35 +303,30 @@ func (ctx *HTTPContext) renderFile() (t *template.Template) {
 
 //ReturnJSON ..
 func (ctx *HTTPContext) ReturnJSON() {
-
 	ctx.ResponseWriter.Header().Set("Content-Type", "application/json; charset=utf-8")
-
 	if len(ctx.Data) > 0 && ctx.Results == nil {
 		ctx.Results = ctx.Data
 	}
 
-	var b []byte
-	var err error
-	if ctx.HasHeader {
-		//header + response(err_no + err_msg)
-		b, err = encoding.JSON.Marshal(ctx)
-	} else {
-		//err_no + err_msg
-		b, err = encoding.JSON.Marshal(ctx.Response)
-	}
-	ctx.CheckErr(err)
-
+	var w io.Writer
 	if !ctx.IsError && ctx.IsZip {
 		ctx.ResponseWriter.Header().Del("Content-Length")
 		ctx.ResponseWriter.Header().Set("Content-Encoding", "gzip")
-		writer := gzip.NewWriter(ctx.ResponseWriter)
+		w = gzip.NewWriter(ctx.ResponseWriter)
 		defer func() {
-			_ = writer.Close()
+			_ = w.(io.WriteCloser).Close()
 		}()
-		_, err = writer.Write(b)
-		ctx.CheckErr(err)
 	} else {
-		_, err = ctx.ResponseWriter.Write(b)
-		ctx.CheckErr(err)
+		w = ctx.ResponseWriter
 	}
+
+	var err error
+	if ctx.HasHeader {
+		//header + response(err_no + err_msg)
+		err = encoding.JSONWriterMarshal(w, ctx)
+	} else {
+		//err_no + err_msg
+		err = encoding.JSONWriterMarshal(w, ctx.Response)
+	}
+	ctx.CheckErr(err)
 }
