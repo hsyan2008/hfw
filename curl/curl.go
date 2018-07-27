@@ -18,9 +18,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode/utf8"
 
-	"github.com/axgle/mahonia"
 	"github.com/hsyan2008/hfw2/common"
 )
 
@@ -30,6 +28,16 @@ type Response struct {
 	Url        string            `json:"url"`
 	FollowUrls []string          `json:"follow_urls"`
 	Body       []byte            `json:"body"`
+	BodyReader io.ReadCloser     `json:"-"`
+}
+
+func (resp *Response) ReadBody() (body []byte, err error) {
+	body, err = ioutil.ReadAll(resp.BodyReader)
+	if err != nil {
+		return
+	}
+
+	return bytes.TrimSpace(body), nil
 }
 
 var stopRedirect = errors.New("no redirects allowed")
@@ -52,6 +60,8 @@ type Curl struct {
 	timeout time.Duration
 
 	followUrls []string
+	//是否要把BodyReader读取到Body里
+	isNoRead bool
 }
 
 var tr = &http.Transport{
@@ -82,6 +92,10 @@ func NewCurl(url string) *Curl {
 		PostFields: neturl.Values{},
 		PostFiles:  make(map[string]string),
 	}
+}
+
+func (curls *Curl) SetNoRead() {
+	curls.isNoRead = true
 }
 
 func (curls *Curl) SetHeaders(headers map[string]string) {
@@ -171,10 +185,6 @@ func (curls *Curl) Request() (rs Response, err error) {
 		}
 	}
 
-	defer func() {
-		_ = httpResponse.Body.Close()
-	}()
-
 	return curls.curlResponse(httpResponse)
 }
 
@@ -235,12 +245,7 @@ func (curls *Curl) postForm() (httpRequest *http.Request, err error) {
 
 //处理获取的页面
 func (curls *Curl) curlResponse(resp *http.Response) (response Response, err error) {
-	response.Body, err = curls.getBody(resp)
-	if err != nil {
-		return
-	}
 	response.Headers = curls.rcHeader(resp.Header)
-
 	location, _ := resp.Location()
 	if nil != location {
 		location_url := location.String()
@@ -273,44 +278,28 @@ func (curls *Curl) curlResponse(resp *http.Response) (response Response, err err
 	response.Url = curls.Url
 	response.FollowUrls = curls.followUrls
 
-	return response, nil
+	response.BodyReader, err = curls.getReader(resp)
+	if !curls.isNoRead {
+		response.Body, err = response.ReadBody()
+	}
+
+	return response, err
 }
 
-func (curls *Curl) getBody(resp *http.Response) (body []byte, err error) {
-
+//需要调用方手动关闭
+func (curls *Curl) getReader(resp *http.Response) (r io.ReadCloser, err error) {
 	//如果出现302或301，已经表示是不自动重定向 或者出现200才读
 	if resp.StatusCode == http.StatusOK || resp.StatusCode == 299 {
 		if strings.Contains(resp.Header.Get("Content-Encoding"), "gzip") {
-			var reader *gzip.Reader
-			reader, err = gzip.NewReader(resp.Body)
-			if err != nil {
-				return
-			}
-			body, err = ioutil.ReadAll(reader)
+			return gzip.NewReader(resp.Body)
 		} else if strings.Contains(resp.Header.Get("Content-Encoding"), "deflate") {
-			reader := flate.NewReader(resp.Body)
-			defer func() {
-				_ = reader.Close()
-			}()
-			body, err = ioutil.ReadAll(reader)
+			return flate.NewReader(resp.Body), nil
 		} else {
-			body, err = ioutil.ReadAll(resp.Body)
-		}
-		if err != nil {
-			return
+			return resp.Body, nil
 		}
 	}
 
-	return bytes.TrimSpace(body), nil
-}
-
-func (curl *Curl) toUtf8(body string) string {
-	if utf8.ValidString(body) == false {
-		enc := mahonia.NewDecoder("gb18030")
-		body = enc.ConvertString(body)
-	}
-
-	return body
+	return nil, nil
 }
 
 //返回结果的时候，转换cookie为字符串
