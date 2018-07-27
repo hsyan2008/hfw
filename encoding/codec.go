@@ -3,7 +3,8 @@ package encoding
 import (
 	"bytes"
 	"encoding/gob"
-	"encoding/json"
+
+	jsoniter "github.com/json-iterator/go"
 )
 
 //Codec 参考https://github.com/golang/appengine/blob/master/memcache/memcache.go
@@ -16,7 +17,8 @@ var (
 	// Gob is a Codec that uses the gob package.
 	Gob = Codec{gobMarshal, gobUnmarshal}
 	// JSON is a Codec that uses the json package.
-	JSON = Codec{json.Marshal, json.Unmarshal}
+	// JSON = Codec{json.Marshal, json.Unmarshal}
+	JSON = jsoniter.ConfigCompatibleWithStandardLibrary
 )
 
 func gobMarshal(v interface{}) ([]byte, error) {
