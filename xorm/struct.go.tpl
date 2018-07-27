@@ -5,6 +5,7 @@ package {{.Models}}
 import (
     "encoding/gob"
     hfw "github.com/hsyan2008/hfw2"
+    "github.com/hsyan2008/hfw2/database"
 	{{range .Imports}}"{{.}}"{{end}}
 )
 {{else}}
@@ -15,7 +16,7 @@ import (
 {{end}}
 
 {{range .Tables}}
-var {{Mapper .Name}}Model = &{{Mapper .Name}}{Dao: hfw.NewNoCacheDao(hfw.Config)}
+var {{Mapper .Name}}Model = &{{Mapper .Name}}{Dao: database.NewNoCacheDao(hfw.Config)}
 {{end}}
 
 func init() {
@@ -28,7 +29,7 @@ type {{Mapper .Name}} struct {
 {{$table := .}}
 {{range .ColumnsSeq}}{{$col := $table.GetColumn .}}	{{Mapper $col.Name}}	{{Type $col}} {{Tag $table $col}}
 {{end}}
-    Dao         *hfw.NoCacheDao     `json:"-" xorm:"-"`
+    Dao         *database.NoCacheDao     `json:"-" xorm:"-"`
 }
 
 func (m *{{Mapper .Name}}) TableName() string {
