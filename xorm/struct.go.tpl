@@ -20,9 +20,7 @@ var {{Mapper .Name}}Model = &{{Mapper .Name}}{Dao: hfw.NewNoCacheDao(hfw.Config)
 
 func init() {
 	//gob: type not registered for interface
-{{range .Tables}}
-	gob.Register({{Mapper .Name}}Model)
-{{end}}
+    {{range .Tables}}gob.Register({{Mapper .Name}}Model){{end}}
 }
 
 {{range .Tables}}
