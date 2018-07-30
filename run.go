@@ -68,7 +68,6 @@ func initLog() {
 }
 
 func loadConfig() {
-
 	if common.IsExist(filepath.Join(APPPATH, "config")) {
 		ENVIRONMENT = os.Getenv("ENVIRONMENT")
 		if ENVIRONMENT == "" {
@@ -86,10 +85,6 @@ func loadConfig() {
 	}
 
 	initConfig()
-
-	if Config.Redis.Server != "" {
-		DefaultRedisIns = redis.NewRedis(Config.Redis)
-	}
 }
 
 //Run start
@@ -185,5 +180,9 @@ func initConfig() {
 	}
 	if Config.Server.WriteTimeout == 0 {
 		Config.Server.WriteTimeout = 60
+	}
+
+	if Config.Redis.Server != "" {
+		DefaultRedisIns = redis.NewRedis(Config.Redis)
 	}
 }

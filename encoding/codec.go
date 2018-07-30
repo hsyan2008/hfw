@@ -34,11 +34,20 @@ func gobUnmarshal(data []byte, v interface{}) error {
 	return gob.NewDecoder(bytes.NewBuffer(data)).Decode(v)
 }
 
-func JSONReaderUnmarshal(r io.Reader, d interface{}) (err error) {
-	return jsoniter.NewDecoder(r).Decode(d)
+//以下直接针对r/w操作
+func GobWriterMarshal(w io.Writer, data interface{}) (err error) {
+	return gob.NewEncoder(w).Encode(data)
 }
-func JSONWriterMarshal(w io.Writer, d interface{}) (err error) {
+
+func GobReaderUnmarshal(r io.Reader, data interface{}) (err error) {
+	return gob.NewDecoder(r).Decode(data)
+}
+
+func JSONWriterMarshal(w io.Writer, data interface{}) (err error) {
 	enc := jsoniter.NewEncoder(w)
 	enc.SetEscapeHTML(false)
-	return enc.Encode(d)
+	return enc.Encode(data)
+}
+func JSONReaderUnmarshal(r io.Reader, data interface{}) (err error) {
+	return jsoniter.NewDecoder(r).Decode(data)
 }
