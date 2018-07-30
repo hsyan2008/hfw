@@ -67,6 +67,9 @@ func (ctl *Controller) Init(ctx *HTTPContext) {
 
 //Finish ..
 func (ctl *Controller) Finish(ctx *HTTPContext) {
+	if ctx.IsWebSocket {
+		return
+	}
 
 	if ctx.Session != nil {
 		ctx.Session.Close(ctx.Request, ctx.ResponseWriter)
@@ -82,6 +85,9 @@ func (ctl *Controller) Before(ctx *HTTPContext) {
 //After ..
 func (ctl *Controller) After(ctx *HTTPContext) {
 	// logger.Debug("Controller After")
+	if ctx.IsWebSocket {
+		return
+	}
 }
 
 //NotFound ..
@@ -127,6 +133,8 @@ type HTTPContext struct {
 	Data    map[string]interface{} `json:"-"`
 	FuncMap map[string]interface{} `json:"-"`
 
+	IsWebSocket bool `json:"-"`
+
 	HasHeader       bool `json:"-"`
 	common.Response `json:"response"`
 	Header          interface{} `json:"header"`
@@ -142,6 +150,8 @@ func (ctx *HTTPContext) Init(w http.ResponseWriter, r *http.Request) {
 	ctx.IsError = false
 	ctx.Data = make(map[string]interface{})
 	ctx.FuncMap = make(map[string]interface{})
+
+	ctx.IsWebSocket = false
 
 	ctx.HasHeader = false
 	ctx.Header = nil
@@ -287,7 +297,15 @@ func (ctx *HTTPContext) renderHtml() (t *template.Template) {
 	return
 }
 func (ctx *HTTPContext) renderFile() (t *template.Template) {
-	templateFilePath := filepath.Join(Config.Template.HTMLPath, ctx.TemplateFile)
+	var templateFilePath string
+	if common.IsExist(ctx.TemplateFile) {
+		templateFilePath = ctx.TemplateFile
+	} else {
+		templateFilePath = filepath.Join(Config.Template.HTMLPath, ctx.TemplateFile)
+	}
+	if !common.IsExist(templateFilePath) {
+		ctx.ThrowException(500, "system error")
+	}
 	if len(ctx.FuncMap) == 0 {
 		t = template.Must(template.ParseFiles(templateFilePath))
 	} else {
