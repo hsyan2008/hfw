@@ -197,13 +197,7 @@ func (d *NoCacheDao) Count(t interface{}, cond map[string]interface{}) (total in
 	)
 	for k, v := range cond {
 		k = strings.ToLower(k)
-		if k == "orderby" {
-			continue
-		}
-		if k == "page" {
-			continue
-		}
-		if k == "pagesize" {
+		if k == "orderby" || k == "page" || k == "pagesize" {
 			continue
 		}
 		if k == "where" {
