@@ -33,29 +33,27 @@ type {{Mapper .Name}} struct {
 }
 
 func (m *{{Mapper .Name}}) TableName() string {
-
 	return "{{.Name}}"
 }
 
 func (m *{{Mapper .Name}}) Save(t *{{Mapper .Name}}) (err error) {
-
 	if t.Id > 0 {
 		err = m.Dao.UpdateById(t)
 	} else {
 		err = m.Dao.Insert(t)
 	}
-
 	return
 }
 
 func (m *{{Mapper .Name}}) Update(params hfw.Cond,
 	where hfw.Cond) (err error) {
-
 	return m.Dao.UpdateByWhere(m, params, where)
 }
 
 func (m *{{Mapper .Name}}) SearchOne(cond hfw.Cond) (t *{{Mapper .Name}}, err error) {
-
+    if cond == nil {
+        cond = hfw.Cond{}
+    }
 	cond["page"] = 1
 	cond["pagesize"] = 1
 
@@ -63,38 +61,29 @@ func (m *{{Mapper .Name}}) SearchOne(cond hfw.Cond) (t *{{Mapper .Name}}, err er
 	if err == nil && len(rs) > 0 {
 		t = rs[0]
     }
-
 	return
 }
 
 func (m *{{Mapper .Name}}) Search(cond hfw.Cond) (t []*{{Mapper .Name}}, err error) {
-
 	err = m.Dao.Search(&t, cond)
-
 	return
 }
 
 func (m *{{Mapper .Name}}) Count(cond hfw.Cond) (total int64, err error) {
-
-	total, err = m.Dao.Count(m, cond)
-
-	return
+	return m.Dao.Count(m, cond)
 }
 
 func (m *{{Mapper .Name}}) GetMulti(ids ...interface{}) (t []*{{Mapper .Name}}, err error) {
 	err = m.Dao.GetMulti(&t, ids...)
-
 	return
 }
 
 //注意，和SearchOne一样，返回的t可能是nil TODO
 func (m *{{Mapper .Name}}) GetById(id interface{}) (t *{{Mapper .Name}}, err error) {
-
 	rs, err := m.GetMulti(id)
 	if err == nil && len(rs) > 0 {
 		t = rs[0]
 	}
-
 	return
 }
 
