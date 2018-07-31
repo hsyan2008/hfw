@@ -1,5 +1,7 @@
 package configs
 
+import "time"
+
 //Config 项目配置
 type AllConfig struct {
 	Server   ServerConfig
@@ -30,9 +32,11 @@ type SessionConfig struct {
 type ServerConfig struct {
 	Address string
 	//Port已废弃，用Address代替
-	Port          string
-	ReadTimeout   int64
-	WriteTimeout  int64
+	Port string
+	//并发数量限制
+	Concurrence   uint
+	ReadTimeout   time.Duration
+	WriteTimeout  time.Duration
 	HTTPSCertFile string
 	HTTPSKeyFile  string
 	HTTPSPhrase   string

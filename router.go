@@ -4,11 +4,13 @@ package hfw
 import (
 	"fmt"
 	"net/http"
+	_ "net/http/pprof"
 	"path/filepath"
 	"reflect"
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/hsyan2008/go-logger/logger"
 )
@@ -19,13 +21,9 @@ var ctxPool = &sync.Pool{
 	},
 }
 
-//Router ..
-type Router struct {
-	C ControllerInterface
-}
+var concurrenceChan chan bool
 
-func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
+func router(w http.ResponseWriter, r *http.Request) {
 	logger.Debug(r.Method, r.URL.String(), "start")
 	defer logger.Debug(r.Method, r.URL.String(), "end")
 
@@ -34,6 +32,34 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if len(routeMap) == 0 {
 		panic("nil router")
+	}
+
+	if Config.Server.Concurrence > 0 {
+	FOR:
+		for {
+			select {
+			case <-Ctx.Shutdown:
+				return
+			case <-time.After(time.Second):
+				hj, ok := w.(http.Hijacker)
+				if !ok {
+					logger.Warn("Hijacker err")
+					return
+				}
+				conn, _, err := hj.Hijack()
+				if err != nil {
+					logger.Warn("Hijack", err)
+					return
+				}
+				conn.Close()
+				return
+			case concurrenceChan <- true:
+				defer func() {
+					<-concurrenceChan
+				}()
+				break FOR
+			}
+		}
 	}
 
 	//放入pool里
@@ -121,12 +147,7 @@ func RegHandler(pattern string, handler ControllerInterface) (err error) {
 
 	if !routeInit {
 		routeInit = true
-		http.Handle("/", &Router{})
-		// http.HandleFunc("/debug/pprof/", pprof.Index)
-		// http.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-		// http.HandleFunc("/debug/pprof/profile", pprof.Profile)
-		// http.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-		// http.HandleFunc("/debug/pprof/trace", pprof.Trace)
+		http.HandleFunc("/", router)
 	}
 
 	controller, _, leave := formatURL(pattern)

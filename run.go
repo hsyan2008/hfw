@@ -6,9 +6,7 @@ import (
 	"os"
 	"strings"
 
-	//pprof
 	"net/http"
-	_ "net/http/pprof"
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
@@ -119,6 +117,10 @@ func Run() (err error) {
 		logger.Info("Listen on", Config.Server.Address)
 
 		Ctx.IsHTTP = true
+
+		if Config.Server.Concurrence > 0 {
+			concurrenceChan = make(chan bool, Config.Server.Concurrence)
+		}
 
 		err = serve.Start(Config)
 	} else {
