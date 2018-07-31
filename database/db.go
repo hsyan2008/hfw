@@ -13,6 +13,7 @@ import (
 	"github.com/go-xorm/core"
 	"github.com/go-xorm/xorm"
 	"github.com/hsyan2008/go-logger/logger"
+	hfw "github.com/hsyan2008/hfw2"
 	"github.com/hsyan2008/hfw2/configs"
 )
 
@@ -137,11 +138,16 @@ func openCache(engine *xorm.Engine, config configs.AllConfig) {
 	}
 }
 
-//保持mysql连接活跃
 func keepalive(engine *xorm.Engine, long time.Duration) {
+	t := time.Tick(long * time.Second)
+FOR:
 	for {
-		time.Sleep(long * time.Second)
-		_ = engine.Ping()
+		select {
+		case <-t:
+			_ = engine.Ping()
+		case <-hfw.Ctx.Shutdown:
+			break FOR
+		}
 	}
 }
 
