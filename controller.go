@@ -13,6 +13,7 @@ import (
 	"sync"
 	"text/template"
 
+	"github.com/gorilla/websocket"
 	"github.com/hsyan2008/go-logger/logger"
 	"github.com/hsyan2008/hfw2/common"
 	"github.com/hsyan2008/hfw2/encoding"
@@ -65,18 +66,6 @@ func (ctl *Controller) Init(ctx *HTTPContext) {
 	ctx.CheckErr(err)
 }
 
-//Finish ..
-func (ctl *Controller) Finish(ctx *HTTPContext) {
-	if ctx.IsWebSocket {
-		return
-	}
-
-	if ctx.Session != nil {
-		ctx.Session.Close(ctx.Request, ctx.ResponseWriter)
-	}
-	ctx.Output()
-}
-
 //Before ..
 func (ctl *Controller) Before(ctx *HTTPContext) {
 	// logger.Debug("Controller Before")
@@ -85,9 +74,21 @@ func (ctl *Controller) Before(ctx *HTTPContext) {
 //After ..
 func (ctl *Controller) After(ctx *HTTPContext) {
 	// logger.Debug("Controller After")
-	if ctx.IsWebSocket {
+	if websocket.IsWebSocketUpgrade(ctx.Request) {
 		return
 	}
+}
+
+//Finish ..
+func (ctl *Controller) Finish(ctx *HTTPContext) {
+	if websocket.IsWebSocketUpgrade(ctx.Request) {
+		return
+	}
+
+	if ctx.Session != nil {
+		ctx.Session.Close(ctx.Request, ctx.ResponseWriter)
+	}
+	ctx.Output()
 }
 
 //NotFound ..
@@ -133,8 +134,6 @@ type HTTPContext struct {
 	Data    map[string]interface{} `json:"-"`
 	FuncMap map[string]interface{} `json:"-"`
 
-	IsWebSocket bool `json:"-"`
-
 	HasHeader       bool `json:"-"`
 	common.Response `json:"response"`
 	Header          interface{} `json:"header"`
@@ -150,8 +149,6 @@ func (ctx *HTTPContext) Init(w http.ResponseWriter, r *http.Request) {
 	ctx.IsError = false
 	ctx.Data = make(map[string]interface{})
 	ctx.FuncMap = make(map[string]interface{})
-
-	ctx.IsWebSocket = false
 
 	ctx.HasHeader = false
 	ctx.Header = nil
