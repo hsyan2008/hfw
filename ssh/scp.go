@@ -81,18 +81,14 @@ func (this *SSH) scpFile(src, des string, fileinfo os.FileInfo) (err error) {
 	if err != nil {
 		return
 	}
-	defer func() {
-		_ = sess.Close()
-	}()
+	defer sess.Close()
 
 	go func() {
 		w, err := sess.StdinPipe()
 		if err != nil {
 			return
 		}
-		defer func() {
-			_ = w.Close()
-		}()
+		defer w.Close()
 		fmt.Fprintf(w, "C%#o %d %s\n", fileinfo.Mode().Perm(), fileinfo.Size(), fileinfo.Name())
 		File, err := os.Open(src)
 		if err != nil {

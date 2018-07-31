@@ -55,9 +55,7 @@ func dumpStacks() {
 
 func writeStack(buf []byte) {
 	fd, _ := os.OpenFile(stdFile, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
-	defer func() {
-		_ = fd.Close()
-	}()
+	defer fd.Close()
 
 	_, _ = fd.WriteString(strings.Repeat("=", 80) + "\n\n")
 	_, _ = fd.WriteString(time.Now().Format(timeFormat))

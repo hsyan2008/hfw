@@ -222,9 +222,7 @@ func (curls *Curl) postForm() (httpRequest *http.Request, err error) {
 			if err != nil {
 				return nil, err
 			}
-			defer func() {
-				_ = fh.Close()
-			}()
+			defer fh.Close()
 
 			_, err = io.Copy(fileWriter, fh)
 			if err != nil {

@@ -237,9 +237,7 @@ func (ctx *HTTPContext) Render() {
 		ctx.ResponseWriter.Header().Del("Content-Length")
 		ctx.ResponseWriter.Header().Set("Content-Encoding", "gzip")
 		writer := gzip.NewWriter(ctx.ResponseWriter)
-		defer func() {
-			_ = writer.Close()
-		}()
+		defer writer.Close()
 		err = t.Execute(writer, ctx)
 	} else {
 		err = t.Execute(ctx.ResponseWriter, ctx)
@@ -328,9 +326,7 @@ func (ctx *HTTPContext) ReturnJSON() {
 		ctx.ResponseWriter.Header().Del("Content-Length")
 		ctx.ResponseWriter.Header().Set("Content-Encoding", "gzip")
 		w = gzip.NewWriter(ctx.ResponseWriter)
-		defer func() {
-			_ = w.(io.WriteCloser).Close()
-		}()
+		defer w.(io.WriteCloser).Close()
 	} else {
 		w = ctx.ResponseWriter
 	}

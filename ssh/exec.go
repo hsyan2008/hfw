@@ -16,9 +16,7 @@ func (this *SSH) Exec(cmd string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer func() {
-		_ = sess.Close()
-	}()
+	defer sess.Close()
 
 	c, err := sess.CombinedOutput(cmd)
 
@@ -40,17 +38,13 @@ func (this *SSH) ExecWithPty(cmd string, timeout time.Duration) error {
 		if err != nil {
 			return err
 		}
-		defer func() {
-			_ = terminal.Restore(fd, oldState)
-		}()
+		defer terminal.Restore(fd, oldState)
 
 		sess, err := this.c.NewSession()
 		if err != nil {
 			return err
 		}
-		defer func() {
-			_ = sess.Close()
-		}()
+		defer sess.Close()
 
 		//如果没有stdin，top之类的命令无法操作
 		// sess.Stdin = os.Stdin
@@ -105,17 +99,13 @@ func (this *SSH) Shell() error {
 		if err != nil {
 			return err
 		}
-		defer func() {
-			_ = terminal.Restore(fd, oldState)
-		}()
+		defer terminal.Restore(fd, oldState)
 
 		sess, err := this.c.NewSession()
 		if err != nil {
 			return err
 		}
-		defer func() {
-			_ = sess.Close()
-		}()
+		defer sess.Close()
 
 		sess.Stdin = os.Stdin
 		sess.Stdout = os.Stdout

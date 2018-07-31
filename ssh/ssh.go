@@ -297,9 +297,7 @@ func (this *SSH) Check() (err error) {
 	if err != nil {
 		return
 	}
-	defer func() {
-		_ = sess.Close()
-	}()
+	defer sess.Close()
 	if err = sess.Shell(); err != nil {
 		return
 	}
