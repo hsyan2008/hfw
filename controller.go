@@ -2,21 +2,15 @@ package hfw
 
 //手动匹配路由
 import (
-	"compress/gzip"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
-	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
-	"text/template"
 
 	"github.com/gorilla/websocket"
 	"github.com/hsyan2008/go-logger/logger"
 	"github.com/hsyan2008/hfw2/common"
-	"github.com/hsyan2008/hfw2/encoding"
 	"github.com/hsyan2008/hfw2/session"
 )
 
@@ -127,10 +121,13 @@ type HTTPContext struct {
 	Controll       string              `json:"-"`
 	Action         string              `json:"-"`
 	Path           string              `json:"-"`
-	Template       string              `json:"-"`
-	TemplateFile   string              `json:"-"`
-	IsJSON         bool                `json:"-"`
-	IsZip          bool                `json:"-"`
+
+	//html文本
+	Template string `json:"-"`
+	//模板文件
+	TemplateFile string `json:"-"`
+	IsJSON       bool   `json:"-"`
+	IsZip        bool   `json:"-"`
 	//404和500页面被自动更改content-type，导致压缩后有问题，暂时不压缩
 	IsError bool                   `json:"-"`
 	Data    map[string]interface{} `json:"-"`
@@ -145,6 +142,7 @@ func (httpContext *HTTPContext) Init(w http.ResponseWriter, r *http.Request) {
 	httpContext.ResponseWriter = w
 	httpContext.Request = r
 	httpContext.Layout = ""
+	httpContext.Template = ""
 	httpContext.TemplateFile = ""
 	httpContext.IsJSON = false
 	httpContext.IsZip = false
@@ -203,143 +201,4 @@ func (httpContext *HTTPContext) CheckErr(err error) {
 		logger.Error(err)
 		httpContext.ThrowException(500, "系统错误")
 	}
-}
-
-//Output ..
-func (httpContext *HTTPContext) Output() {
-	// logger.Debug("Output")
-	if httpContext.ResponseWriter.Header().Get("Location") != "" {
-		return
-	}
-	if (httpContext.TemplateFile == "" && httpContext.Template == "") || httpContext.IsJSON {
-		httpContext.ReturnJSON()
-	} else {
-		httpContext.Render()
-	}
-}
-
-var templatesCache = struct {
-	list map[string]*template.Template
-	l    *sync.RWMutex
-}{
-	list: make(map[string]*template.Template),
-	l:    &sync.RWMutex{},
-}
-
-//Render ..
-func (httpContext *HTTPContext) Render() {
-	httpContext.ResponseWriter.Header().Set("Content-Type", "text/html; charset=utf-8")
-	var (
-		t   *template.Template
-		err error
-	)
-	t = httpContext.render()
-
-	if !httpContext.IsError && httpContext.IsZip {
-		httpContext.ResponseWriter.Header().Del("Content-Length")
-		httpContext.ResponseWriter.Header().Set("Content-Encoding", "gzip")
-		writer := gzip.NewWriter(httpContext.ResponseWriter)
-		defer writer.Close()
-		err = t.Execute(writer, httpContext)
-	} else {
-		err = t.Execute(httpContext.ResponseWriter, httpContext)
-	}
-	httpContext.CheckErr(err)
-}
-
-func (httpContext *HTTPContext) render() (t *template.Template) {
-	var key string
-	var render func() *template.Template
-	var ok bool
-	if httpContext.Template != "" {
-		key = httpContext.Path
-		// return httpContext.renderHtml()
-		render = httpContext.renderHtml
-	} else if httpContext.TemplateFile != "" {
-		key = httpContext.TemplateFile
-		render = httpContext.renderFile
-	}
-
-	if Config.Template.IsCache {
-		templatesCache.l.RLock()
-		if t, ok = templatesCache.list[key]; !ok {
-			templatesCache.l.RUnlock()
-			// t = httpContext.render()
-			t = render()
-			templatesCache.l.Lock()
-			templatesCache.list[key] = t
-			templatesCache.l.Unlock()
-		} else {
-			templatesCache.l.RUnlock()
-		}
-	} else {
-		// t = httpContext.render()
-		t = render()
-	}
-
-	return t
-}
-
-func (httpContext *HTTPContext) renderHtml() (t *template.Template) {
-	if len(httpContext.FuncMap) == 0 {
-		t = template.Must(template.New(httpContext.Path).Parse(httpContext.Template))
-	} else {
-		t = template.Must(template.New(httpContext.Path).Funcs(httpContext.FuncMap).Parse(httpContext.Template))
-	}
-	if Config.Template.WidgetsPath != "" {
-		widgetsPath := filepath.Join(Config.Template.HTMLPath, Config.Template.WidgetsPath)
-		t = template.Must(t.ParseGlob(widgetsPath))
-	}
-
-	return
-}
-func (httpContext *HTTPContext) renderFile() (t *template.Template) {
-	var templateFilePath string
-	if common.IsExist(httpContext.TemplateFile) {
-		templateFilePath = httpContext.TemplateFile
-	} else {
-		templateFilePath = filepath.Join(Config.Template.HTMLPath, httpContext.TemplateFile)
-	}
-	if !common.IsExist(templateFilePath) {
-		httpContext.ThrowException(500, "system error")
-	}
-	if len(httpContext.FuncMap) == 0 {
-		t = template.Must(template.ParseFiles(templateFilePath))
-	} else {
-		t = template.Must(template.New(filepath.Base(httpContext.TemplateFile)).Funcs(httpContext.FuncMap).ParseFiles(templateFilePath))
-	}
-	if Config.Template.WidgetsPath != "" {
-		widgetsPath := filepath.Join(Config.Template.HTMLPath, Config.Template.WidgetsPath)
-		t = template.Must(t.ParseGlob(widgetsPath))
-	}
-
-	return
-}
-
-//ReturnJSON ..
-func (httpContext *HTTPContext) ReturnJSON() {
-	httpContext.ResponseWriter.Header().Set("Content-Type", "application/json; charset=utf-8")
-	if len(httpContext.Data) > 0 && httpContext.Results == nil {
-		httpContext.Results = httpContext.Data
-	}
-
-	var w io.Writer
-	if !httpContext.IsError && httpContext.IsZip {
-		httpContext.ResponseWriter.Header().Del("Content-Length")
-		httpContext.ResponseWriter.Header().Set("Content-Encoding", "gzip")
-		w = gzip.NewWriter(httpContext.ResponseWriter)
-		defer w.(io.WriteCloser).Close()
-	} else {
-		w = httpContext.ResponseWriter
-	}
-
-	var err error
-	if httpContext.HasHeader {
-		//header + response(err_no + err_msg)
-		err = encoding.JSONWriterMarshal(w, httpContext)
-	} else {
-		//err_no + err_msg
-		err = encoding.JSONWriterMarshal(w, httpContext.Response)
-	}
-	httpContext.CheckErr(err)
 }
