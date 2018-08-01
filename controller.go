@@ -2,6 +2,7 @@ package hfw
 
 //手动匹配路由
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -113,6 +114,8 @@ func (ctl *Controller) ServerError(httpContext *HTTPContext) {
 //Layout的功能未实现 TODO
 type HTTPContext struct {
 	*SignalContext `json:"-"`
+	Ctx            context.Context    `json:"-"`
+	Cancel         context.CancelFunc `json:"-"`
 
 	ResponseWriter http.ResponseWriter `json:"-"`
 	Request        *http.Request       `json:"-"`

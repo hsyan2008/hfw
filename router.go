@@ -2,6 +2,8 @@ package hfw
 
 //手动匹配路由
 import (
+	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	_ "net/http/pprof"
@@ -34,41 +36,39 @@ func router(w http.ResponseWriter, r *http.Request) {
 		panic("nil router")
 	}
 
-	if Config.Server.Concurrence > 0 {
-	FOR:
-		for {
-			select {
-			//服务关闭
-			case <-signalContext.Ctx.Done():
-				return
-			case <-time.After(time.Second):
-				hj, ok := w.(http.Hijacker)
-				if !ok {
-					logger.Warn("Hijacker err")
-					return
-				}
-				conn, _, err := hj.Hijack()
-				if err != nil {
-					logger.Warn("Hijack", err)
-					return
-				}
-				conn.Close()
-				return
-			case concurrenceChan <- true:
-				defer func() {
-					<-concurrenceChan
-				}()
-				break FOR
-			}
-		}
-	}
-
 	//放入pool里
 	httpContext := httpContextPool.Get().(*HTTPContext)
 	defer httpContextPool.Put(httpContext)
 	httpContext.Init(w, r)
-	// httpContext.Ctx, httpContext.Cancel = context.WithCancel(ctx)
 	httpContext.SignalContext = signalContext
+	httpContext.Ctx, httpContext.Cancel = context.WithCancel(signalContext.Ctx)
+	defer httpContext.Cancel()
+
+	//如果用户关闭连接
+	go func() {
+		//panic: net/http: CloseNotify called after ServeHTTP finished
+		defer func() {
+			recover()
+		}()
+		select {
+		case <-httpContext.Ctx.Done():
+			return
+		case <-httpContext.ResponseWriter.(http.CloseNotifier).CloseNotify():
+			httpContext.Cancel()
+			return
+		}
+	}()
+
+	if Config.Server.Concurrence > 0 {
+		err := holdConcurrenceChan(httpContext)
+		if err != nil {
+			logger.Warn(err)
+			return
+		}
+		defer func() {
+			<-concurrenceChan
+		}()
+	}
 
 	var reflectVal reflect.Value
 	var isNotFound bool
@@ -127,6 +127,30 @@ func router(w http.ResponseWriter, r *http.Request) {
 	reflectVal.MethodByName(action).Call(initValue)
 
 	reflectVal.MethodByName("After").Call(initValue)
+}
+
+func holdConcurrenceChan(httpContext *HTTPContext) (err error) {
+	select {
+	//用户关闭连接
+	case <-httpContext.Ctx.Done():
+		return httpContext.Ctx.Err()
+	//服务关闭
+	case <-signalContext.Ctx.Done():
+		return errors.New("shutdown")
+	case <-time.After(3 * time.Second):
+		hj, ok := httpContext.ResponseWriter.(http.Hijacker)
+		if !ok {
+			return errors.New("Hijacker err")
+		}
+		conn, _, err := hj.Hijack()
+		if err != nil {
+			return err
+		}
+		conn.Close()
+		return errors.New("timeout")
+	case concurrenceChan <- true:
+		return
+	}
 }
 
 var urlPrefix string

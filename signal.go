@@ -17,15 +17,15 @@ import (
 )
 
 type SignalContext struct {
-	IsHTTP bool
+	IsHTTP bool `json:"-"`
 	//Wg 业务方调用此变量注册工作
-	Wg *sync.WaitGroup
+	Wg *sync.WaitGroup `json:"-"`
 	//done 业务方调用Shutdowned函数获取所有任务已经退出的通知
 	done chan bool
 
 	//Shutdown 业务方手动监听此通道获知通知
-	Ctx    context.Context
-	Cancel context.CancelFunc
+	Ctx    context.Context    `json:"-"`
+	Cancel context.CancelFunc `json:"-"`
 }
 
 var signalContext *SignalContext

@@ -128,6 +128,7 @@ func Run() (err error) {
 	}
 	//如果未启动服务，就触发退出
 	if err != nil {
+		logger.Warn(err)
 		signalContext.doShutdownDone()
 	}
 
