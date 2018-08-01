@@ -93,7 +93,7 @@ func Run() (err error) {
 	}
 
 	logger.Info("Starting ...")
-	defer logger.Info("Shutdown complete!")
+	defer logger.Info("Shutdowned!")
 
 	logger.Infof("Running, ENVIRONMENT=%s, APPNAME=%s, APPPATH=%s", ENVIRONMENT, APPNAME, APPPATH)
 

@@ -55,7 +55,7 @@ func (ctx *SignalContext) listenSignal() {
 	logger.Info("recv signal:", s)
 	go ctx.doShutdownDone()
 	if ctx.IsHTTP {
-		logger.Info("start to stop http")
+		logger.Info("Stopping http server")
 		p, _ := os.FindProcess(os.Getpid())
 		switch s {
 		case syscall.SIGTERM:
@@ -66,14 +66,14 @@ func (ctx *SignalContext) listenSignal() {
 			_ = p.Signal(syscall.SIGQUIT)
 		}
 	} else {
-		logger.Info("start to stop console")
+		logger.Info("Stopping console server")
 		//暂时不做重启
 	}
 }
 
 func (ctx *SignalContext) doShutdownDone() {
-	logger.Info("start to shutdown")
-	defer logger.Info("shutdown done")
+	logger.Info("doShutdownDone start.")
+	defer logger.Info("doShutdownDone done.")
 
 	go ctx.waitDone()
 
