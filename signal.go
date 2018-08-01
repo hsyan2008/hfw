@@ -6,6 +6,7 @@
 package hfw
 
 import (
+	"context"
 	"os"
 	"os/signal"
 	"sync"
@@ -15,29 +16,35 @@ import (
 	"github.com/hsyan2008/go-logger/logger"
 )
 
-type context struct {
+type SignalContext struct {
 	IsHTTP bool
 	//Wg 业务方调用此变量注册工作
 	Wg *sync.WaitGroup
+	//done 业务方调用Shutdowned函数获取所有任务已经退出的通知
+	done chan bool
+
 	//Shutdown 业务方手动监听此通道获知通知
-	Shutdown chan bool
-	//Done 业务方调用Shutdowned函数获取已经完成shutdown的通知
-	Done chan bool
+	Ctx    context.Context
+	Cancel context.CancelFunc
 }
 
-var Ctx *context
+var signalContext *SignalContext
 
 func init() {
-	Ctx = &context{
-		Wg:       new(sync.WaitGroup),
-		Shutdown: make(chan bool),
-		Done:     make(chan bool),
+	signalContext = &SignalContext{
+		Wg:   new(sync.WaitGroup),
+		done: make(chan bool),
 	}
+	signalContext.Ctx, signalContext.Cancel = context.WithCancel(context.Background())
+}
+
+//GetSignalContext 一般用于其他包或者非http程序
+func GetSignalContext() *SignalContext {
+	return signalContext
 }
 
 //gracehttp外，增加两个信号支持
-func (ctx *context) listenSignal() {
-
+func (ctx *SignalContext) listenSignal() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM)
 	logger.Infof("Exec `kill -INT %d` will graceful exit", PID)
@@ -46,7 +53,7 @@ func (ctx *context) listenSignal() {
 	}
 	s := <-c
 	logger.Info("recv signal:", s)
-	go ctx.waitShutdownDone()
+	go ctx.doShutdownDone()
 	if ctx.IsHTTP {
 		logger.Info("start to stop http")
 		p, _ := os.FindProcess(os.Getpid())
@@ -64,7 +71,7 @@ func (ctx *context) listenSignal() {
 	}
 }
 
-func (ctx *context) waitShutdownDone() {
+func (ctx *SignalContext) doShutdownDone() {
 	logger.Info("start to shutdown")
 	defer logger.Info("shutdown done")
 
@@ -77,35 +84,35 @@ func (ctx *context) waitShutdownDone() {
 	timeout := 30
 	select {
 	case <-time.After(time.Duration(timeout) * time.Second):
-		logger.Warnf("waitShutdownDone %ds timeout", timeout)
-		close(ctx.Done)
-	case <-ctx.Done:
+		logger.Warnf("doShutdownDone %ds timeout", timeout)
+		close(ctx.done)
+	case <-ctx.done:
 	}
 }
 
 //通知业务方，并等待业务方结束
-func (ctx *context) waitDone() {
-	//通知业务方
-	close(ctx.Shutdown)
+func (ctx *SignalContext) waitDone() {
+	//context包来取消，以通知业务方
+	ctx.Cancel()
 	//等待业务方完成退出
-	ctx.Wg.Wait()
+	ctx.WgWait()
 	//表示全部完成
-	close(ctx.Done)
+	close(ctx.done)
 }
 
-//Shutdowned 获取是否已经结束，暂时只有run.go里用到
-func (ctx *context) Shutdowned() {
-	<-ctx.Done
+//Shutdowned 获取是否已经全部结束，暂时只有run.go里用到
+func (ctx *SignalContext) Shutdowned() {
+	<-ctx.done
 }
 
-func (ctx *context) WgAdd() {
+func (ctx *SignalContext) WgAdd() {
 	ctx.Wg.Add(1)
 }
 
-func (ctx *context) WgDone() {
+func (ctx *SignalContext) WgDone() {
 	ctx.Wg.Done()
 }
 
-func (ctx *context) WgWait() {
+func (ctx *SignalContext) WgWait() {
 	ctx.Wg.Wait()
 }

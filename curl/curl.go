@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/flate"
 	"compress/gzip"
+	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
@@ -62,6 +63,8 @@ type Curl struct {
 	followUrls []string
 	//是否要把BodyReader读取到Body里
 	isNoRead bool
+
+	ctx context.Context
 }
 
 var tr = &http.Transport{
@@ -130,7 +133,12 @@ func (curls *Curl) SetOption(key string, val bool) {
 	curls.Options[key] = val
 }
 
-func (curls *Curl) Request() (rs Response, err error) {
+func (curls *Curl) Request(ctx context.Context) (rs Response, err error) {
+	if ctx == nil {
+		return rs, errors.New("err context")
+	}
+	curls.ctx = ctx
+
 	if curls.timeout <= 0 {
 		curls.SetTimeout(5)
 	}
@@ -173,7 +181,12 @@ func (curls *Curl) Request() (rs Response, err error) {
 	select {
 	case <-time.After(curls.timeout * time.Second):
 		tr.CancelRequest(httpRequest)
+		<-c
 		err = errors.New("request time out")
+	case <-ctx.Done():
+		tr.CancelRequest(httpRequest)
+		<-c
+		err = ctx.Err()
 	case <-c:
 	}
 
@@ -262,7 +275,7 @@ func (curls *Curl) curlResponse(resp *http.Response) (response Response, err err
 				curls.PostFiles = nil
 				curls.Cookie = curls.afterCookie(resp)
 
-				return curls.Request()
+				return curls.Request(curls.ctx)
 			} else {
 				return response, errors.New("重定向次数过多")
 			}

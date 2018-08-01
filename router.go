@@ -15,7 +15,7 @@ import (
 	"github.com/hsyan2008/go-logger/logger"
 )
 
-var ctxPool = &sync.Pool{
+var httpContextPool = &sync.Pool{
 	New: func() interface{} {
 		return new(HTTPContext)
 	},
@@ -27,8 +27,8 @@ func router(w http.ResponseWriter, r *http.Request) {
 	logger.Debug(r.Method, r.URL.String(), "start")
 	defer logger.Debug(r.Method, r.URL.String(), "end")
 
-	Ctx.WgAdd()
-	defer Ctx.WgDone()
+	signalContext.WgAdd()
+	defer signalContext.WgDone()
 
 	if len(routeMap) == 0 {
 		panic("nil router")
@@ -38,7 +38,8 @@ func router(w http.ResponseWriter, r *http.Request) {
 	FOR:
 		for {
 			select {
-			case <-Ctx.Shutdown:
+			//服务关闭
+			case <-signalContext.Ctx.Done():
 				return
 			case <-time.After(time.Second):
 				hj, ok := w.(http.Hijacker)
@@ -63,16 +64,18 @@ func router(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//放入pool里
-	ctx := ctxPool.Get().(*HTTPContext)
-	defer ctxPool.Put(ctx)
-	ctx.Init(w, r)
+	httpContext := httpContextPool.Get().(*HTTPContext)
+	defer httpContextPool.Put(httpContext)
+	httpContext.Init(w, r)
+	// httpContext.Ctx, httpContext.Cancel = context.WithCancel(ctx)
+	httpContext.SignalContext = signalContext
 
 	var reflectVal reflect.Value
 	var isNotFound bool
 	var instance instance
 	var ok bool
-	if instance, ok = routeMap[ctx.Path+strings.ToLower(r.Method)]; !ok {
-		if instance, ok = routeMap[ctx.Path]; !ok {
+	if instance, ok = routeMap[httpContext.Path+strings.ToLower(r.Method)]; !ok {
+		if instance, ok = routeMap[httpContext.Path]; !ok {
 			isNotFound = true
 			//取默认的
 			p := Config.Route.DefaultController + "/" + Config.Route.DefaultAction
@@ -88,7 +91,7 @@ func router(w http.ResponseWriter, r *http.Request) {
 
 	//初始化Controller
 	initValue := []reflect.Value{
-		reflect.ValueOf(ctx),
+		reflect.ValueOf(httpContext),
 	}
 
 	//注意方法必须是大写开头，否则无法调用
@@ -120,7 +123,7 @@ func router(w http.ResponseWriter, r *http.Request) {
 	} else {
 		action = instance.methodName
 	}
-	logger.Debugf("Query Path: %s -> Call: %s/%s", ctx.Path, instance.controllerName, instance.methodName)
+	logger.Debugf("Query Path: %s -> Call: %s/%s", httpContext.Path, instance.controllerName, instance.methodName)
 	reflectVal.MethodByName(action).Call(initValue)
 
 	reflectVal.MethodByName("After").Call(initValue)

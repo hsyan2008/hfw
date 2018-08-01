@@ -140,12 +140,13 @@ func openCache(engine *xorm.Engine, config configs.AllConfig) {
 
 func keepalive(engine *xorm.Engine, long time.Duration) {
 	t := time.Tick(long * time.Second)
+	ctx := hfw.GetSignalContext()
 FOR:
 	for {
 		select {
 		case <-t:
 			_ = engine.Ping()
-		case <-hfw.Ctx.Shutdown:
+		case <-ctx.Ctx.Done():
 			break FOR
 		}
 	}

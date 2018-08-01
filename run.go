@@ -104,10 +104,10 @@ func Run() (err error) {
 	}
 
 	//监听信号
-	go Ctx.listenSignal()
+	go signalContext.listenSignal()
 
 	//等待工作完成
-	defer Ctx.Shutdowned()
+	defer signalContext.Shutdowned()
 
 	if randPortListener == nil {
 		if Config.Server.Address == "" {
@@ -116,7 +116,7 @@ func Run() (err error) {
 
 		logger.Info("Listen on", Config.Server.Address)
 
-		Ctx.IsHTTP = true
+		signalContext.IsHTTP = true
 
 		if Config.Server.Concurrence > 0 {
 			concurrenceChan = make(chan bool, Config.Server.Concurrence)
@@ -128,7 +128,7 @@ func Run() (err error) {
 	}
 	//如果未启动服务，就触发退出
 	if err != nil {
-		Ctx.waitShutdownDone()
+		signalContext.doShutdownDone()
 	}
 
 	return

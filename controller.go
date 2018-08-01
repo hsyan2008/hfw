@@ -44,73 +44,73 @@ type Controller struct {
 }
 
 //Init ..
-func (ctl *Controller) Init(ctx *HTTPContext) {
+func (ctl *Controller) Init(httpContext *HTTPContext) {
 
 	var err error
 
 	// logger.Debug("Controller init")
 
-	if strings.Contains(ctx.Request.URL.RawQuery, "format=json") {
-		ctx.IsJSON = true
-	} else if strings.Contains(ctx.Request.Header.Get("Accept"), "application/json") {
-		ctx.IsJSON = true
+	if strings.Contains(httpContext.Request.URL.RawQuery, "format=json") {
+		httpContext.IsJSON = true
+	} else if strings.Contains(httpContext.Request.Header.Get("Accept"), "application/json") {
+		httpContext.IsJSON = true
 	}
 
-	if strings.Contains(ctx.Request.Header.Get("Accept-Encoding"), "gzip") {
-		ctx.IsZip = true
+	if strings.Contains(httpContext.Request.Header.Get("Accept-Encoding"), "gzip") {
+		httpContext.IsZip = true
 	}
 
-	// _ = ctx.Request.ParseMultipartForm(2 * 1024 * 1024)
+	// _ = httpContext.Request.ParseMultipartForm(2 * 1024 * 1024)
 
-	ctx.Session, err = session.NewSession(ctx.Request, DefaultRedisIns, Config)
-	ctx.CheckErr(err)
+	httpContext.Session, err = session.NewSession(httpContext.Request, DefaultRedisIns, Config)
+	httpContext.CheckErr(err)
 }
 
 //Before ..
-func (ctl *Controller) Before(ctx *HTTPContext) {
+func (ctl *Controller) Before(httpContext *HTTPContext) {
 	// logger.Debug("Controller Before")
 }
 
 //After ..
-func (ctl *Controller) After(ctx *HTTPContext) {
+func (ctl *Controller) After(httpContext *HTTPContext) {
 	// logger.Debug("Controller After")
-	if websocket.IsWebSocketUpgrade(ctx.Request) {
+	if websocket.IsWebSocketUpgrade(httpContext.Request) {
 		return
 	}
 }
 
 //Finish ..
-func (ctl *Controller) Finish(ctx *HTTPContext) {
-	if websocket.IsWebSocketUpgrade(ctx.Request) {
+func (ctl *Controller) Finish(httpContext *HTTPContext) {
+	if websocket.IsWebSocketUpgrade(httpContext.Request) {
 		return
 	}
 
-	if ctx.Session != nil {
-		ctx.Session.Close(ctx.Request, ctx.ResponseWriter)
+	if httpContext.Session != nil {
+		httpContext.Session.Close(httpContext.Request, httpContext.ResponseWriter)
 	}
-	ctx.Output()
+	httpContext.Output()
 }
 
 //NotFound ..
-func (ctl *Controller) NotFound(ctx *HTTPContext) {
+func (ctl *Controller) NotFound(httpContext *HTTPContext) {
 
-	ctx.ResponseWriter.WriteHeader(http.StatusNotFound)
-	ctx.IsError = true
+	httpContext.ResponseWriter.WriteHeader(http.StatusNotFound)
+	httpContext.IsError = true
 
-	ctx.ErrNo = 404
-	ctx.ErrMsg = "NotFound"
+	httpContext.ErrNo = 404
+	httpContext.ErrMsg = "NotFound"
 }
 
 //ServerError ..
 //不要手动调用，用于捕获未知错误，手动请用Throw
 //该方法不能使用StopRun，也不能panic，因为会被自动调用
-func (ctl *Controller) ServerError(ctx *HTTPContext) {
+func (ctl *Controller) ServerError(httpContext *HTTPContext) {
 
-	ctx.ResponseWriter.WriteHeader(http.StatusInternalServerError)
-	ctx.IsError = true
+	httpContext.ResponseWriter.WriteHeader(http.StatusInternalServerError)
+	httpContext.IsError = true
 
-	ctx.ErrNo = 500
-	ctx.ErrMsg = "ServerError"
+	httpContext.ErrNo = 500
+	httpContext.ErrMsg = "ServerError"
 }
 
 //HTTPContext ..
@@ -118,6 +118,8 @@ func (ctl *Controller) ServerError(ctx *HTTPContext) {
 //Json里的数据放Response
 //Layout的功能未实现 TODO
 type HTTPContext struct {
+	*SignalContext `json:"-"`
+
 	ResponseWriter http.ResponseWriter `json:"-"`
 	Request        *http.Request       `json:"-"`
 	Session        *session.Session    `json:"-"`
@@ -139,42 +141,42 @@ type HTTPContext struct {
 	Header          interface{} `json:"header"`
 }
 
-func (ctx *HTTPContext) Init(w http.ResponseWriter, r *http.Request) {
-	ctx.ResponseWriter = w
-	ctx.Request = r
-	ctx.Layout = ""
-	ctx.TemplateFile = ""
-	ctx.IsJSON = false
-	ctx.IsZip = false
-	ctx.IsError = false
-	ctx.Data = make(map[string]interface{})
-	ctx.FuncMap = make(map[string]interface{})
+func (httpContext *HTTPContext) Init(w http.ResponseWriter, r *http.Request) {
+	httpContext.ResponseWriter = w
+	httpContext.Request = r
+	httpContext.Layout = ""
+	httpContext.TemplateFile = ""
+	httpContext.IsJSON = false
+	httpContext.IsZip = false
+	httpContext.IsError = false
+	httpContext.Data = make(map[string]interface{})
+	httpContext.FuncMap = make(map[string]interface{})
 
-	ctx.HasHeader = false
-	ctx.Header = nil
-	ctx.ErrNo = 0
-	ctx.ErrMsg = ""
-	ctx.Results = nil
+	httpContext.HasHeader = false
+	httpContext.Header = nil
+	httpContext.ErrNo = 0
+	httpContext.ErrMsg = ""
+	httpContext.Results = nil
 
-	ctx.Controll, ctx.Action, _ = formatURL(r.URL.Path)
-	ctx.Path = fmt.Sprintf("%s/%s", ctx.Controll, ctx.Action)
-	logger.Infof("Parse Result: Controll:%s, Action:%s", ctx.Controll, ctx.Action)
-	// ctx.TemplateFile = fmt.Sprintf("%s.html", ctx.Path)
+	httpContext.Controll, httpContext.Action, _ = formatURL(r.URL.Path)
+	httpContext.Path = fmt.Sprintf("%s/%s", httpContext.Controll, httpContext.Action)
+	logger.Infof("Parse Result: Controll:%s, Action:%s", httpContext.Controll, httpContext.Action)
+	// httpContext.TemplateFile = fmt.Sprintf("%s.html", httpContext.Path)
 }
 
 //GetForm 优先post和put,然后get
-func (ctx *HTTPContext) GetForm(key string) string {
-	return strings.TrimSpace(ctx.Request.FormValue(key))
+func (httpContext *HTTPContext) GetForm(key string) string {
+	return strings.TrimSpace(httpContext.Request.FormValue(key))
 }
 
 //GetFormInt 优先post和put,然后get，转为int
-func (ctx *HTTPContext) GetFormInt(key string) int {
-	n, _ := strconv.Atoi(ctx.GetForm(key))
+func (httpContext *HTTPContext) GetFormInt(key string) int {
+	n, _ := strconv.Atoi(httpContext.GetForm(key))
 	return n
 }
 
 //StopRun ..
-func (ctx *HTTPContext) StopRun() {
+func (httpContext *HTTPContext) StopRun() {
 	// logger.Debug("StopRun")
 	panic(ErrStopRun)
 
@@ -183,36 +185,36 @@ func (ctx *HTTPContext) StopRun() {
 }
 
 //Redirect ..
-func (ctx *HTTPContext) Redirect(url string) {
-	http.Redirect(ctx.ResponseWriter, ctx.Request, url, http.StatusFound)
-	ctx.StopRun()
+func (httpContext *HTTPContext) Redirect(url string) {
+	http.Redirect(httpContext.ResponseWriter, httpContext.Request, url, http.StatusFound)
+	httpContext.StopRun()
 }
 
 //ThrowException ..
-func (ctx *HTTPContext) ThrowException(code int64, msg string) {
-	ctx.ErrNo = code
-	ctx.ErrMsg = msg
-	ctx.StopRun()
+func (httpContext *HTTPContext) ThrowException(code int64, msg string) {
+	httpContext.ErrNo = code
+	httpContext.ErrMsg = msg
+	httpContext.StopRun()
 }
 
 //CheckErr ..
-func (ctx *HTTPContext) CheckErr(err error) {
+func (httpContext *HTTPContext) CheckErr(err error) {
 	if nil != err {
 		logger.Error(err)
-		ctx.ThrowException(500, "系统错误")
+		httpContext.ThrowException(500, "系统错误")
 	}
 }
 
 //Output ..
-func (ctx *HTTPContext) Output() {
+func (httpContext *HTTPContext) Output() {
 	// logger.Debug("Output")
-	if ctx.ResponseWriter.Header().Get("Location") != "" {
+	if httpContext.ResponseWriter.Header().Get("Location") != "" {
 		return
 	}
-	if (ctx.TemplateFile == "" && ctx.Template == "") || ctx.IsJSON {
-		ctx.ReturnJSON()
+	if (httpContext.TemplateFile == "" && httpContext.Template == "") || httpContext.IsJSON {
+		httpContext.ReturnJSON()
 	} else {
-		ctx.Render()
+		httpContext.Render()
 	}
 }
 
@@ -225,44 +227,44 @@ var templatesCache = struct {
 }
 
 //Render ..
-func (ctx *HTTPContext) Render() {
-	ctx.ResponseWriter.Header().Set("Content-Type", "text/html; charset=utf-8")
+func (httpContext *HTTPContext) Render() {
+	httpContext.ResponseWriter.Header().Set("Content-Type", "text/html; charset=utf-8")
 	var (
 		t   *template.Template
 		err error
 	)
-	t = ctx.render()
+	t = httpContext.render()
 
-	if !ctx.IsError && ctx.IsZip {
-		ctx.ResponseWriter.Header().Del("Content-Length")
-		ctx.ResponseWriter.Header().Set("Content-Encoding", "gzip")
-		writer := gzip.NewWriter(ctx.ResponseWriter)
+	if !httpContext.IsError && httpContext.IsZip {
+		httpContext.ResponseWriter.Header().Del("Content-Length")
+		httpContext.ResponseWriter.Header().Set("Content-Encoding", "gzip")
+		writer := gzip.NewWriter(httpContext.ResponseWriter)
 		defer writer.Close()
-		err = t.Execute(writer, ctx)
+		err = t.Execute(writer, httpContext)
 	} else {
-		err = t.Execute(ctx.ResponseWriter, ctx)
+		err = t.Execute(httpContext.ResponseWriter, httpContext)
 	}
-	ctx.CheckErr(err)
+	httpContext.CheckErr(err)
 }
 
-func (ctx *HTTPContext) render() (t *template.Template) {
+func (httpContext *HTTPContext) render() (t *template.Template) {
 	var key string
 	var render func() *template.Template
 	var ok bool
-	if ctx.Template != "" {
-		key = ctx.Path
-		// return ctx.renderHtml()
-		render = ctx.renderHtml
-	} else if ctx.TemplateFile != "" {
-		key = ctx.TemplateFile
-		render = ctx.renderFile
+	if httpContext.Template != "" {
+		key = httpContext.Path
+		// return httpContext.renderHtml()
+		render = httpContext.renderHtml
+	} else if httpContext.TemplateFile != "" {
+		key = httpContext.TemplateFile
+		render = httpContext.renderFile
 	}
 
 	if Config.Template.IsCache {
 		templatesCache.l.RLock()
 		if t, ok = templatesCache.list[key]; !ok {
 			templatesCache.l.RUnlock()
-			// t = ctx.render()
+			// t = httpContext.render()
 			t = render()
 			templatesCache.l.Lock()
 			templatesCache.list[key] = t
@@ -271,18 +273,18 @@ func (ctx *HTTPContext) render() (t *template.Template) {
 			templatesCache.l.RUnlock()
 		}
 	} else {
-		// t = ctx.render()
+		// t = httpContext.render()
 		t = render()
 	}
 
 	return t
 }
 
-func (ctx *HTTPContext) renderHtml() (t *template.Template) {
-	if len(ctx.FuncMap) == 0 {
-		t = template.Must(template.New(ctx.Path).Parse(ctx.Template))
+func (httpContext *HTTPContext) renderHtml() (t *template.Template) {
+	if len(httpContext.FuncMap) == 0 {
+		t = template.Must(template.New(httpContext.Path).Parse(httpContext.Template))
 	} else {
-		t = template.Must(template.New(ctx.Path).Funcs(ctx.FuncMap).Parse(ctx.Template))
+		t = template.Must(template.New(httpContext.Path).Funcs(httpContext.FuncMap).Parse(httpContext.Template))
 	}
 	if Config.Template.WidgetsPath != "" {
 		widgetsPath := filepath.Join(Config.Template.HTMLPath, Config.Template.WidgetsPath)
@@ -291,20 +293,20 @@ func (ctx *HTTPContext) renderHtml() (t *template.Template) {
 
 	return
 }
-func (ctx *HTTPContext) renderFile() (t *template.Template) {
+func (httpContext *HTTPContext) renderFile() (t *template.Template) {
 	var templateFilePath string
-	if common.IsExist(ctx.TemplateFile) {
-		templateFilePath = ctx.TemplateFile
+	if common.IsExist(httpContext.TemplateFile) {
+		templateFilePath = httpContext.TemplateFile
 	} else {
-		templateFilePath = filepath.Join(Config.Template.HTMLPath, ctx.TemplateFile)
+		templateFilePath = filepath.Join(Config.Template.HTMLPath, httpContext.TemplateFile)
 	}
 	if !common.IsExist(templateFilePath) {
-		ctx.ThrowException(500, "system error")
+		httpContext.ThrowException(500, "system error")
 	}
-	if len(ctx.FuncMap) == 0 {
+	if len(httpContext.FuncMap) == 0 {
 		t = template.Must(template.ParseFiles(templateFilePath))
 	} else {
-		t = template.Must(template.New(filepath.Base(ctx.TemplateFile)).Funcs(ctx.FuncMap).ParseFiles(templateFilePath))
+		t = template.Must(template.New(filepath.Base(httpContext.TemplateFile)).Funcs(httpContext.FuncMap).ParseFiles(templateFilePath))
 	}
 	if Config.Template.WidgetsPath != "" {
 		widgetsPath := filepath.Join(Config.Template.HTMLPath, Config.Template.WidgetsPath)
@@ -315,29 +317,29 @@ func (ctx *HTTPContext) renderFile() (t *template.Template) {
 }
 
 //ReturnJSON ..
-func (ctx *HTTPContext) ReturnJSON() {
-	ctx.ResponseWriter.Header().Set("Content-Type", "application/json; charset=utf-8")
-	if len(ctx.Data) > 0 && ctx.Results == nil {
-		ctx.Results = ctx.Data
+func (httpContext *HTTPContext) ReturnJSON() {
+	httpContext.ResponseWriter.Header().Set("Content-Type", "application/json; charset=utf-8")
+	if len(httpContext.Data) > 0 && httpContext.Results == nil {
+		httpContext.Results = httpContext.Data
 	}
 
 	var w io.Writer
-	if !ctx.IsError && ctx.IsZip {
-		ctx.ResponseWriter.Header().Del("Content-Length")
-		ctx.ResponseWriter.Header().Set("Content-Encoding", "gzip")
-		w = gzip.NewWriter(ctx.ResponseWriter)
+	if !httpContext.IsError && httpContext.IsZip {
+		httpContext.ResponseWriter.Header().Del("Content-Length")
+		httpContext.ResponseWriter.Header().Set("Content-Encoding", "gzip")
+		w = gzip.NewWriter(httpContext.ResponseWriter)
 		defer w.(io.WriteCloser).Close()
 	} else {
-		w = ctx.ResponseWriter
+		w = httpContext.ResponseWriter
 	}
 
 	var err error
-	if ctx.HasHeader {
+	if httpContext.HasHeader {
 		//header + response(err_no + err_msg)
-		err = encoding.JSONWriterMarshal(w, ctx)
+		err = encoding.JSONWriterMarshal(w, httpContext)
 	} else {
 		//err_no + err_msg
-		err = encoding.JSONWriterMarshal(w, ctx.Response)
+		err = encoding.JSONWriterMarshal(w, httpContext.Response)
 	}
-	ctx.CheckErr(err)
+	httpContext.CheckErr(err)
 }
