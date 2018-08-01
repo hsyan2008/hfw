@@ -57,14 +57,15 @@ func ConnectDb(config configs.AllConfig, dbConfigs ...configs.DbConfig) *xorm.En
 		logger.Warn("NewEngine:", dbConfig, err)
 		panic(err)
 	}
+
+	engine.SetLogger(&mysqlLog{})
+	engine.ShowSQL(true)
+
 	err = engine.Ping()
 	if err != nil {
 		logger.Warn("Ping:", dbConfig, err)
 		panic(err)
 	}
-
-	engine.SetLogger(&mysqlLog{})
-	engine.ShowSQL(true)
 
 	//连接池的空闲数大小
 	if dbConfig.MaxIdleConns > 0 {
