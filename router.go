@@ -94,10 +94,6 @@ func router(w http.ResponseWriter, r *http.Request) {
 		reflect.ValueOf(httpContext),
 	}
 
-	//注意方法必须是大写开头，否则无法调用
-	reflectVal.MethodByName("Init").Call(initValue)
-	defer reflectVal.MethodByName("Finish").Call(initValue)
-
 	defer func() {
 		//注意recover只能执行一次
 		if err := recover(); err != nil {
@@ -114,6 +110,10 @@ func router(w http.ResponseWriter, r *http.Request) {
 			reflectVal.MethodByName("ServerError").Call(initValue)
 		}
 	}()
+
+	//注意方法必须是大写开头，否则无法调用
+	reflectVal.MethodByName("Init").Call(initValue)
+	defer reflectVal.MethodByName("Finish").Call(initValue)
 
 	reflectVal.MethodByName("Before").Call(initValue)
 
