@@ -33,7 +33,7 @@ func (httpContext *HTTPContext) Output() {
 }
 
 //DownloadFile 下载文件服务
-func (httpContext *HTTPContext) DownloadFile(filename string, file interface{}) {
+func (httpContext *HTTPContext) ReturnFileContent(filename string, file interface{}) {
 	httpContext.IsJSON = false
 	httpContext.Template = ""
 	httpContext.TemplateFile = ""
