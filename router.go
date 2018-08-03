@@ -27,7 +27,11 @@ var concurrenceChan chan bool
 
 func router(w http.ResponseWriter, r *http.Request) {
 	logger.Debug(r.Method, r.URL.String(), "start")
-	defer logger.Debug(r.Method, r.URL.String(), "end")
+	startTime := time.Now()
+	defer func() {
+		logger.Debug("ExecTime:", time.Now().Sub(startTime))
+		logger.Debug(r.Method, r.URL.String(), "end")
+	}()
 
 	signalContext.WgAdd()
 	defer signalContext.WgDone()

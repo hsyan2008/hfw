@@ -87,7 +87,7 @@ func loadConfig() {
 
 //Run start
 func Run() (err error) {
-	//防止被挂起，若webview
+	//防止被挂起，如webview
 	if randPortListener != nil {
 		defer os.Exit(0)
 	}
