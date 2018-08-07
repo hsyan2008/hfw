@@ -62,7 +62,7 @@ type Curl struct {
 
 	followUrls []string
 	//是否要把BodyReader读取到Body里
-	isNoRead bool
+	isStream bool
 
 	ctx context.Context
 }
@@ -97,8 +97,8 @@ func NewCurl(url string) *Curl {
 	}
 }
 
-func (curls *Curl) SetNoRead() {
-	curls.isNoRead = true
+func (curls *Curl) SetStream() {
+	curls.isStream = true
 }
 
 func (curls *Curl) SetHeaders(headers map[string]string) {
@@ -290,7 +290,7 @@ func (curls *Curl) curlResponse(resp *http.Response) (response Response, err err
 	response.FollowUrls = curls.followUrls
 
 	response.BodyReader, err = curls.getReader(resp)
-	if !curls.isNoRead {
+	if !curls.isStream {
 		response.Body, err = response.ReadBody()
 	}
 
