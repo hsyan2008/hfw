@@ -161,7 +161,6 @@ func (httpContext *HTTPContext) Init(w http.ResponseWriter, r *http.Request) {
 
 	httpContext.Controll, httpContext.Action, _ = formatURL(r.URL.Path)
 	httpContext.Path = fmt.Sprintf("%s/%s", httpContext.Controll, httpContext.Action)
-	logger.Infof("Parse Result: Controll:%s, Action:%s", httpContext.Controll, httpContext.Action)
 	// httpContext.TemplateFile = fmt.Sprintf("%s.html", httpContext.Path)
 }
 
