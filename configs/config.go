@@ -12,6 +12,7 @@ type AllConfig struct {
 	Route    RouteConfig
 	Redis    RedisConfig
 	Session  SessionConfig
+	Custom   map[string]string
 }
 
 type RedisConfig struct {
