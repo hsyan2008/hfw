@@ -40,7 +40,7 @@ func NewNoCacheDao(config configs.AllConfig, dbConfigs ...configs.DbConfig) *NoC
 	if len(dbConfigs) > 0 {
 		dbConfig = dbConfigs[0]
 	}
-	instance.engine = ConnectDb(config, dbConfig)
+	instance.engine = InitDb(config, dbConfig)
 
 	return instance
 }

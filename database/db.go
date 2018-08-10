@@ -27,7 +27,7 @@ var ec = &engineCache{
 	mtx:     new(sync.Mutex),
 }
 
-func ConnectDb(config configs.AllConfig, dbConfigs ...configs.DbConfig) *xorm.Engine {
+func InitDb(config configs.AllConfig, dbConfigs ...configs.DbConfig) *xorm.Engine {
 
 	var dbConfig configs.DbConfig
 
@@ -76,9 +76,7 @@ func ConnectDb(config configs.AllConfig, dbConfigs ...configs.DbConfig) *xorm.En
 		engine.SetMaxOpenConns(dbConfig.MaxOpenConns)
 	}
 
-	if dbConfig.KeepAlive > 0 {
-		// go keepalive(engine, time.Duration(dbConfig.KeepAlive))
-	}
+	go keepalive(engine, dbConfig.KeepAlive)
 
 	openCache(engine, config)
 
@@ -140,6 +138,9 @@ func openCache(engine *xorm.Engine, config configs.AllConfig) {
 }
 
 func keepalive(engine *xorm.Engine, long time.Duration) {
+	if long <= 0 {
+		return
+	}
 	t := time.Tick(long * time.Second)
 	ctx := hfw.GetSignalContext()
 FOR:

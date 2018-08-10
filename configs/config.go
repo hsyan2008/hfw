@@ -68,7 +68,7 @@ type DbConfig struct {
 	CacheType    string
 	MaxIdleConns int
 	MaxOpenConns int
-	KeepAlive    int64
+	KeepAlive    time.Duration
 }
 
 //CacheConfig ..
