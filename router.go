@@ -175,8 +175,8 @@ type instance struct {
 var routeMap = make(map[string]instance)
 var routeInit bool
 
-//RegHandler 暂时只支持2段
-func RegHandler(pattern string, handler ControllerInterface) (err error) {
+//Handler 暂时只支持2段
+func Handler(pattern string, handler ControllerInterface) (err error) {
 
 	if !routeInit {
 		routeInit = true
@@ -207,8 +207,8 @@ func RegHandler(pattern string, handler ControllerInterface) (err error) {
 	return
 }
 
-//RegStaticHandler ..
-func RegStaticHandler(pattern string, dir string) {
+//StaticHandler ..
+func StaticHandler(pattern string, dir string) {
 	if !filepath.IsAbs(dir) {
 		dir = filepath.Join(APPPATH, dir)
 	}
