@@ -120,8 +120,14 @@ func (curls *Curl) SetHeader(key, val string) {
 	curls.Headers[key] = val
 }
 
+//秒
 func (curls *Curl) SetTimeout(t int) {
-	curls.timeout = time.Duration(t)
+	curls.timeout = time.Duration(t) * time.Second
+}
+
+//毫秒
+func (curls *Curl) SetTimeoutMS(t int) {
+	curls.timeout = time.Duration(t) * time.Millisecond
 }
 
 func (curls *Curl) SetOptions(options map[string]bool) {
@@ -172,6 +178,10 @@ func (curls *Curl) Request(ctx context.Context) (rs Response, err error) {
 		httpRequest.Header.Add("Referer", curls.Referer)
 	}
 
+	ctx, cancel := context.WithTimeout(ctx, curls.timeout)
+	defer cancel()
+	httpRequest = httpRequest.WithContext(ctx)
+
 	c := make(chan bool, 1)
 	go func() {
 		httpResponse, err = httpClient.Do(httpRequest)
@@ -179,10 +189,6 @@ func (curls *Curl) Request(ctx context.Context) (rs Response, err error) {
 	}()
 
 	select {
-	case <-time.After(curls.timeout * time.Second):
-		tr.CancelRequest(httpRequest)
-		<-c
-		err = errors.New("request time out")
 	case <-ctx.Done():
 		tr.CancelRequest(httpRequest)
 		<-c
