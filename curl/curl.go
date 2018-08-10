@@ -64,7 +64,8 @@ type Curl struct {
 	//是否要把BodyReader读取到Body里
 	isStream bool
 
-	ctx context.Context
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 var tr = &http.Transport{
@@ -143,7 +144,6 @@ func (curls *Curl) Request(ctx context.Context) (rs Response, err error) {
 	if ctx == nil {
 		return rs, errors.New("err context")
 	}
-	curls.ctx = ctx
 
 	if curls.timeout <= 0 {
 		curls.SetTimeout(5)
@@ -178,9 +178,9 @@ func (curls *Curl) Request(ctx context.Context) (rs Response, err error) {
 		httpRequest.Header.Add("Referer", curls.Referer)
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, curls.timeout)
-	defer cancel()
-	httpRequest = httpRequest.WithContext(ctx)
+	//使用WithTimeout会导致io读取中断
+	curls.ctx, curls.cancel = context.WithCancel(ctx)
+	httpRequest = httpRequest.WithContext(curls.ctx)
 
 	c := make(chan bool, 1)
 	go func() {
@@ -189,7 +189,12 @@ func (curls *Curl) Request(ctx context.Context) (rs Response, err error) {
 	}()
 
 	select {
-	case <-ctx.Done():
+	case <-time.After(curls.timeout):
+		tr.CancelRequest(httpRequest)
+		curls.cancel()
+		<-c
+		err = errors.New("do request time out")
+	case <-curls.ctx.Done():
 		tr.CancelRequest(httpRequest)
 		<-c
 		err = ctx.Err()
