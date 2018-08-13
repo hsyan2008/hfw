@@ -38,7 +38,7 @@ var sessPool = sync.Pool{
 func NewSession(request *http.Request, redisIns *redis.Redis, config configs.AllConfig) (s *Session, err error) {
 	// s := sessPool.Get().(*Session)
 	if config.Session.CookieName == "" || redisIns == nil {
-		logger.Debug("disable Session")
+		logger.Debug("Disabled Session")
 		return
 	}
 

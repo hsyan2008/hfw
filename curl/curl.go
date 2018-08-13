@@ -51,6 +51,8 @@ type Curl struct {
 
 	RedirectCount int
 
+	//[]byte格式
+	PostBytes []byte
 	//string格式
 	PostString string
 	//key=>value格式
@@ -214,7 +216,15 @@ func (curls *Curl) Request(ctx context.Context) (rs Response, err error) {
 
 func (curls *Curl) postForm() (httpRequest *http.Request, err error) {
 
-	if curls.PostString != "" {
+	if len(curls.PostBytes) > 0 {
+		b := bytes.NewReader(curls.PostBytes)
+		httpRequest, _ = http.NewRequest("POST", curls.Url, b)
+		if v, ok := curls.Headers["Content-Type"]; ok {
+			httpRequest.Header.Add("Content-Type", v)
+		} else {
+			httpRequest.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		}
+	} else if curls.PostString != "" {
 		b := strings.NewReader(curls.PostString)
 		httpRequest, _ = http.NewRequest("POST", curls.Url, b)
 		if v, ok := curls.Headers["Content-Type"]; ok {
