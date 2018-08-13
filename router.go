@@ -129,7 +129,7 @@ func router(w http.ResponseWriter, r *http.Request) {
 	} else {
 		action = instance.methodName
 	}
-	logger.Debugf("Query Path: %s -> Call: %s/%s", httpContext.Path, instance.controllerName, instance.methodName)
+	logger.Debugf("Query Path: %s -> Call: %s/%s", httpContext.Path, instance.controllerName, action)
 	reflectVal.MethodByName(action).Call(initValue)
 
 	reflectVal.MethodByName("After").Call(initValue)
@@ -196,12 +196,18 @@ func Handler(pattern string, handler ControllerInterface) (err error) {
 	numMethod := rt.NumMethod()
 	//注意方法必须是大写开头，否则无法调用
 	for i := 0; i < numMethod; i++ {
-		path := fmt.Sprintf("%s/%s", controller, strings.ToLower(rt.Method(i).Name))
-		routeMap[path] = instance{
-			reflectVal:     reflectVal,
-			controllerName: controllerName,
-			methodName:     rt.Method(i).Name,
+		m := rt.Method(i).Name
+		switch m {
+		case "Init", "Before", "After", "Finish", "NotFound", "ServerError":
+		default:
+			path := fmt.Sprintf("%s/%s", controller, strings.ToLower(m))
+			routeMap[path] = instance{
+				reflectVal:     reflectVal,
+				controllerName: controllerName,
+				methodName:     rt.Method(i).Name,
+			}
 		}
+
 	}
 
 	return
