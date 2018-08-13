@@ -314,7 +314,7 @@ func (curls *Curl) curlResponse(resp *http.Response) (response Response, err err
 	response.FollowUrls = curls.followUrls
 
 	response.BodyReader, err = curls.getReader(resp)
-	if !curls.isStream {
+	if err == nil && !curls.isStream {
 		response.Body, err = response.ReadBody()
 	}
 
@@ -334,7 +334,7 @@ func (curls *Curl) getReader(resp *http.Response) (r io.ReadCloser, err error) {
 		}
 	}
 
-	return nil, nil
+	return nil, errors.New("no body")
 }
 
 //返回结果的时候，转换cookie为字符串
