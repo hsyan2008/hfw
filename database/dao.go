@@ -1,6 +1,7 @@
 package database
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"reflect"
@@ -86,8 +87,6 @@ func (d *NoCacheDao) UpdateByWhere(t interface{}, params map[string]interface{},
 	if len(where) == 0 {
 		return errors.New("where paramters error")
 	}
-	sess := d.engine.NewSession()
-	defer sess.Close()
 
 	var (
 		str  []string
@@ -98,6 +97,8 @@ func (d *NoCacheDao) UpdateByWhere(t interface{}, params map[string]interface{},
 		args = append(args, v)
 	}
 
+	sess := d.engine.NewSession()
+	defer sess.Close()
 	_, err = sess.Table(t).Where(strings.Join(str, " "), args...).Update(params)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
@@ -129,8 +130,6 @@ func (d *NoCacheDao) SearchOne(t interface{}) (err error) {
 }
 
 func (d *NoCacheDao) Search(t interface{}, cond map[string]interface{}) (err error) {
-	sess := d.engine.NewSession()
-	defer sess.Close()
 	var (
 		str      []string
 		args     []interface{}
@@ -168,6 +167,9 @@ func (d *NoCacheDao) Search(t interface{}, cond map[string]interface{}) (err err
 	} else {
 		where = strings.Join(str, " AND ")
 	}
+
+	sess := d.engine.NewSession()
+	defer sess.Close()
 	err = sess.Where(where, args...).OrderBy(orderby).
 		Limit(pageSize, (page-1)*pageSize).Find(t)
 	if err != nil {
@@ -175,7 +177,7 @@ func (d *NoCacheDao) Search(t interface{}, cond map[string]interface{}) (err err
 		logger.Error(err, lastSQL, lastSQLArgs)
 	}
 
-	return err
+	return
 }
 
 func (d *NoCacheDao) GetMulti(t interface{}, ids ...interface{}) (err error) {
@@ -188,8 +190,6 @@ func (d *NoCacheDao) GetMulti(t interface{}, ids ...interface{}) (err error) {
 }
 
 func (d *NoCacheDao) Count(t interface{}, cond map[string]interface{}) (total int64, err error) {
-	sess := d.engine.NewSession()
-	defer sess.Close()
 	var (
 		str   []string
 		args  []interface{}
@@ -213,6 +213,9 @@ func (d *NoCacheDao) Count(t interface{}, cond map[string]interface{}) (total in
 	} else {
 		where = strings.Join(str, " AND ")
 	}
+
+	sess := d.engine.NewSession()
+	defer sess.Close()
 	total, err = sess.Where(where, args...).Count(t)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
@@ -220,4 +223,34 @@ func (d *NoCacheDao) Count(t interface{}, cond map[string]interface{}) (total in
 	}
 
 	return
+}
+
+func (d *NoCacheDao) Replace(sql string, cond map[string]interface{}) (id int64, err error) {
+	var (
+		str  []string
+		args []interface{}
+	)
+	for k, v := range cond {
+		k = strings.ToLower(k)
+		if k == "orderby" || k == "page" || k == "pagesize" || k == "where" {
+			continue
+		}
+		str = append(str, fmt.Sprintf("%s = ?", k))
+		args = append(args, v)
+	}
+
+	rs, err := d.engine.Exec(sql+strings.Join(str, ", "), args...)
+	if err != nil {
+		return
+	}
+
+	return rs.LastInsertId()
+}
+
+func (d *NoCacheDao) Exec(sql string, args ...interface{}) (sql.Result, error) {
+	return d.engine.Exec(sql, args...)
+}
+
+func (d *NoCacheDao) Query(args ...interface{}) ([]map[string][]byte, error) {
+	return d.engine.Query(args...)
 }

@@ -58,7 +58,7 @@ type Curl struct {
 	//key=>value格式
 	PostFields neturl.Values
 	//文件
-	PostFiles map[string]string
+	PostFiles neturl.Values
 
 	timeout time.Duration
 
@@ -96,7 +96,7 @@ func NewCurl(url string) *Curl {
 		followUrls: make([]string, 0),
 		Url:        url,
 		PostFields: neturl.Values{},
-		PostFiles:  make(map[string]string),
+		PostFiles:  neturl.Values{},
 	}
 }
 
@@ -244,23 +244,25 @@ func (curls *Curl) postForm() (httpRequest *http.Request, err error) {
 
 		//文件
 		for key, val := range curls.PostFiles {
-			if !common.IsExist(val) {
-				return nil, errors.New(fmt.Sprintf("PostFiles %s => %s not exist", key, val))
-			}
-			fileWriter, err := bodyWriter.CreateFormFile(key, val)
-			if err != nil {
-				return nil, err
-			}
+			for _, v := range val {
+				if !common.IsExist(v) {
+					return nil, errors.New(fmt.Sprintf("PostFiles %s => %s not exist", key, v))
+				}
+				fileWriter, err := bodyWriter.CreateFormFile(key, v)
+				if err != nil {
+					return nil, err
+				}
 
-			fh, err := os.Open(val)
-			if err != nil {
-				return nil, err
-			}
-			defer fh.Close()
+				fh, err := os.Open(v)
+				if err != nil {
+					return nil, err
+				}
+				defer fh.Close()
 
-			_, err = io.Copy(fileWriter, fh)
-			if err != nil {
-				return nil, err
+				_, err = io.Copy(fileWriter, fh)
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
 		//必须在这里，不能defer

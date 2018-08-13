@@ -87,4 +87,16 @@ func (m *{{Mapper .Name}}) GetById(id interface{}) (t *{{Mapper .Name}}, err err
 	return
 }
 
+func (m *{{Mapper .Name}}) Replace(cond hfw.Cond) (int64, error) {
+        return m.Dao.Replace("REPLACE `"+m.TableName()+"` SET ", cond)
+}
+
+func (m *{{Mapper .Name}}) Exec(sql string, args ...interface{}) (sql.Result, error) {
+        return m.Dao.Exec(sql, args...)
+}
+
+func (m *{{Mapper .Name}}) Query(args ...interface{}) ([]map[string][]byte, error) {
+        return m.Dao.Query(args...)
+}
+
 {{end}}
