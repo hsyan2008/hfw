@@ -3,7 +3,6 @@ package hfw
 import (
 	"compress/gzip"
 	"errors"
-	"fmt"
 	"html/template"
 	"io"
 	"os"
@@ -66,12 +65,10 @@ func (httpContext *HTTPContext) ReturnFileContent(filename string, file interfac
 		}
 	}
 
-	httpContext.ResponseWriter.Header().Set("Content-Disposition", fmt.Sprintf(`attachment;filename="%s"`, filename))
+	httpContext.SetDownloadMode(filename)
 
 	_, err = io.Copy(w, r)
 	httpContext.CheckErr(err)
-
-	httpContext.StopRun()
 }
 
 var templatesCache = struct {

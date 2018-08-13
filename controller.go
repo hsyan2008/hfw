@@ -69,20 +69,21 @@ func (ctl *Controller) Before(httpContext *HTTPContext) {
 //After ..
 func (ctl *Controller) After(httpContext *HTTPContext) {
 	// logger.Debug("Controller After")
-	if websocket.IsWebSocketUpgrade(httpContext.Request) {
+	if websocket.IsWebSocketUpgrade(httpContext.Request) || httpContext.isDownload {
 		return
 	}
 }
 
 //Finish ..
 func (ctl *Controller) Finish(httpContext *HTTPContext) {
-	if websocket.IsWebSocketUpgrade(httpContext.Request) {
+	if websocket.IsWebSocketUpgrade(httpContext.Request) || httpContext.isDownload {
 		return
 	}
 
 	if httpContext.Session != nil {
 		httpContext.Session.Close(httpContext.Request, httpContext.ResponseWriter)
 	}
+
 	httpContext.Output()
 }
 
@@ -135,6 +136,9 @@ type HTTPContext struct {
 	IsError bool                   `json:"-"`
 	Data    map[string]interface{} `json:"-"`
 	FuncMap map[string]interface{} `json:"-"`
+
+	//如果是下载文件，不执行After和Finish
+	isDownload bool
 
 	HasHeader       bool `json:"-"`
 	common.Response `json:"response"`
@@ -203,4 +207,10 @@ func (httpContext *HTTPContext) CheckErr(err error) {
 		logger.Error(err)
 		httpContext.ThrowException(500, "系统错误")
 	}
+}
+
+//SetDownloadMode ..
+func (httpContext *HTTPContext) SetDownloadMode(filename string) {
+	httpContext.ResponseWriter.Header().Set("Content-Disposition", fmt.Sprintf(`attachment;filename="%s"`, filename))
+	httpContext.isDownload = true
 }
