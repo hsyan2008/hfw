@@ -80,7 +80,7 @@ func router(w http.ResponseWriter, r *http.Request) {
 	var isNotFound bool
 	var instance instance
 	var ok bool
-	if instance, ok = routeMap[httpContext.Path+strings.ToLower(r.Method)]; !ok {
+	if instance, ok = routeMapMethod[httpContext.Path+"with"+strings.ToLower(r.Method)]; !ok {
 		if instance, ok = routeMap[httpContext.Path]; !ok {
 			isNotFound = true
 			//取默认的
@@ -173,6 +173,7 @@ type instance struct {
 }
 
 var routeMap = make(map[string]instance)
+var routeMapMethod = make(map[string]instance)
 var routeInit bool
 
 //Handler 暂时只支持2段
@@ -200,11 +201,24 @@ func Handler(pattern string, handler ControllerInterface) (err error) {
 		switch m {
 		case "Init", "Before", "After", "Finish", "NotFound", "ServerError":
 		default:
+			isMethod := false
+			//必须With+全大写结尾
+			for _, v := range []string{"GET", "POST", "PUT", "DELETE"} {
+				if strings.HasSuffix(m, "With"+v) && strings.LastIndex(m, "With"+v) > 0 {
+					isMethod = true
+					break
+				}
+			}
 			path := fmt.Sprintf("%s/%s", controller, strings.ToLower(m))
-			routeMap[path] = instance{
+			value := instance{
 				reflectVal:     reflectVal,
 				controllerName: controllerName,
 				methodName:     rt.Method(i).Name,
+			}
+			if isMethod {
+				routeMapMethod[path] = value
+			} else {
+				routeMap[path] = value
 			}
 		}
 
