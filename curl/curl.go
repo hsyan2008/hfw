@@ -154,7 +154,7 @@ func (curls *Curl) Request(ctx context.Context) (rs Response, err error) {
 	var httpRequest *http.Request
 	var httpResponse *http.Response
 
-	if "" != curls.PostString || len(curls.PostFields) > 0 || len(curls.PostFiles) > 0 {
+	if len(curls.PostBytes) > 0 || "" != curls.PostString || len(curls.PostFields) > 0 || len(curls.PostFiles) > 0 {
 		curls.Method = "post"
 	}
 
@@ -291,6 +291,7 @@ func (curls *Curl) curlResponse(resp *http.Response) (response Response, err err
 				curls.followUrls = append(curls.followUrls, curls.Url)
 				curls.Url = location_url
 				curls.Method = "get"
+				curls.PostBytes = nil
 				curls.PostString = ""
 				curls.PostFields = nil
 				curls.PostFiles = nil
