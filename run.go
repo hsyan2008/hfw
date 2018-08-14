@@ -149,9 +149,13 @@ func initConfig() {
 	//设置默认路由
 	if Config.Route.DefaultController == "" {
 		Config.Route.DefaultController = "index"
+	} else {
+		Config.Route.DefaultController = strings.ToLower(Config.Route.DefaultController)
 	}
 	if Config.Route.DefaultAction == "" {
 		Config.Route.DefaultAction = "index"
+	} else {
+		Config.Route.DefaultAction = strings.ToLower(Config.Route.DefaultAction)
 	}
 	//转为绝对路径
 	if !filepath.IsAbs(Config.Template.HTMLPath) {

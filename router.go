@@ -159,13 +159,6 @@ func holdConcurrenceChan(httpContext *HTTPContext) (err error) {
 	}
 }
 
-var urlPrefix string
-
-//SetURLPrefix 去除path的前缀
-func SetURLPrefix(str string) {
-	urlPrefix = strings.Trim(strings.ToLower(str), "/")
-}
-
 type instance struct {
 	reflectVal     reflect.Value
 	controllerName string
@@ -239,18 +232,15 @@ func StaticHandler(pattern string, dir string) {
 func formatURL(url string) (controller string, action string, leave string) {
 	//去掉前缀并把url补全为2段
 	trimURL := strings.Trim(strings.ToLower(url), "/")
-	if urlPrefix != "" {
-		trimURL = strings.Trim(strings.TrimPrefix(trimURL, urlPrefix), "/")
-	}
 	urls := strings.SplitN(trimURL, "/", 3)
 	if len(urls) == 1 {
 		urls = append(urls, Config.Route.DefaultAction)
 	}
 	if urls[0] == "" {
-		urls[0] = strings.ToLower(Config.Route.DefaultController)
+		urls[0] = Config.Route.DefaultController
 	}
 	if urls[1] == "" {
-		urls[1] = strings.ToLower(Config.Route.DefaultAction)
+		urls[1] = Config.Route.DefaultAction
 	}
 	if len(urls) == 3 {
 		leave = urls[2]
