@@ -129,7 +129,7 @@ func router(w http.ResponseWriter, r *http.Request) {
 	} else {
 		action = instance.methodName
 	}
-	logger.Debugf("Query Path: %s -> Call: %s/%s", httpContext.Path, instance.controllerName, action)
+	logger.Debugf("Query Path: %s -> Call: %s/%s", r.URL.String(), instance.controllerName, action)
 	reflectVal.MethodByName(action).Call(initValue)
 
 	reflectVal.MethodByName("After").Call(initValue)
@@ -210,8 +210,10 @@ func Handler(pattern string, handler ControllerInterface) (err error) {
 			}
 			if isMethod {
 				routeMapMethod[path] = value
+				logger.Infof("pattern: %s register routeMapMethod: %s", pattern, path)
 			} else {
 				routeMap[path] = value
+				logger.Infof("pattern: %s register routeMap: %s", pattern, path)
 			}
 		}
 
