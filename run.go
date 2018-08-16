@@ -27,7 +27,7 @@ var APPPATH = common.GetAppPath()
 //APPNAME 项目名称
 var APPNAME = common.GetAppName()
 
-var HOSTNAME string
+var HOSTNAME, _ = os.Hostname()
 
 var PID = os.Getpid()
 
@@ -38,8 +38,6 @@ var DefaultRedisIns *redis.Redis
 func init() {
 	loadConfig()
 	initLog()
-
-	HOSTNAME, _ = os.Hostname()
 }
 
 //setLog 初始化log写入文件
