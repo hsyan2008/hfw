@@ -175,7 +175,6 @@ func Handler(pattern string, handler ControllerInterface) (err error) {
 	if !routeInit {
 		routeInit = true
 		http.HandleFunc("/", router)
-		http.HandleFunc("/logger/adjust", loggerAdjust)
 	}
 
 	controller, _, leave := formatURL(pattern)
@@ -221,11 +220,6 @@ func Handler(pattern string, handler ControllerInterface) (err error) {
 	}
 
 	return
-}
-
-//调整logger的设置
-func loggerAdjust(w http.ResponseWriter, r *http.Request) {
-	logger.SetLevelStr(r.FormValue("level"))
 }
 
 //StaticHandler ..
