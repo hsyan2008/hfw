@@ -130,7 +130,7 @@ func Run() (err error) {
 		err = http.Serve(randPortListener, nil)
 	}
 	//如果未启动服务，就触发退出
-	if err != nil {
+	if err != nil && err != http.ErrServerClosed {
 		logger.Warn(err)
 		signalContext.doShutdownDone()
 	}
