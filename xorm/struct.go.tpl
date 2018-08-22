@@ -3,10 +3,12 @@ package {{.Models}}
 {{$ilen := len .Imports}}
 {{if gt $ilen 0}}
 import (
+    "database/sql"
     "encoding/gob"
+	{{range .Imports}}"{{.}}"{{end}}
+
     hfw "github.com/hsyan2008/hfw2"
     "github.com/hsyan2008/hfw2/database"
-	{{range .Imports}}"{{.}}"{{end}}
 )
 {{else}}
 import (
@@ -58,8 +60,13 @@ func (m *{{Mapper .Name}}) SearchOne(cond hfw.Cond) (t *{{Mapper .Name}}, err er
 	cond["pagesize"] = 1
 
 	rs, err := m.Search(cond)
-	if err == nil && len(rs) > 0 {
+	if err != nil {
+        return
+    }
+	if len(rs) > 0 {
 		t = rs[0]
+    } else {
+        t = new({{Mapper .Name}})
     }
 	return
 }
@@ -78,12 +85,16 @@ func (m *{{Mapper .Name}}) GetMulti(ids ...interface{}) (t []*{{Mapper .Name}}, 
 	return
 }
 
-//注意，和SearchOne一样，返回的t可能是nil TODO
 func (m *{{Mapper .Name}}) GetById(id interface{}) (t *{{Mapper .Name}}, err error) {
 	rs, err := m.GetMulti(id)
-	if err == nil && len(rs) > 0 {
+	if err != nil {
+        return
+    }
+	if len(rs) > 0 {
 		t = rs[0]
-	}
+    } else {
+        t = new({{Mapper .Name}})
+    }
 	return
 }
 
@@ -91,8 +102,8 @@ func (m *{{Mapper .Name}}) Replace(cond hfw.Cond) (int64, error) {
         return m.Dao.Replace("REPLACE `"+m.TableName()+"` SET ", cond)
 }
 
-func (m *{{Mapper .Name}}) Exec(sql string, args ...interface{}) (sql.Result, error) {
-        return m.Dao.Exec(sql, args...)
+func (m *{{Mapper .Name}}) Exec(sqlState string, args ...interface{}) (sql.Result, error) {
+        return m.Dao.Exec(sqlState, args...)
 }
 
 func (m *{{Mapper .Name}}) Query(args ...interface{}) ([]map[string][]byte, error) {
