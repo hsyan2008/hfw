@@ -221,16 +221,16 @@ func (curls *Curl) postForm() (httpRequest *http.Request, err error) {
 		httpRequest, _ = http.NewRequest("POST", curls.Url, b)
 		if v, ok := curls.Headers["Content-Type"]; ok {
 			httpRequest.Header.Add("Content-Type", v)
-		} else {
-			httpRequest.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+			// } else {
+			// 	httpRequest.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		}
 	} else if curls.PostString != "" {
 		b := strings.NewReader(curls.PostString)
 		httpRequest, _ = http.NewRequest("POST", curls.Url, b)
 		if v, ok := curls.Headers["Content-Type"]; ok {
 			httpRequest.Header.Add("Content-Type", v)
-		} else {
-			httpRequest.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+			// } else {
+			// 	httpRequest.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		}
 	} else {
 		var b = &bytes.Buffer{}
@@ -334,7 +334,7 @@ func (curls *Curl) getReader(resp *http.Response) (r io.ReadCloser, err error) {
 		}
 	}
 
-	return nil, errors.New("no body")
+	return nil, fmt.Errorf("got http status:%s, no body get", resp.Status)
 }
 
 //返回结果的时候，转换cookie为字符串
