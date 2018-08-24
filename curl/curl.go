@@ -59,6 +59,8 @@ type Curl struct {
 	PostFields neturl.Values
 	//文件
 	PostFiles neturl.Values
+	//流
+	PostReader io.Reader
 
 	timeout time.Duration
 
@@ -154,7 +156,7 @@ func (curls *Curl) Request(ctx context.Context) (rs Response, err error) {
 	var httpRequest *http.Request
 	var httpResponse *http.Response
 
-	if len(curls.PostBytes) > 0 || "" != curls.PostString || len(curls.PostFields) > 0 || len(curls.PostFiles) > 0 {
+	if curls.PostReader != nil || len(curls.PostBytes) > 0 || "" != curls.PostString || len(curls.PostFields) > 0 || len(curls.PostFiles) > 0 {
 		curls.Method = "post"
 	}
 
@@ -216,22 +218,18 @@ func (curls *Curl) Request(ctx context.Context) (rs Response, err error) {
 
 func (curls *Curl) postForm() (httpRequest *http.Request, err error) {
 
-	if len(curls.PostBytes) > 0 {
+	if v, ok := curls.Headers["Content-Type"]; ok {
+		httpRequest.Header.Set("Content-Type", v)
+	}
+
+	if curls.PostReader != nil {
+		httpRequest, _ = http.NewRequest("POST", curls.Url, curls.PostReader)
+	} else if len(curls.PostBytes) > 0 {
 		b := bytes.NewReader(curls.PostBytes)
 		httpRequest, _ = http.NewRequest("POST", curls.Url, b)
-		if v, ok := curls.Headers["Content-Type"]; ok {
-			httpRequest.Header.Add("Content-Type", v)
-			// } else {
-			// 	httpRequest.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-		}
 	} else if curls.PostString != "" {
 		b := strings.NewReader(curls.PostString)
 		httpRequest, _ = http.NewRequest("POST", curls.Url, b)
-		if v, ok := curls.Headers["Content-Type"]; ok {
-			httpRequest.Header.Add("Content-Type", v)
-			// } else {
-			// 	httpRequest.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-		}
 	} else {
 		var b = &bytes.Buffer{}
 		bodyWriter := multipart.NewWriter(b)
@@ -269,7 +267,7 @@ func (curls *Curl) postForm() (httpRequest *http.Request, err error) {
 		_ = bodyWriter.Close()
 
 		httpRequest, _ = http.NewRequest("POST", curls.Url, b)
-		httpRequest.Header.Add("Content-Type", bodyWriter.FormDataContentType())
+		httpRequest.Header.Set("Content-Type", bodyWriter.FormDataContentType())
 	}
 
 	delete(curls.Headers, "Content-Type")
@@ -297,6 +295,7 @@ func (curls *Curl) curlResponse(resp *http.Response) (response Response, err err
 				curls.PostString = ""
 				curls.PostFields = nil
 				curls.PostFiles = nil
+				curls.PostReader = nil
 				curls.Cookie = curls.afterCookie(resp)
 
 				return curls.Request(curls.ctx)
