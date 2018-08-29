@@ -214,3 +214,22 @@ func (httpContext *HTTPContext) SetDownloadMode(filename string) {
 	httpContext.ResponseWriter.Header().Set("Content-Disposition", fmt.Sprintf(`attachment;filename="%s"`, filename))
 	httpContext.isDownload = true
 }
+
+func (httpContext *HTTPContext) GetCookie(key string) (s string, err error) {
+	cookie, err := httpContext.Request.Cookie(key)
+	if err != nil {
+		return
+	}
+
+	return cookie.Value, nil
+}
+func (httpContext *HTTPContext) SetCookie(key, value string) {
+	cookie := &http.Cookie{
+		Name:     key,
+		Value:    value,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   httpContext.Request.URL.Scheme == "https",
+	}
+	http.SetCookie(httpContext.ResponseWriter, cookie)
+}
