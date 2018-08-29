@@ -17,7 +17,7 @@ import (
 	"github.com/hsyan2008/go-logger/logger"
 )
 
-var httpContextPool = &sync.Pool{
+var httpCtxPool = &sync.Pool{
 	New: func() interface{} {
 		return new(HTTPContext)
 	},
@@ -43,12 +43,12 @@ func router(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//放入pool里
-	httpContext := httpContextPool.Get().(*HTTPContext)
-	defer httpContextPool.Put(httpContext)
-	httpContext.Init(w, r)
-	httpContext.SignalContext = signalContext
-	httpContext.Ctx, httpContext.Cancel = context.WithCancel(signalContext.Ctx)
-	defer httpContext.Cancel()
+	httpCtx := httpCtxPool.Get().(*HTTPContext)
+	defer httpCtxPool.Put(httpCtx)
+	httpCtx.Init(w, r)
+	httpCtx.SignalContext = signalContext
+	httpCtx.Ctx, httpCtx.Cancel = context.WithCancel(signalContext.Ctx)
+	defer httpCtx.Cancel()
 
 	//如果用户关闭连接
 	go func() {
@@ -57,16 +57,16 @@ func router(w http.ResponseWriter, r *http.Request) {
 			recover()
 		}()
 		select {
-		case <-httpContext.Ctx.Done():
+		case <-httpCtx.Ctx.Done():
 			return
-		case <-httpContext.ResponseWriter.(http.CloseNotifier).CloseNotify():
-			httpContext.Cancel()
+		case <-httpCtx.ResponseWriter.(http.CloseNotifier).CloseNotify():
+			httpCtx.Cancel()
 			return
 		}
 	}()
 
 	if Config.Server.Concurrence > 0 {
-		err := holdConcurrenceChan(httpContext)
+		err := holdConcurrenceChan(httpCtx)
 		if err != nil {
 			logger.Warn(err)
 			return
@@ -80,8 +80,8 @@ func router(w http.ResponseWriter, r *http.Request) {
 	var isNotFound bool
 	var instance instance
 	var ok bool
-	if instance, ok = routeMapMethod[httpContext.Path+"with"+strings.ToLower(r.Method)]; !ok {
-		if instance, ok = routeMap[httpContext.Path]; !ok {
+	if instance, ok = routeMapMethod[httpCtx.Path+"with"+strings.ToLower(r.Method)]; !ok {
+		if instance, ok = routeMap[httpCtx.Path]; !ok {
 			isNotFound = true
 			//取默认的
 			p := Config.Route.DefaultController + "/" + Config.Route.DefaultAction
@@ -97,7 +97,7 @@ func router(w http.ResponseWriter, r *http.Request) {
 
 	//初始化Controller
 	initValue := []reflect.Value{
-		reflect.ValueOf(httpContext),
+		reflect.ValueOf(httpCtx),
 	}
 
 	//注意方法必须是大写开头，否则无法调用
@@ -135,16 +135,16 @@ func router(w http.ResponseWriter, r *http.Request) {
 	reflectVal.MethodByName("After").Call(initValue)
 }
 
-func holdConcurrenceChan(httpContext *HTTPContext) (err error) {
+func holdConcurrenceChan(httpCtx *HTTPContext) (err error) {
 	select {
 	//用户关闭连接
-	case <-httpContext.Ctx.Done():
-		return httpContext.Ctx.Err()
+	case <-httpCtx.Ctx.Done():
+		return httpCtx.Ctx.Err()
 	//服务关闭
 	case <-signalContext.Ctx.Done():
 		return errors.New("shutdown")
 	case <-time.After(3 * time.Second):
-		hj, ok := httpContext.ResponseWriter.(http.Hijacker)
+		hj, ok := httpCtx.ResponseWriter.(http.Hijacker)
 		if !ok {
 			return errors.New("Hijacker err")
 		}

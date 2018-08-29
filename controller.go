@@ -39,74 +39,74 @@ type Controller struct {
 }
 
 //Init ..
-func (ctl *Controller) Init(httpContext *HTTPContext) {
+func (ctl *Controller) Init(httpCtx *HTTPContext) {
 
 	var err error
 
 	// logger.Debug("Controller init")
 
-	if strings.Contains(httpContext.Request.URL.RawQuery, "format=json") {
-		httpContext.IsJSON = true
-	} else if strings.Contains(httpContext.Request.Header.Get("Accept"), "application/json") {
-		httpContext.IsJSON = true
+	if strings.Contains(httpCtx.Request.URL.RawQuery, "format=json") {
+		httpCtx.IsJSON = true
+	} else if strings.Contains(httpCtx.Request.Header.Get("Accept"), "application/json") {
+		httpCtx.IsJSON = true
 	}
 
-	if strings.Contains(httpContext.Request.Header.Get("Accept-Encoding"), "gzip") {
-		httpContext.IsZip = true
+	if strings.Contains(httpCtx.Request.Header.Get("Accept-Encoding"), "gzip") {
+		httpCtx.IsZip = true
 	}
 
-	// _ = httpContext.Request.ParseMultipartForm(2 * 1024 * 1024)
+	// _ = httpCtx.Request.ParseMultipartForm(2 * 1024 * 1024)
 
-	httpContext.Session, err = session.NewSession(httpContext.Request, DefaultRedisIns, Config)
-	httpContext.CheckErr(err)
+	httpCtx.Session, err = session.NewSession(httpCtx.Request, DefaultRedisIns, Config)
+	httpCtx.CheckErr(err)
 }
 
 //Before ..
-func (ctl *Controller) Before(httpContext *HTTPContext) {
+func (ctl *Controller) Before(httpCtx *HTTPContext) {
 	// logger.Debug("Controller Before")
 }
 
 //After ..
-func (ctl *Controller) After(httpContext *HTTPContext) {
+func (ctl *Controller) After(httpCtx *HTTPContext) {
 	// logger.Debug("Controller After")
-	if websocket.IsWebSocketUpgrade(httpContext.Request) || httpContext.isDownload {
+	if websocket.IsWebSocketUpgrade(httpCtx.Request) || httpCtx.isDownload {
 		return
 	}
 }
 
 //Finish ..
-func (ctl *Controller) Finish(httpContext *HTTPContext) {
-	if websocket.IsWebSocketUpgrade(httpContext.Request) || httpContext.isDownload {
+func (ctl *Controller) Finish(httpCtx *HTTPContext) {
+	if websocket.IsWebSocketUpgrade(httpCtx.Request) || httpCtx.isDownload {
 		return
 	}
 
-	if httpContext.Session != nil {
-		httpContext.Session.Close(httpContext.Request, httpContext.ResponseWriter)
+	if httpCtx.Session != nil {
+		httpCtx.Session.Close(httpCtx.Request, httpCtx.ResponseWriter)
 	}
 
-	httpContext.Output()
+	httpCtx.Output()
 }
 
 //NotFound ..
-func (ctl *Controller) NotFound(httpContext *HTTPContext) {
+func (ctl *Controller) NotFound(httpCtx *HTTPContext) {
 
-	httpContext.ResponseWriter.WriteHeader(http.StatusNotFound)
-	httpContext.IsError = true
+	httpCtx.ResponseWriter.WriteHeader(http.StatusNotFound)
+	httpCtx.IsError = true
 
-	httpContext.ErrNo = 404
-	httpContext.ErrMsg = "NotFound"
+	httpCtx.ErrNo = 404
+	httpCtx.ErrMsg = "NotFound"
 }
 
 //ServerError ..
 //不要手动调用，用于捕获未知错误，手动请用Throw
 //该方法不能使用StopRun，也不能panic，因为会被自动调用
-func (ctl *Controller) ServerError(httpContext *HTTPContext) {
+func (ctl *Controller) ServerError(httpCtx *HTTPContext) {
 
-	httpContext.ResponseWriter.WriteHeader(http.StatusInternalServerError)
-	httpContext.IsError = true
+	httpCtx.ResponseWriter.WriteHeader(http.StatusInternalServerError)
+	httpCtx.IsError = true
 
-	httpContext.ErrNo = 500
-	httpContext.ErrMsg = "ServerError"
+	httpCtx.ErrNo = 500
+	httpCtx.ErrMsg = "ServerError"
 }
 
 //HTTPContext ..
@@ -145,42 +145,42 @@ type HTTPContext struct {
 	Header          interface{} `json:"header"`
 }
 
-func (httpContext *HTTPContext) Init(w http.ResponseWriter, r *http.Request) {
-	httpContext.ResponseWriter = w
-	httpContext.Request = r
-	httpContext.Layout = ""
-	httpContext.Template = ""
-	httpContext.TemplateFile = ""
-	httpContext.IsJSON = false
-	httpContext.IsZip = false
-	httpContext.IsError = false
-	httpContext.Data = make(map[string]interface{})
-	httpContext.FuncMap = make(map[string]interface{})
+func (httpCtx *HTTPContext) Init(w http.ResponseWriter, r *http.Request) {
+	httpCtx.ResponseWriter = w
+	httpCtx.Request = r
+	httpCtx.Layout = ""
+	httpCtx.Template = ""
+	httpCtx.TemplateFile = ""
+	httpCtx.IsJSON = false
+	httpCtx.IsZip = false
+	httpCtx.IsError = false
+	httpCtx.Data = make(map[string]interface{})
+	httpCtx.FuncMap = make(map[string]interface{})
 
-	httpContext.HasHeader = false
-	httpContext.Header = nil
-	httpContext.ErrNo = 0
-	httpContext.ErrMsg = ""
-	httpContext.Results = nil
+	httpCtx.HasHeader = false
+	httpCtx.Header = nil
+	httpCtx.ErrNo = 0
+	httpCtx.ErrMsg = ""
+	httpCtx.Results = nil
 
-	httpContext.Controll, httpContext.Action, _ = formatURL(r.URL.Path)
-	httpContext.Path = fmt.Sprintf("%s/%s", httpContext.Controll, httpContext.Action)
-	// httpContext.TemplateFile = fmt.Sprintf("%s.html", httpContext.Path)
+	httpCtx.Controll, httpCtx.Action, _ = formatURL(r.URL.Path)
+	httpCtx.Path = fmt.Sprintf("%s/%s", httpCtx.Controll, httpCtx.Action)
+	// httpCtx.TemplateFile = fmt.Sprintf("%s.html", httpCtx.Path)
 }
 
 //GetForm 优先post和put,然后get
-func (httpContext *HTTPContext) GetForm(key string) string {
-	return strings.TrimSpace(httpContext.Request.FormValue(key))
+func (httpCtx *HTTPContext) GetForm(key string) string {
+	return strings.TrimSpace(httpCtx.Request.FormValue(key))
 }
 
 //GetFormInt 优先post和put,然后get，转为int
-func (httpContext *HTTPContext) GetFormInt(key string) int {
-	n, _ := strconv.Atoi(httpContext.GetForm(key))
+func (httpCtx *HTTPContext) GetFormInt(key string) int {
+	n, _ := strconv.Atoi(httpCtx.GetForm(key))
 	return n
 }
 
 //StopRun ..
-func (httpContext *HTTPContext) StopRun() {
+func (httpCtx *HTTPContext) StopRun() {
 	// logger.Debug("StopRun")
 	panic(ErrStopRun)
 
@@ -189,47 +189,47 @@ func (httpContext *HTTPContext) StopRun() {
 }
 
 //Redirect ..
-func (httpContext *HTTPContext) Redirect(url string) {
-	http.Redirect(httpContext.ResponseWriter, httpContext.Request, url, http.StatusFound)
-	httpContext.StopRun()
+func (httpCtx *HTTPContext) Redirect(url string) {
+	http.Redirect(httpCtx.ResponseWriter, httpCtx.Request, url, http.StatusFound)
+	httpCtx.StopRun()
 }
 
 //ThrowException ..
-func (httpContext *HTTPContext) ThrowException(code int64, msg string) {
-	httpContext.ErrNo = code
-	httpContext.ErrMsg = msg
-	httpContext.StopRun()
+func (httpCtx *HTTPContext) ThrowException(code int64, msg string) {
+	httpCtx.ErrNo = code
+	httpCtx.ErrMsg = msg
+	httpCtx.StopRun()
 }
 
 //CheckErr ..
-func (httpContext *HTTPContext) CheckErr(err error) {
+func (httpCtx *HTTPContext) CheckErr(err error) {
 	if nil != err {
 		logger.Error(err)
-		httpContext.ThrowException(500, "系统错误")
+		httpCtx.ThrowException(500, "系统错误")
 	}
 }
 
 //SetDownloadMode ..
-func (httpContext *HTTPContext) SetDownloadMode(filename string) {
-	httpContext.ResponseWriter.Header().Set("Content-Disposition", fmt.Sprintf(`attachment;filename="%s"`, filename))
-	httpContext.isDownload = true
+func (httpCtx *HTTPContext) SetDownloadMode(filename string) {
+	httpCtx.ResponseWriter.Header().Set("Content-Disposition", fmt.Sprintf(`attachment;filename="%s"`, filename))
+	httpCtx.isDownload = true
 }
 
-func (httpContext *HTTPContext) GetCookie(key string) (s string, err error) {
-	cookie, err := httpContext.Request.Cookie(key)
+func (httpCtx *HTTPContext) GetCookie(key string) (s string, err error) {
+	cookie, err := httpCtx.Request.Cookie(key)
 	if err != nil {
 		return
 	}
 
 	return cookie.Value, nil
 }
-func (httpContext *HTTPContext) SetCookie(key, value string) {
+func (httpCtx *HTTPContext) SetCookie(key, value string) {
 	cookie := &http.Cookie{
 		Name:     key,
 		Value:    value,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   httpContext.Request.URL.Scheme == "https",
+		Secure:   httpCtx.Request.URL.Scheme == "https",
 	}
-	http.SetCookie(httpContext.ResponseWriter, cookie)
+	http.SetCookie(httpCtx.ResponseWriter, cookie)
 }

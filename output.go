@@ -14,50 +14,50 @@ import (
 )
 
 //Output ..
-func (httpContext *HTTPContext) Output() {
+func (httpCtx *HTTPContext) Output() {
 	// logger.Debug("Output")
-	if httpContext.ResponseWriter.Header().Get("Location") != "" {
+	if httpCtx.ResponseWriter.Header().Get("Location") != "" {
 		return
 	}
 
-	if httpContext.IsJSON {
-		httpContext.ReturnJSON()
+	if httpCtx.IsJSON {
+		httpCtx.ReturnJSON()
 		return
-	} else if httpContext.TemplateFile != "" || httpContext.Template != "" {
-		httpContext.Render()
+	} else if httpCtx.TemplateFile != "" || httpCtx.Template != "" {
+		httpCtx.Render()
 		return
 	}
 
-	httpContext.ReturnJSON()
+	httpCtx.ReturnJSON()
 }
 
 //DownloadFile 下载文件服务
-func (httpContext *HTTPContext) ReturnFileContent(filename string, file interface{}) {
-	httpContext.IsJSON = false
-	httpContext.Template = ""
-	httpContext.TemplateFile = ""
+func (httpCtx *HTTPContext) ReturnFileContent(filename string, file interface{}) {
+	httpCtx.IsJSON = false
+	httpCtx.Template = ""
+	httpCtx.TemplateFile = ""
 	var w io.Writer
 	var r io.Reader
 	var err error
-	if !httpContext.IsError && httpContext.IsZip {
-		httpContext.ResponseWriter.Header().Del("Content-Length")
-		httpContext.ResponseWriter.Header().Set("Content-Encoding", "gzip")
-		w = gzip.NewWriter(httpContext.ResponseWriter)
+	if !httpCtx.IsError && httpCtx.IsZip {
+		httpCtx.ResponseWriter.Header().Del("Content-Length")
+		httpCtx.ResponseWriter.Header().Set("Content-Encoding", "gzip")
+		w = gzip.NewWriter(httpCtx.ResponseWriter)
 		defer w.(io.WriteCloser).Close()
 	} else {
-		w = httpContext.ResponseWriter
+		w = httpCtx.ResponseWriter
 	}
 
 	switch t := file.(type) {
 	case string: //文件路径，http.ServeFile不自动压缩
 		f, err := filepath.Abs(file.(string))
-		httpContext.CheckErr(err)
+		httpCtx.CheckErr(err)
 		if !common.IsExist(f) {
-			httpContext.CheckErr(errors.New("file not exist"))
+			httpCtx.CheckErr(errors.New("file not exist"))
 		}
 		r, err = os.Open(t)
 		defer r.(io.Closer).Close()
-		httpContext.CheckErr(err)
+		httpCtx.CheckErr(err)
 	case io.Reader: //io流，如果是文件内容，可以通过bytes.Buffer包装下
 		r = file.(io.Reader)
 		if f, ok := file.(io.Closer); ok {
@@ -65,10 +65,10 @@ func (httpContext *HTTPContext) ReturnFileContent(filename string, file interfac
 		}
 	}
 
-	httpContext.SetDownloadMode(filename)
+	httpCtx.SetDownloadMode(filename)
 
 	_, err = io.Copy(w, r)
-	httpContext.CheckErr(err)
+	httpCtx.CheckErr(err)
 }
 
 var templatesCache = struct {
@@ -80,44 +80,44 @@ var templatesCache = struct {
 }
 
 //Render ..
-func (httpContext *HTTPContext) Render() {
-	httpContext.ResponseWriter.Header().Set("Content-Type", "text/html; charset=utf-8")
+func (httpCtx *HTTPContext) Render() {
+	httpCtx.ResponseWriter.Header().Set("Content-Type", "text/html; charset=utf-8")
 	var (
 		t   *template.Template
 		err error
 	)
-	t = httpContext.render()
+	t = httpCtx.render()
 
-	if !httpContext.IsError && httpContext.IsZip {
-		httpContext.ResponseWriter.Header().Del("Content-Length")
-		httpContext.ResponseWriter.Header().Set("Content-Encoding", "gzip")
-		writer := gzip.NewWriter(httpContext.ResponseWriter)
+	if !httpCtx.IsError && httpCtx.IsZip {
+		httpCtx.ResponseWriter.Header().Del("Content-Length")
+		httpCtx.ResponseWriter.Header().Set("Content-Encoding", "gzip")
+		writer := gzip.NewWriter(httpCtx.ResponseWriter)
 		defer writer.Close()
-		err = t.Execute(writer, httpContext)
+		err = t.Execute(writer, httpCtx)
 	} else {
-		err = t.Execute(httpContext.ResponseWriter, httpContext)
+		err = t.Execute(httpCtx.ResponseWriter, httpCtx)
 	}
-	httpContext.CheckErr(err)
+	httpCtx.CheckErr(err)
 }
 
-func (httpContext *HTTPContext) render() (t *template.Template) {
+func (httpCtx *HTTPContext) render() (t *template.Template) {
 	var key string
 	var render func() *template.Template
 	var ok bool
-	if httpContext.Template != "" {
-		key = httpContext.Path
-		// return httpContext.renderHtml()
-		render = httpContext.renderHtml
-	} else if httpContext.TemplateFile != "" {
-		key = httpContext.TemplateFile
-		render = httpContext.renderFile
+	if httpCtx.Template != "" {
+		key = httpCtx.Path
+		// return httpCtx.renderHtml()
+		render = httpCtx.renderHtml
+	} else if httpCtx.TemplateFile != "" {
+		key = httpCtx.TemplateFile
+		render = httpCtx.renderFile
 	}
 
 	if Config.Template.IsCache {
 		templatesCache.l.RLock()
 		if t, ok = templatesCache.list[key]; !ok {
 			templatesCache.l.RUnlock()
-			// t = httpContext.render()
+			// t = httpCtx.render()
 			t = render()
 			templatesCache.l.Lock()
 			templatesCache.list[key] = t
@@ -126,18 +126,18 @@ func (httpContext *HTTPContext) render() (t *template.Template) {
 			templatesCache.l.RUnlock()
 		}
 	} else {
-		// t = httpContext.render()
+		// t = httpCtx.render()
 		t = render()
 	}
 
 	return t
 }
 
-func (httpContext *HTTPContext) renderHtml() (t *template.Template) {
-	if len(httpContext.FuncMap) == 0 {
-		t = template.Must(template.New(httpContext.Path).Parse(httpContext.Template))
+func (httpCtx *HTTPContext) renderHtml() (t *template.Template) {
+	if len(httpCtx.FuncMap) == 0 {
+		t = template.Must(template.New(httpCtx.Path).Parse(httpCtx.Template))
 	} else {
-		t = template.Must(template.New(httpContext.Path).Funcs(httpContext.FuncMap).Parse(httpContext.Template))
+		t = template.Must(template.New(httpCtx.Path).Funcs(httpCtx.FuncMap).Parse(httpCtx.Template))
 	}
 	if Config.Template.WidgetsPath != "" {
 		widgetsPath := filepath.Join(Config.Template.HTMLPath, Config.Template.WidgetsPath)
@@ -146,20 +146,20 @@ func (httpContext *HTTPContext) renderHtml() (t *template.Template) {
 
 	return
 }
-func (httpContext *HTTPContext) renderFile() (t *template.Template) {
+func (httpCtx *HTTPContext) renderFile() (t *template.Template) {
 	var templateFilePath string
-	if common.IsExist(httpContext.TemplateFile) {
-		templateFilePath = httpContext.TemplateFile
+	if common.IsExist(httpCtx.TemplateFile) {
+		templateFilePath = httpCtx.TemplateFile
 	} else {
-		templateFilePath = filepath.Join(Config.Template.HTMLPath, httpContext.TemplateFile)
+		templateFilePath = filepath.Join(Config.Template.HTMLPath, httpCtx.TemplateFile)
 	}
 	if !common.IsExist(templateFilePath) {
-		httpContext.ThrowException(500, "system error")
+		httpCtx.ThrowException(500, "system error")
 	}
-	if len(httpContext.FuncMap) == 0 {
+	if len(httpCtx.FuncMap) == 0 {
 		t = template.Must(template.ParseFiles(templateFilePath))
 	} else {
-		t = template.Must(template.New(filepath.Base(httpContext.TemplateFile)).Funcs(httpContext.FuncMap).ParseFiles(templateFilePath))
+		t = template.Must(template.New(filepath.Base(httpCtx.TemplateFile)).Funcs(httpCtx.FuncMap).ParseFiles(templateFilePath))
 	}
 	if Config.Template.WidgetsPath != "" {
 		widgetsPath := filepath.Join(Config.Template.HTMLPath, Config.Template.WidgetsPath)
@@ -170,29 +170,29 @@ func (httpContext *HTTPContext) renderFile() (t *template.Template) {
 }
 
 //ReturnJSON ..
-func (httpContext *HTTPContext) ReturnJSON() {
-	httpContext.ResponseWriter.Header().Set("Content-Type", "application/json; charset=utf-8")
-	if len(httpContext.Data) > 0 && httpContext.Results == nil {
-		httpContext.Results = httpContext.Data
+func (httpCtx *HTTPContext) ReturnJSON() {
+	httpCtx.ResponseWriter.Header().Set("Content-Type", "application/json; charset=utf-8")
+	if len(httpCtx.Data) > 0 && httpCtx.Results == nil {
+		httpCtx.Results = httpCtx.Data
 	}
 
 	var w io.Writer
-	if !httpContext.IsError && httpContext.IsZip {
-		httpContext.ResponseWriter.Header().Del("Content-Length")
-		httpContext.ResponseWriter.Header().Set("Content-Encoding", "gzip")
-		w = gzip.NewWriter(httpContext.ResponseWriter)
+	if !httpCtx.IsError && httpCtx.IsZip {
+		httpCtx.ResponseWriter.Header().Del("Content-Length")
+		httpCtx.ResponseWriter.Header().Set("Content-Encoding", "gzip")
+		w = gzip.NewWriter(httpCtx.ResponseWriter)
 		defer w.(io.WriteCloser).Close()
 	} else {
-		w = httpContext.ResponseWriter
+		w = httpCtx.ResponseWriter
 	}
 
 	var err error
-	if httpContext.HasHeader {
+	if httpCtx.HasHeader {
 		//header + response(err_no + err_msg)
-		err = encoding.JSONWriterMarshal(w, httpContext)
+		err = encoding.JSONWriterMarshal(w, httpCtx)
 	} else {
 		//err_no + err_msg
-		err = encoding.JSONWriterMarshal(w, httpContext.Response)
+		err = encoding.JSONWriterMarshal(w, httpCtx.Response)
 	}
-	httpContext.CheckErr(err)
+	httpCtx.CheckErr(err)
 }
