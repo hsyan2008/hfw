@@ -34,20 +34,30 @@ func gobUnmarshal(data []byte, v interface{}) error {
 	return gob.NewDecoder(bytes.NewBuffer(data)).Decode(v)
 }
 
+type CodecIO struct {
+	Marshal   func(io.Writer, interface{}) error
+	Unmarshal func(io.Reader, interface{}) error
+}
+
+var (
+	GobIO  = CodecIO{gobWriterMarshal, gobReaderUnmarshal}
+	JSONIO = CodecIO{jsonWriterMarshal, jsonReaderUnmarshal}
+)
+
 //以下直接针对r/w操作
-func GobWriterMarshal(w io.Writer, data interface{}) (err error) {
+func gobWriterMarshal(w io.Writer, data interface{}) (err error) {
 	return gob.NewEncoder(w).Encode(data)
 }
 
-func GobReaderUnmarshal(r io.Reader, data interface{}) (err error) {
+func gobReaderUnmarshal(r io.Reader, data interface{}) (err error) {
 	return gob.NewDecoder(r).Decode(data)
 }
 
-func JSONWriterMarshal(w io.Writer, data interface{}) (err error) {
+func jsonWriterMarshal(w io.Writer, data interface{}) (err error) {
 	enc := jsoniter.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 	return enc.Encode(data)
 }
-func JSONReaderUnmarshal(r io.Reader, data interface{}) (err error) {
+func jsonReaderUnmarshal(r io.Reader, data interface{}) (err error) {
 	return jsoniter.NewDecoder(r).Decode(data)
 }

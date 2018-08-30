@@ -189,10 +189,10 @@ func (httpCtx *HTTPContext) ReturnJSON() {
 	var err error
 	if httpCtx.HasHeader {
 		//header + response(err_no + err_msg)
-		err = encoding.JSONWriterMarshal(w, httpCtx)
+		err = encoding.JSONIO.Marshal(w, httpCtx)
 	} else {
 		//err_no + err_msg
-		err = encoding.JSONWriterMarshal(w, httpCtx.Response)
+		err = encoding.JSONIO.Marshal(w, httpCtx.Response)
 	}
 	httpCtx.CheckErr(err)
 }
