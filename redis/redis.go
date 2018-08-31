@@ -130,7 +130,7 @@ func (this *Redis) Del(key string) (isExist bool, err error) {
 	return
 }
 
-func (this *Redis) Setnx(key string, value interface{}) (isExist bool, err error) {
+func (this *Redis) SetNx(key string, value interface{}) (isExist bool, err error) {
 	key = this.prefix + key
 	// key = fmt.Sprintf("%x", md5.Sum([]byte(key)))
 	// Debug("Put cache key:", sessid, key, value)
