@@ -117,12 +117,12 @@ func (this *Redis) Get(key string) (value interface{}, err error) {
 	return
 }
 
-func (this *Redis) Del(key string) (isExist bool, err error) {
+func (this *Redis) Del(key string) (isOk bool, err error) {
 	key = this.prefix + key
 	// key = fmt.Sprintf("%x", md5.Sum([]byte(key)))
 	// Debug("Del cache key:", sessid, key)
 
-	isExist, err = redis.Bool(this.pool().Do("DEL", key))
+	isOk, err = redis.Bool(this.pool().Do("DEL", key))
 	if err != nil {
 		logger.Debug("Del cache key:", key, err)
 	}
@@ -130,7 +130,7 @@ func (this *Redis) Del(key string) (isExist bool, err error) {
 	return
 }
 
-func (this *Redis) SetNx(key string, value interface{}) (isExist bool, err error) {
+func (this *Redis) SetNx(key string, value interface{}) (isOk bool, err error) {
 	key = this.prefix + key
 	// key = fmt.Sprintf("%x", md5.Sum([]byte(key)))
 	// Debug("Put cache key:", sessid, key, value)
@@ -139,9 +139,16 @@ func (this *Redis) SetNx(key string, value interface{}) (isExist bool, err error
 	if err != nil {
 		logger.Debug("Setnx cache Gob Marshal key:", key, value, err)
 	} else {
-		isExist, err = redis.Bool(this.pool().Do("SETNX", key, v))
+		var ok string
+		ok, err = redis.String(this.pool().Do("SET", key, v, "NX"))
 		if err != nil {
 			logger.Debug("Setnx cache key:", key, v, err)
+			return
+		}
+		if ok != "OK" {
+			err = errors.New("SetEx return not ok")
+		} else {
+			isOk = true
 		}
 	}
 
@@ -160,11 +167,12 @@ func (this *Redis) SetEx(key string, value interface{}, expiration int) (err err
 	} else {
 		var ok string
 		ok, err = redis.String(this.pool().Do("SET", key, v, "EX", expiration))
-		if ok != "OK" {
-			err = errors.New("SetEx return not ok")
-		}
 		if err != nil {
 			logger.Debug("SetEx cache key:", key, v, ok, err)
+			return
+		}
+		if ok != "OK" {
+			err = errors.New("SetEx return not ok")
 		}
 	}
 
@@ -172,7 +180,7 @@ func (this *Redis) SetEx(key string, value interface{}, expiration int) (err err
 }
 
 //set的复杂格式，支持过期时间，当key存在的时候不保存
-func (this *Redis) SetNxEx(key string, value interface{}, expiration int) (err error) {
+func (this *Redis) SetNxEx(key string, value interface{}, expiration int) (isOk bool, err error) {
 	key = this.prefix + key
 	// key = fmt.Sprintf("%x", md5.Sum([]byte(key)))
 	// Debug("Put cache key:", sessid, key, value)
@@ -183,11 +191,14 @@ func (this *Redis) SetNxEx(key string, value interface{}, expiration int) (err e
 	} else {
 		var ok string
 		ok, err = redis.String(this.pool().Do("SET", key, v, "NX", "EX", expiration))
-		if ok != "OK" {
-			err = errors.New("SetNxEx return not ok")
-		}
 		if err != nil {
 			logger.Debug("SetNxEx cache key:", key, v, ok, err)
+			return
+		}
+		if ok != "OK" {
+			err = errors.New("SetNxEx return not ok")
+		} else {
+			isOk = true
 		}
 	}
 
