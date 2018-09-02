@@ -2,6 +2,7 @@ package redis
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/garyburd/redigo/redis"
@@ -142,6 +143,9 @@ func (this *Redis) SetNx(key string, value interface{}) (isOk bool, err error) {
 		var ok string
 		ok, err = redis.String(this.pool().Do("SET", key, v, "NX"))
 		if err != nil {
+			if strings.Contains(err.Error(), "nil return") {
+				return false, nil
+			}
 			logger.Debug("Setnx cache key:", key, v, err)
 			return
 		}
@@ -192,6 +196,9 @@ func (this *Redis) SetNxEx(key string, value interface{}, expiration int) (isOk 
 		var ok string
 		ok, err = redis.String(this.pool().Do("SET", key, v, "NX", "EX", expiration))
 		if err != nil {
+			if strings.Contains(err.Error(), "nil return") {
+				return false, nil
+			}
 			logger.Debug("SetNxEx cache key:", key, v, ok, err)
 			return
 		}
