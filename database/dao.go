@@ -99,7 +99,7 @@ func (d *NoCacheDao) UpdateByWhere(t interface{}, params map[string]interface{},
 
 	sess := d.engine.NewSession()
 	defer sess.Close()
-	_, err = sess.Table(t).Where(strings.Join(str, " "), args...).Update(params)
+	_, err = sess.Table(t).Where(strings.Join(str, " AND "), args...).Update(params)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
 		logger.Error(err, lastSQL, lastSQLArgs)
