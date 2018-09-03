@@ -99,15 +99,21 @@ func (m *{{Mapper .Name}}) GetById(id interface{}) (t *{{Mapper .Name}}, err err
 }
 
 func (m *{{Mapper .Name}}) Replace(cond hfw.Cond) (int64, error) {
-        return m.Dao.Replace("REPLACE `"+m.TableName()+"` SET ", cond)
+    return m.Dao.Replace(fmt.Sprintf("REPLACE `%s` SET ", m.TableName()), cond)
 }
 
 func (m *{{Mapper .Name}}) Exec(sqlState string, args ...interface{}) (sql.Result, error) {
-        return m.Dao.Exec(sqlState, args...)
+    return m.Dao.Exec(sqlState, args...)
 }
 
 func (m *{{Mapper .Name}}) Query(args ...interface{}) ([]map[string][]byte, error) {
-        return m.Dao.Query(args...)
+    return m.Dao.Query(args...)
 }
 
+func (m *{{Mapper .Name}}) QueryString(args ...interface{}) ([]map[string]string, error) {
+    return m.Dao.Query(args...)
+}
+func (m *{{Mapper .Name}}) QueryInterface(args ...interface{}) ([]map[string]interface{}, error) {
+    return m.Dao.Query(args...)
+}
 {{end}}
