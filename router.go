@@ -51,19 +51,7 @@ func router(w http.ResponseWriter, r *http.Request) {
 	defer httpCtx.Cancel()
 
 	//如果用户关闭连接
-	go func() {
-		//panic: net/http: CloseNotify called after ServeHTTP finished
-		defer func() {
-			recover()
-		}()
-		select {
-		case <-httpCtx.Ctx.Done():
-			return
-		case <-httpCtx.ResponseWriter.(http.CloseNotifier).CloseNotify():
-			httpCtx.Cancel()
-			return
-		}
-	}()
+	go closeNotify(httpCtx)
 
 	if Config.Server.Concurrence > 0 {
 		err := holdConcurrenceChan(httpCtx)
@@ -104,22 +92,7 @@ func router(w http.ResponseWriter, r *http.Request) {
 	reflectVal.MethodByName("Init").Call(initValue)
 	defer reflectVal.MethodByName("Finish").Call(initValue)
 
-	defer func() {
-		//注意recover只能执行一次
-		if err := recover(); err != nil {
-			//用户触发的
-			if err == ErrStopRun {
-				return
-			}
-			buf := make([]byte, 1<<20)
-			num := runtime.Stack(buf, false)
-			logger.Warn(num, string(buf))
-
-			errMsg := fmt.Sprint(err)
-			logger.Warn(errMsg)
-			reflectVal.MethodByName("ServerError").Call(initValue)
-		}
-	}()
+	defer recoverPanic(reflectVal, initValue)
 
 	reflectVal.MethodByName("Before").Call(initValue)
 
@@ -133,6 +106,35 @@ func router(w http.ResponseWriter, r *http.Request) {
 	reflectVal.MethodByName(action).Call(initValue)
 
 	reflectVal.MethodByName("After").Call(initValue)
+}
+
+func recoverPanic(reflectVal reflect.Value, initValue []reflect.Value) {
+	//注意recover只能执行一次
+	if err := recover(); err != nil {
+		//用户触发的
+		if err == ErrStopRun {
+			return
+		}
+		buf := make([]byte, 1<<20)
+		num := runtime.Stack(buf, false)
+		logger.Warn(err, num, string(buf))
+
+		reflectVal.MethodByName("ServerError").Call(initValue)
+	}
+}
+
+func closeNotify(httpCtx *HTTPContext) {
+	//panic: net/http: CloseNotify called after ServeHTTP finished
+	defer func() {
+		_ = recover()
+	}()
+	select {
+	case <-httpCtx.Ctx.Done():
+		return
+	case <-httpCtx.ResponseWriter.(http.CloseNotifier).CloseNotify():
+		httpCtx.Cancel()
+		return
+	}
 }
 
 func holdConcurrenceChan(httpCtx *HTTPContext) (err error) {
@@ -152,7 +154,7 @@ func holdConcurrenceChan(httpCtx *HTTPContext) (err error) {
 		if err != nil {
 			return err
 		}
-		conn.Close()
+		_ = conn.Close()
 		return errors.New("timeout")
 	case concurrenceChan <- true:
 		return

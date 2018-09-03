@@ -195,9 +195,13 @@ func (httpCtx *HTTPContext) Redirect(url string) {
 }
 
 //ThrowException ..
-func (httpCtx *HTTPContext) ThrowException(code int64, msg string) {
-	httpCtx.ErrNo = code
-	httpCtx.ErrMsg = msg
+func (httpCtx *HTTPContext) ThrowException(errNo int64, errMsg string) {
+	logger.Output(3, "WARN", errNo, errMsg)
+	httpCtx.ErrNo = errNo
+	httpCtx.ErrMsg = GetErrorMap(errNo)
+	if len(httpCtx.ErrMsg) == 0 {
+		httpCtx.ErrMsg = errMsg
+	}
 	httpCtx.StopRun()
 }
 
