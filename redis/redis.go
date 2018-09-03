@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/garyburd/redigo/redis"
+	"github.com/gomodule/redigo/redis"
 	"github.com/hsyan2008/go-logger/logger"
 	"github.com/hsyan2008/hfw2/configs"
 	"github.com/hsyan2008/hfw2/encoding"
@@ -113,6 +113,32 @@ func (this *Redis) Get(key string) (value interface{}, err error) {
 		if err != nil {
 			logger.Debug("Get cache Gob Unmarshal key:", key, err)
 		}
+	}
+
+	return
+}
+
+func (this *Redis) Incr(key string) (value int64, err error) {
+	key = this.prefix + key
+	// key = fmt.Sprintf("%x", md5.Sum([]byte(key)))
+	// Debug("Get cache key:", sessid, key)
+
+	value, err = redis.Int64(this.pool().Do("INCR", key))
+	if err != nil {
+		logger.Debug("Get cache key:", key, err)
+	}
+
+	return
+}
+
+func (this *Redis) Decr(key string) (value int64, err error) {
+	key = this.prefix + key
+	// key = fmt.Sprintf("%x", md5.Sum([]byte(key)))
+	// Debug("Get cache key:", sessid, key)
+
+	value, err = redis.Int64(this.pool().Do("DECR", key))
+	if err != nil {
+		logger.Debug("Get cache key:", key, err)
 	}
 
 	return
