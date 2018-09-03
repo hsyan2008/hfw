@@ -2,7 +2,6 @@ package hfw
 
 import (
 	"compress/gzip"
-	"errors"
 	"html/template"
 	"io"
 	"os"
@@ -51,13 +50,13 @@ func (httpCtx *HTTPContext) ReturnFileContent(filename string, file interface{})
 	switch t := file.(type) {
 	case string: //文件路径，http.ServeFile不自动压缩
 		f, err := filepath.Abs(file.(string))
-		httpCtx.CheckErr(err)
+		httpCtx.ThrowError(500, err)
 		if !common.IsExist(f) {
-			httpCtx.CheckErr(errors.New("file not exist"))
+			httpCtx.ThrowException(500, "file not exist")
 		}
 		r, err = os.Open(t)
 		defer r.(io.Closer).Close()
-		httpCtx.CheckErr(err)
+		httpCtx.ThrowError(500, err)
 	case io.Reader: //io流，如果是文件内容，可以通过bytes.Buffer包装下
 		r = file.(io.Reader)
 		if f, ok := file.(io.Closer); ok {
@@ -68,7 +67,7 @@ func (httpCtx *HTTPContext) ReturnFileContent(filename string, file interface{})
 	httpCtx.SetDownloadMode(filename)
 
 	_, err = io.Copy(w, r)
-	httpCtx.CheckErr(err)
+	httpCtx.ThrowError(500, err)
 }
 
 var templatesCache = struct {
@@ -97,7 +96,7 @@ func (httpCtx *HTTPContext) Render() {
 	} else {
 		err = t.Execute(httpCtx.ResponseWriter, httpCtx)
 	}
-	httpCtx.CheckErr(err)
+	httpCtx.ThrowError(500, err)
 }
 
 func (httpCtx *HTTPContext) render() (t *template.Template) {
@@ -194,5 +193,5 @@ func (httpCtx *HTTPContext) ReturnJSON() {
 		//err_no + err_msg
 		err = encoding.JSONIO.Marshal(w, httpCtx.Response)
 	}
-	httpCtx.CheckErr(err)
+	httpCtx.ThrowError(500, err)
 }

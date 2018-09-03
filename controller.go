@@ -58,7 +58,7 @@ func (ctl *Controller) Init(httpCtx *HTTPContext) {
 	// _ = httpCtx.Request.ParseMultipartForm(2 * 1024 * 1024)
 
 	httpCtx.Session, err = session.NewSession(httpCtx.Request, DefaultRedisIns, Config)
-	httpCtx.CheckErr(err)
+	httpCtx.ThrowError(500, err)
 }
 
 //Before ..
@@ -183,9 +183,6 @@ func (httpCtx *HTTPContext) GetFormInt(key string) int {
 func (httpCtx *HTTPContext) StopRun() {
 	// logger.Debug("StopRun")
 	panic(ErrStopRun)
-
-	//考虑用runtime.Goexit()，
-	//经测试，会执行defer，但连接在这里就中断了，浏览器拿不到结果
 }
 
 //Redirect ..
@@ -205,12 +202,12 @@ func (httpCtx *HTTPContext) ThrowException(errNo int64, errMsg string) {
 	httpCtx.StopRun()
 }
 
-//CheckErr ..
-func (httpCtx *HTTPContext) CheckErr(err error) {
-	if nil != err {
-		logger.Error(err)
-		httpCtx.ThrowException(500, "系统错误")
+//ThrowError ..
+func (httpCtx *HTTPContext) ThrowError(errNo int64, err error) {
+	if err == nil {
+		return
 	}
+	httpCtx.ThrowException(errNo, err.Error())
 }
 
 //SetDownloadMode ..
