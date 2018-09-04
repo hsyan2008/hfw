@@ -2,6 +2,7 @@ package hfw
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -81,6 +82,9 @@ func (httpCtx *HTTPContext) GetFormInt(key string) int {
 	n, _ := strconv.Atoi(httpCtx.GetForm(key))
 	return n
 }
+
+//ErrStopRun ..
+var ErrStopRun = errors.New("user stop run")
 
 //StopRun ..
 func (httpCtx *HTTPContext) StopRun() {

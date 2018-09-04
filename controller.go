@@ -2,7 +2,6 @@ package hfw
 
 //手动匹配路由
 import (
-	"errors"
 	"net/http"
 	"strings"
 
@@ -25,9 +24,6 @@ type ControllerInterface interface {
 
 //确认Controller实现了接口 ControllerInterface
 var _ ControllerInterface = &Controller{}
-
-//ErrStopRun ..
-var ErrStopRun = errors.New("user stop run")
 
 //Controller ..
 type Controller struct {
