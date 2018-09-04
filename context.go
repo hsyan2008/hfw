@@ -110,7 +110,14 @@ func (httpCtx *HTTPContext) ThrowIfError(errNo int64, err error) {
 	if err == nil {
 		return
 	}
-	httpCtx.ThrowException(errNo, err.Error())
+	errMsg := err.Error()
+	logger.Output(3, "WARN", errNo, errMsg)
+	httpCtx.ErrNo = errNo
+	httpCtx.ErrMsg = GetErrorMap(errNo)
+	if len(httpCtx.ErrMsg) == 0 {
+		httpCtx.ErrMsg = errMsg
+	}
+	httpCtx.StopRun()
 }
 
 //SetDownloadMode ..
