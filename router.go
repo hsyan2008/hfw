@@ -224,13 +224,26 @@ func Handler(pattern string, handler ControllerInterface) (err error) {
 	return
 }
 
-//StaticHandler ..
+//StaticHandler ...
+//如pattern=css,dir=./static，则css在./static下
 func StaticHandler(pattern string, dir string) {
 	if !filepath.IsAbs(dir) {
 		dir = filepath.Join(APPPATH, dir)
 	}
-	s := "/" + strings.Trim(pattern, "/")
+	s := "/" + strings.Trim(pattern, "/") + "/"
+	logger.Info("StaticHandler", s, dir)
 	http.Handle(s, http.FileServer(http.Dir(dir)))
+}
+
+//StaticStripHandler ...
+//如pattern=css,dir=./static/cssd，则css在./static/cssd下
+func StaticStripHandler(pattern string, dir string) {
+	if !filepath.IsAbs(dir) {
+		dir = filepath.Join(APPPATH, dir)
+	}
+	s := "/" + strings.Trim(pattern, "/") + "/"
+	logger.Info("StaticStripHandler", s, dir)
+	http.Handle(s, http.StripPrefix(s, http.FileServer(http.Dir(dir))))
 }
 
 func formatURL(url string) (controller string, action string, leave string) {
