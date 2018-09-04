@@ -48,6 +48,10 @@ func (m *{{Mapper .Name}}) Save(t *{{Mapper .Name}}) (err error) {
 	return
 }
 
+func (m *{{Mapper .Name}}) Saves(t []*{{Mapper .Name}}) (err error) {
+    return m.Dao.Insert(t)
+}
+
 func (m *{{Mapper .Name}}) Update(params hfw.Cond,
 	where hfw.Cond) (err error) {
 	return m.Dao.UpdateByWhere(m, params, where)
