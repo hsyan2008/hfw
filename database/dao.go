@@ -254,3 +254,9 @@ func (d *NoCacheDao) Exec(sql string, args ...interface{}) (sql.Result, error) {
 func (d *NoCacheDao) Query(args ...interface{}) ([]map[string][]byte, error) {
 	return d.engine.Query(args...)
 }
+func (d *NoCacheDao) QueryString(args ...interface{}) ([]map[string]string, error) {
+	return d.engine.QueryString(args...)
+}
+func (d *NoCacheDao) QueryInterface(args ...interface{}) ([]map[string]interface{}, error) {
+	return d.engine.QueryInterface(args...)
+}

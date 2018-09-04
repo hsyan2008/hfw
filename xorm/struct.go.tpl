@@ -5,6 +5,7 @@ package {{.Models}}
 import (
     "database/sql"
     "encoding/gob"
+    "fmt"
 	{{range .Imports}}"{{.}}"{{end}}
 
     hfw "github.com/hsyan2008/hfw2"
@@ -111,9 +112,9 @@ func (m *{{Mapper .Name}}) Query(args ...interface{}) ([]map[string][]byte, erro
 }
 
 func (m *{{Mapper .Name}}) QueryString(args ...interface{}) ([]map[string]string, error) {
-    return m.Dao.Query(args...)
+    return m.Dao.QueryString(args...)
 }
 func (m *{{Mapper .Name}}) QueryInterface(args ...interface{}) ([]map[string]interface{}, error) {
-    return m.Dao.Query(args...)
+    return m.Dao.QueryInterface(args...)
 }
 {{end}}
