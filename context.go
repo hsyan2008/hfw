@@ -105,8 +105,8 @@ func (httpCtx *HTTPContext) ThrowException(errNo int64, errMsg string) {
 	httpCtx.StopRun()
 }
 
-//ThrowError ..
-func (httpCtx *HTTPContext) ThrowError(errNo int64, err error) {
+//ThrowIfError ..
+func (httpCtx *HTTPContext) ThrowIfError(errNo int64, err error) {
 	if err == nil {
 		return
 	}
