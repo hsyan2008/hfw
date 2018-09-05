@@ -139,15 +139,11 @@ func (d *NoCacheDao) SearchOne(t interface{}) (err error) {
 	return
 }
 
-func (d *NoCacheDao) Search(t interface{}, cond map[string]interface{}) (err error) {
-	var (
-		str      []string
-		args     []interface{}
-		orderby  = "id desc"
-		page     = 1
-		pageSize = DefaultPageSize
-		where    string
-	)
+func (d *NoCacheDao) buildCond(cond map[string]interface{}) (where string, args []interface{}, orderby string, page, pageSize int) {
+	var str []string
+	orderby = "id desc"
+	page = 1
+	pageSize = DefaultPageSize
 	for k, v := range cond {
 		k = strings.ToLower(k)
 		if k == "orderby" {
@@ -178,10 +174,49 @@ func (d *NoCacheDao) Search(t interface{}, cond map[string]interface{}) (err err
 		where = strings.Join(str, " AND ")
 	}
 
+	return where, args, orderby, page, pageSize
+}
+
+func (d *NoCacheDao) Search(t interface{}, cond map[string]interface{}) (err error) {
+
+	where, args, orderby, page, pageSize := d.buildCond(cond)
+
 	sess := d.engine.NewSession()
 	defer sess.Close()
 	err = sess.Where(where, args...).OrderBy(orderby).
 		Limit(pageSize, (page-1)*pageSize).Find(t)
+	if err != nil {
+		lastSQL, lastSQLArgs := sess.LastSQL()
+		logger.Error(err, lastSQL, lastSQLArgs)
+	}
+
+	return
+}
+
+func (d *NoCacheDao) Rows(t interface{}, cond map[string]interface{}) (rows *xorm.Rows, err error) {
+
+	where, args, orderby, page, pageSize := d.buildCond(cond)
+
+	sess := d.engine.NewSession()
+	defer sess.Close()
+	rows, err = sess.Where(where, args...).OrderBy(orderby).
+		Limit(pageSize, (page-1)*pageSize).Rows(t)
+	if err != nil {
+		lastSQL, lastSQLArgs := sess.LastSQL()
+		logger.Error(err, lastSQL, lastSQLArgs)
+	}
+
+	return
+}
+
+func (d *NoCacheDao) Iterate(t interface{}, cond map[string]interface{}, f xorm.IterFunc) (err error) {
+
+	where, args, orderby, page, pageSize := d.buildCond(cond)
+
+	sess := d.engine.NewSession()
+	defer sess.Close()
+	err = sess.Where(where, args...).OrderBy(orderby).
+		Limit(pageSize, (page-1)*pageSize).Iterate(t, f)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
 		logger.Error(err, lastSQL, lastSQLArgs)
@@ -269,12 +304,18 @@ func (d *NoCacheDao) Exec(sqlStr string, args ...interface{}) (sql.Result, error
 func (d *NoCacheDao) Query(args ...interface{}) ([]map[string][]byte, error) {
 	return d.engine.Query(args...)
 }
+
 func (d *NoCacheDao) QueryString(args ...interface{}) ([]map[string]string, error) {
 	return d.engine.QueryString(args...)
 }
+
 func (d *NoCacheDao) QueryInterface(args ...interface{}) ([]map[string]interface{}, error) {
 	return d.engine.QueryInterface(args...)
 }
+
+// func (d *NoCacheDao) Raws() {
+// engine.Where("id >?", 1).Rows(user)
+// }
 
 func (d *NoCacheDao) EnableCache(t interface{}) {
 	_ = d.engine.MapCacher(t, d.cacher)
