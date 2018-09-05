@@ -93,7 +93,7 @@ func (d *NoCacheDao) UpdateByWhere(t interface{}, params map[string]interface{},
 		args []interface{}
 	)
 	for k, v := range where {
-		str = append(str, fmt.Sprintf("%s = ?", k))
+		str = append(str, fmt.Sprintf("`%s` = ?", k))
 		args = append(args, v)
 	}
 
@@ -158,7 +158,7 @@ func (d *NoCacheDao) Search(t interface{}, cond map[string]interface{}) (err err
 			where = v.(string)
 			continue
 		}
-		str = append(str, fmt.Sprintf("%s = ?", k))
+		str = append(str, fmt.Sprintf("`%s` = ?", k))
 		args = append(args, v)
 	}
 
@@ -204,7 +204,7 @@ func (d *NoCacheDao) Count(t interface{}, cond map[string]interface{}) (total in
 			where = v.(string)
 			continue
 		}
-		str = append(str, fmt.Sprintf("%s = ?", k))
+		str = append(str, fmt.Sprintf("`%s` = ?", k))
 		args = append(args, v)
 	}
 
@@ -235,11 +235,11 @@ func (d *NoCacheDao) Replace(sql string, cond map[string]interface{}) (id int64,
 		if k == "orderby" || k == "page" || k == "pagesize" || k == "where" {
 			continue
 		}
-		str = append(str, fmt.Sprintf("%s = ?", k))
+		str = append(str, fmt.Sprintf("`%s` = ?", k))
 		args = append(args, v)
 	}
 
-	rs, err := d.engine.Exec(sql+strings.Join(str, ", "), args...)
+	rs, err := d.Exec(sql+strings.Join(str, ", "), args...)
 	if err != nil {
 		return
 	}
@@ -247,8 +247,11 @@ func (d *NoCacheDao) Replace(sql string, cond map[string]interface{}) (id int64,
 	return rs.LastInsertId()
 }
 
-func (d *NoCacheDao) Exec(sql string, args ...interface{}) (sql.Result, error) {
-	return d.engine.Exec(sql, args...)
+func (d *NoCacheDao) Exec(sqlStr string, args ...interface{}) (sql.Result, error) {
+	tmp := make([]interface{}, len(args)+1)
+	tmp = append(tmp, sqlStr)
+	tmp = append(tmp, args...)
+	return d.engine.Exec(args...)
 }
 
 func (d *NoCacheDao) Query(args ...interface{}) ([]map[string][]byte, error) {
