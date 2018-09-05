@@ -185,13 +185,6 @@ func initConfig() {
 		}
 	}
 
-	if Config.Server.ReadTimeout == 0 {
-		Config.Server.ReadTimeout = 60
-	}
-	if Config.Server.WriteTimeout == 0 {
-		Config.Server.WriteTimeout = 60
-	}
-
 	if Config.Redis.Server != "" {
 		DefaultRedisIns = redis.NewRedis(Config.Redis)
 	}

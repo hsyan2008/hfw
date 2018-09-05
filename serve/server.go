@@ -32,7 +32,7 @@ func startHTTP(config configs.AllConfig) (err error) {
 		Addr: config.Server.Address,
 		// Handler:      controllers,
 		ReadTimeout:  config.Server.ReadTimeout * time.Second,
-		WriteTimeout: (config.Server.WriteTimeout + config.Server.ReadTimeout) * time.Second,
+		WriteTimeout: config.Server.WriteTimeout * time.Second,
 		// MaxHeaderBytes: 1 << 20,
 	}
 
@@ -85,7 +85,7 @@ func startHTTPS(config configs.AllConfig) (err error) {
 		Addr: config.Server.Address,
 		// Handler:      controllers,
 		ReadTimeout:  config.Server.ReadTimeout * time.Second,
-		WriteTimeout: (config.Server.WriteTimeout + config.Server.ReadTimeout) * time.Second,
+		WriteTimeout: config.Server.ReadTimeout * time.Second,
 		// MaxHeaderBytes: 1 << 20,
 		TLSConfig: &tls.Config{
 			// NextProtos: []string{"http/1.1", "h2"}, //去掉1.1才支持h2
