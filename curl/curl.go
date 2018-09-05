@@ -218,23 +218,15 @@ func (curls *Curl) Request(ctx context.Context) (rs Response, err error) {
 
 func (curls *Curl) postForm() (httpRequest *http.Request, err error) {
 
+	var isSetHeader bool
 	if curls.PostReader != nil {
 		httpRequest, _ = http.NewRequest("POST", curls.Url, curls.PostReader)
-		if v, ok := curls.Headers["Content-Type"]; ok {
-			httpRequest.Header.Set("Content-Type", v)
-		}
 	} else if len(curls.PostBytes) > 0 {
 		b := bytes.NewReader(curls.PostBytes)
 		httpRequest, _ = http.NewRequest("POST", curls.Url, b)
-		if v, ok := curls.Headers["Content-Type"]; ok {
-			httpRequest.Header.Set("Content-Type", v)
-		}
 	} else if curls.PostString != "" {
 		b := strings.NewReader(curls.PostString)
 		httpRequest, _ = http.NewRequest("POST", curls.Url, b)
-		if v, ok := curls.Headers["Content-Type"]; ok {
-			httpRequest.Header.Set("Content-Type", v)
-		}
 	} else {
 		var b = &bytes.Buffer{}
 		bodyWriter := multipart.NewWriter(b)
@@ -273,6 +265,12 @@ func (curls *Curl) postForm() (httpRequest *http.Request, err error) {
 
 		httpRequest, _ = http.NewRequest("POST", curls.Url, b)
 		httpRequest.Header.Set("Content-Type", bodyWriter.FormDataContentType())
+		isSetHeader = true
+	}
+	if !isSetHeader {
+		if v, ok := curls.Headers["Content-Type"]; ok {
+			httpRequest.Header.Set("Content-Type", v)
+		}
 	}
 
 	delete(curls.Headers, "Content-Type")
