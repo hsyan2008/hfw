@@ -14,18 +14,12 @@ import (
 	"github.com/go-xorm/xorm"
 	"github.com/hsyan2008/go-logger/logger"
 	hfw "github.com/hsyan2008/hfw2"
+	"github.com/hsyan2008/hfw2/common"
 	"github.com/hsyan2008/hfw2/configs"
+	"github.com/hsyan2008/hfw2/encoding"
 )
 
-type engineCache struct {
-	engines map[string]*xorm.Engine
-	mtx     *sync.Mutex
-}
-
-var ec = &engineCache{
-	engines: make(map[string]*xorm.Engine),
-	mtx:     new(sync.Mutex),
-}
+var engineMap = new(sync.Map)
 
 func InitDb(config configs.AllConfig, dbConfigs ...configs.DbConfig) *xorm.Engine {
 
@@ -44,10 +38,8 @@ func InitDb(config configs.AllConfig, dbConfigs ...configs.DbConfig) *xorm.Engin
 	driver := dbConfig.Driver
 	dbDsn := getDbDsn(dbConfig)
 
-	ec.mtx.Lock()
-	if e, ok := ec.engines[dbDsn]; ok {
-		ec.mtx.Unlock()
-		return e
+	if e, ok := engineMap.Load(common.Md5(dbDsn)); ok {
+		return e.(*xorm.Engine)
 	}
 
 	logger.Info("dbDsn:", dbDsn)
@@ -80,8 +72,7 @@ func InitDb(config configs.AllConfig, dbConfigs ...configs.DbConfig) *xorm.Engin
 
 	// openCache(engine, config)
 
-	ec.engines[dbDsn] = engine
-	ec.mtx.Unlock()
+	engineMap.Store(common.Md5(dbDsn), engine)
 
 	return engine
 }
@@ -113,9 +104,38 @@ func openCache(engine *xorm.Engine, config configs.AllConfig) {
 	}
 }
 
+var cacherMap = new(sync.Map)
+
 func GetCacher(config configs.AllConfig) (cacher *xorm.LRUCacher) {
 	if config.Db.CacheMaxSize == 0 {
 		config.Db.CacheMaxSize = 999999999
+	}
+
+	var key string
+	switch config.Db.CacheType {
+	case "memory":
+		key = common.Md5(config.Db.CacheType)
+	case "memcache":
+		j, err := encoding.JSON.Marshal(config.Cache.Servers)
+		if err != nil {
+			panic(err)
+		}
+		key = common.Md5(config.Db.CacheType + string(j))
+	case "redis":
+		j, err := encoding.JSON.Marshal(config.Redis)
+		if err != nil {
+			panic(err)
+		}
+		key = common.Md5(config.Db.CacheType + string(j))
+		// case "leveldb":
+	}
+
+	if len(key) == 0 {
+		return
+	}
+
+	if c, ok := cacherMap.Load(key); ok {
+		return c.(*xorm.LRUCacher)
 	}
 
 	//开启缓存
@@ -131,15 +151,17 @@ func GetCacher(config configs.AllConfig) (cacher *xorm.LRUCacher) {
 		if config.Redis.Server == "" {
 			return
 		}
-		cf := make(map[string]string)
-		cf["key"] = config.Redis.Prefix + "mysqlCache"
-		cf["password"] = config.Redis.Password
-		cf["conn"] = config.Redis.Server
+		cf := map[string]string{
+			"key":      config.Redis.Prefix + "mysqlCache",
+			"password": config.Redis.Password,
+			"conn":     config.Redis.Server,
+		}
 		cacher = xorm.NewLRUCacher(cachestore.NewRedisCache(cf), config.Db.CacheMaxSize)
 		// case "leveldb":
 		// 	cacher = xorm.NewLRUCacher(cachestore.NewLevelDBStore(cacheServers), config.Db.CacheMaxSize)
 	}
 	if cacher != nil {
+		cacherMap.Store(key, cacher)
 		//可以指定缓存有效时间，如下
 		cacher.Expired = config.Db.CacheTimeout * time.Second
 	}
