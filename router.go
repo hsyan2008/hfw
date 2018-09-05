@@ -95,6 +95,7 @@ func router(w http.ResponseWriter, r *http.Request) {
 	defer recoverPanic(reflectVal, initValue)
 
 	reflectVal.MethodByName("Before").Call(initValue)
+	defer reflectVal.MethodByName("After").Call(initValue)
 
 	var action string
 	if isNotFound {
@@ -105,7 +106,6 @@ func router(w http.ResponseWriter, r *http.Request) {
 	logger.Debugf("Query Path: %s -> Call: %s/%s", r.URL.String(), instance.controllerName, action)
 	reflectVal.MethodByName(action).Call(initValue)
 
-	reflectVal.MethodByName("After").Call(initValue)
 }
 
 func recoverPanic(reflectVal reflect.Value, initValue []reflect.Value) {
