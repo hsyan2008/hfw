@@ -108,6 +108,7 @@ func (m *{{Mapper .Name}}) Replace(cond hfw.Cond) (int64, error) {
 }
 
 func (m *{{Mapper .Name}}) Exec(sqlState string, args ...interface{}) (sql.Result, error) {
+    defer m.Dao.ClearCache(m)
     return m.Dao.Exec(sqlState, args...)
 }
 

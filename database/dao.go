@@ -43,11 +43,21 @@ func NewNoCacheDao(config configs.AllConfig, dbConfigs ...configs.DbConfig) *NoC
 	}
 	instance.engine = InitDb(config, dbConfig)
 
+	//开启缓存
+	instance.cacher = GetCacher(config)
+	if instance.cacher != nil {
+		instance.isCache = true
+		//所有表开启缓存
+		instance.engine.SetDefaultCacher(instance.cacher)
+	}
+
 	return instance
 }
 
 type NoCacheDao struct {
-	engine *xorm.Engine
+	engine  *xorm.Engine
+	isCache bool
+	cacher  *xorm.LRUCacher
 }
 
 func (d *NoCacheDao) UpdateById(t interface{}) (err error) {
@@ -247,10 +257,12 @@ func (d *NoCacheDao) Replace(sql string, cond map[string]interface{}) (id int64,
 	return rs.LastInsertId()
 }
 
+//必须确保执行Exec后，再执行ClearCache
 func (d *NoCacheDao) Exec(sqlStr string, args ...interface{}) (sql.Result, error) {
 	tmp := make([]interface{}, len(args)+1)
 	tmp = append(tmp, sqlStr)
 	tmp = append(tmp, args...)
+
 	return d.engine.Exec(args...)
 }
 
@@ -262,4 +274,19 @@ func (d *NoCacheDao) QueryString(args ...interface{}) ([]map[string]string, erro
 }
 func (d *NoCacheDao) QueryInterface(args ...interface{}) ([]map[string]interface{}, error) {
 	return d.engine.QueryInterface(args...)
+}
+
+func (d *NoCacheDao) EnableCache(t interface{}) {
+	_ = d.engine.MapCacher(t, d.cacher)
+}
+
+func (d *NoCacheDao) DisableCache(t interface{}) {
+	_ = d.engine.MapCacher(t, nil)
+}
+
+//用于清理缓存
+func (d *NoCacheDao) ClearCache(t interface{}) {
+	if d.isCache {
+		_ = d.engine.ClearCache(t)
+	}
 }

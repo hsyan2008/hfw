@@ -78,7 +78,7 @@ func InitDb(config configs.AllConfig, dbConfigs ...configs.DbConfig) *xorm.Engin
 
 	go keepalive(engine, dbConfig.KeepAlive)
 
-	openCache(engine, config)
+	// openCache(engine, config)
 
 	ec.engines[dbDsn] = engine
 	ec.mtx.Unlock()
@@ -106,17 +106,27 @@ func getDbDsn(dbConfig configs.DbConfig) string {
 }
 
 func openCache(engine *xorm.Engine, config configs.AllConfig) {
-	var cacher *xorm.LRUCacher
+	cacher := GetCacher(config)
+	if cacher != nil {
+		//所有表开启缓存
+		engine.SetDefaultCacher(cacher)
+	}
+}
+
+func GetCacher(config configs.AllConfig) (cacher *xorm.LRUCacher) {
+	if config.Db.CacheMaxSize == 0 {
+		config.Db.CacheMaxSize = 999999999
+	}
 
 	//开启缓存
 	switch config.Db.CacheType {
 	case "memory":
-		cacher = xorm.NewLRUCacher(xorm.NewMemoryStore(), 1000)
+		cacher = xorm.NewLRUCacher(xorm.NewMemoryStore(), config.Db.CacheMaxSize)
 	case "memcache":
 		if len(config.Cache.Servers) == 0 {
 			return
 		}
-		cacher = xorm.NewLRUCacher(cachestore.NewMemCache(config.Cache.Servers), 999999999)
+		cacher = xorm.NewLRUCacher(cachestore.NewMemCache(config.Cache.Servers), config.Db.CacheMaxSize)
 	case "redis":
 		if config.Redis.Server == "" {
 			return
@@ -125,16 +135,16 @@ func openCache(engine *xorm.Engine, config configs.AllConfig) {
 		cf["key"] = config.Redis.Prefix + "mysqlCache"
 		cf["password"] = config.Redis.Password
 		cf["conn"] = config.Redis.Server
-		cacher = xorm.NewLRUCacher(cachestore.NewRedisCache(cf), 999999999)
+		cacher = xorm.NewLRUCacher(cachestore.NewRedisCache(cf), config.Db.CacheMaxSize)
 		// case "leveldb":
-		// 	cacher = xorm.NewLRUCacher(cachestore.NewLevelDBStore(cacheServers), 999999999)
+		// 	cacher = xorm.NewLRUCacher(cachestore.NewLevelDBStore(cacheServers), config.Db.CacheMaxSize)
 	}
 	if cacher != nil {
 		//可以指定缓存有效时间，如下
-		cacher.Expired = 86400 * time.Second
-		//所有表开启缓存
-		engine.SetDefaultCacher(cacher)
+		cacher.Expired = config.Db.CacheTimeout * time.Second
 	}
+
+	return
 }
 
 func keepalive(engine *xorm.Engine, long time.Duration) {

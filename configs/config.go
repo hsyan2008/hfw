@@ -65,10 +65,13 @@ type DbConfig struct {
 	Port         string
 	Dbname       string
 	Params       string
-	CacheType    string
 	MaxIdleConns int
 	MaxOpenConns int
 	KeepAlive    time.Duration
+	//缓存配置
+	CacheType    string
+	CacheMaxSize int
+	CacheTimeout time.Duration
 }
 
 //CacheConfig ..
