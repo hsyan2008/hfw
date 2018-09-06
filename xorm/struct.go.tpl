@@ -3,13 +3,12 @@ package {{.Models}}
 {{$ilen := len .Imports}}
 {{if gt $ilen 0}}
 import (
-    "database/sql"
     "encoding/gob"
     "fmt"
-	{{range .Imports}}"{{.}}"{{end}}
+	{{range .Imports}}{{if ne . "time"}}"{{.}}"{{end}}{{end}}
 
     hfw "github.com/hsyan2008/hfw2"
-    "github.com/hsyan2008/hfw2/database"
+    "github.com/hsyan2008/hfw2/db"
 )
 {{else}}
 import (
@@ -19,20 +18,21 @@ import (
 {{end}}
 
 {{range .Tables}}
-var {{Mapper .Name}}Model = &{{Mapper .Name}}{Dao: database.NewNoCacheDao(hfw.Config)}
+var {{Mapper .Name}}Model = &{{Mapper .Name}}{}
 {{end}}
 
 func init() {
+    {{range .Tables}}{{Mapper .Name}}Model.Dao = db.NewNoCacheDao(hfw.Config)
 	//gob: type not registered for interface
-    {{range .Tables}}gob.Register({{Mapper .Name}}Model){{end}}
+    gob.Register({{Mapper .Name}}Model){{end}}
 }
 
 {{range .Tables}}
 type {{Mapper .Name}} struct {
+    db.Models `xorm:"extends"`
 {{$table := .}}
-{{range .ColumnsSeq}}{{$col := $table.GetColumn .}}	{{Mapper $col.Name}}	{{Type $col}} {{Tag $table $col}}
+{{range .ColumnsSeq}}{{$col := $table.GetColumn .}}	{{if eq $col.Name "id" "is_deleted" "updated_at" "created_at"}}{{else}}{{Mapper $col.Name}}	{{Type $col}} {{Tag $table $col}}{{end}}
 {{end}}
-    Dao         *database.NoCacheDao     `json:"-" xorm:"-"`
 }
 
 func (m *{{Mapper .Name}}) TableName() string {
@@ -52,14 +52,14 @@ func (m *{{Mapper .Name}}) Saves(t []*{{Mapper .Name}}) (err error) {
     return m.Dao.Insert(t)
 }
 
-func (m *{{Mapper .Name}}) Update(params hfw.Cond,
-	where hfw.Cond) (err error) {
+func (m *{{Mapper .Name}}) Update(params db.Cond,
+	where db.Cond) (err error) {
 	return m.Dao.UpdateByWhere(m, params, where)
 }
 
-func (m *{{Mapper .Name}}) SearchOne(cond hfw.Cond) (t *{{Mapper .Name}}, err error) {
+func (m *{{Mapper .Name}}) SearchOne(cond db.Cond) (t *{{Mapper .Name}}, err error) {
     if cond == nil {
-        cond = hfw.Cond{}
+        cond = db.Cond{}
     }
 	cond["page"] = 1
 	cond["pagesize"] = 1
@@ -76,12 +76,12 @@ func (m *{{Mapper .Name}}) SearchOne(cond hfw.Cond) (t *{{Mapper .Name}}, err er
 	return
 }
 
-func (m *{{Mapper .Name}}) Search(cond hfw.Cond) (t []*{{Mapper .Name}}, err error) {
+func (m *{{Mapper .Name}}) Search(cond db.Cond) (t []*{{Mapper .Name}}, err error) {
 	err = m.Dao.Search(&t, cond)
 	return
 }
 
-func (m *{{Mapper .Name}}) Count(cond hfw.Cond) (total int64, err error) {
+func (m *{{Mapper .Name}}) Count(cond db.Cond) (total int64, err error) {
 	return m.Dao.Count(m, cond)
 }
 
@@ -103,23 +103,7 @@ func (m *{{Mapper .Name}}) GetById(id interface{}) (t *{{Mapper .Name}}, err err
 	return
 }
 
-func (m *{{Mapper .Name}}) Replace(cond hfw.Cond) (int64, error) {
+func (m *{{Mapper .Name}}) Replace(cond db.Cond) (int64, error) {
     return m.Dao.Replace(fmt.Sprintf("REPLACE `%s` SET ", m.TableName()), cond)
-}
-
-func (m *{{Mapper .Name}}) Exec(sqlState string, args ...interface{}) (sql.Result, error) {
-    defer m.Dao.ClearCache(m)
-    return m.Dao.Exec(sqlState, args...)
-}
-
-func (m *{{Mapper .Name}}) Query(args ...interface{}) ([]map[string][]byte, error) {
-    return m.Dao.Query(args...)
-}
-
-func (m *{{Mapper .Name}}) QueryString(args ...interface{}) ([]map[string]string, error) {
-    return m.Dao.QueryString(args...)
-}
-func (m *{{Mapper .Name}}) QueryInterface(args ...interface{}) ([]map[string]interface{}, error) {
-    return m.Dao.QueryInterface(args...)
 }
 {{end}}
