@@ -18,8 +18,11 @@ import (
 	"github.com/hsyan2008/hfw2/stack"
 )
 
-//ENVIRONMENT ..
+//ENVIRONMENT 环境
 var ENVIRONMENT string
+
+//VERSION 版本
+var VERSION string
 
 //APPPATH 项目路径
 var APPPATH = common.GetAppPath()
@@ -36,8 +39,23 @@ var Config configs.AllConfig
 var DefaultRedisIns *redis.Redis
 
 func init() {
+	parseFlag()
 	loadConfig()
 	initLog()
+}
+
+func parseFlag() {
+	flag.StringVar(&ENVIRONMENT, "e", "dev", "set env, e.g dev test prod")
+	flag.StringVar(&VERSION, "v", "0.1", "set version")
+	flag.Parse()
+
+	if len(ENVIRONMENT) == 0 {
+		ENVIRONMENT = os.Getenv("ENVIRONMENT")
+	}
+
+	if len(VERSION) == 0 {
+		VERSION = os.Getenv("VERSION")
+	}
 }
 
 //setLog 初始化log写入文件
@@ -48,9 +66,9 @@ func initLog() {
 	if lc.LogFile != "" {
 		logger.SetLevelStr(lc.LogLevel)
 		logger.SetConsole(lc.IsConsole)
-		if lc.LogType == "daily" {
+		if strings.ToLower(lc.LogType) == "daily" {
 			logger.SetRollingDaily(lc.LogFile)
-		} else if lc.LogType == "roll" {
+		} else if strings.ToLower(lc.LogType) == "roll" {
 			logger.SetRollingFile(lc.LogFile, lc.LogMaxNum, lc.LogSize, lc.LogUnit)
 		} else {
 			panic("undefined logtype")
@@ -65,23 +83,15 @@ func initLog() {
 	}
 
 	// logger.SetPrefix(fmt.Sprintf("Pid:%d", PID))
-	logger.SetPrefix(HOSTNAME)
+	logger.SetPrefix(HOSTNAME + "/" + VERSION)
 }
 
 func loadConfig() {
-	if common.IsExist(filepath.Join(APPPATH, "config")) {
-		ENVIRONMENT = os.Getenv("ENVIRONMENT")
-		if ENVIRONMENT == "" {
-			flag.StringVar(&ENVIRONMENT, "e", "dev", "set env, e.g dev test prod")
-			flag.Parse()
-		}
-
-		configPath := filepath.Join(APPPATH, "config", ENVIRONMENT, "config.toml")
-		if common.IsExist(configPath) {
-			_, err := toml.DecodeFile(configPath, &Config)
-			if err != nil {
-				panic(err)
-			}
+	configPath := filepath.Join(APPPATH, "config", ENVIRONMENT, "config.toml")
+	if common.IsExist(configPath) {
+		_, err := toml.DecodeFile(configPath, &Config)
+		if err != nil {
+			panic(err)
 		}
 	}
 
