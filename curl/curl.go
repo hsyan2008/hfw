@@ -218,7 +218,7 @@ func (curls *Curl) Request(ctx context.Context) (rs Response, err error) {
 
 func (curls *Curl) postForm() (httpRequest *http.Request, err error) {
 
-	var isSetHeader bool
+	var hasSetHeader bool
 	if curls.PostReader != nil {
 		httpRequest, _ = http.NewRequest("POST", curls.Url, curls.PostReader)
 	} else if len(curls.PostBytes) > 0 {
@@ -265,9 +265,9 @@ func (curls *Curl) postForm() (httpRequest *http.Request, err error) {
 
 		httpRequest, _ = http.NewRequest("POST", curls.Url, b)
 		httpRequest.Header.Set("Content-Type", bodyWriter.FormDataContentType())
-		isSetHeader = true
+		hasSetHeader = true
 	}
-	if !isSetHeader {
+	if !hasSetHeader {
 		if v, ok := curls.Headers["Content-Type"]; ok {
 			httpRequest.Header.Set("Content-Type", v)
 		}
