@@ -108,7 +108,7 @@ func Run() (err error) {
 	logger.Info("Starting ...")
 	defer logger.Info("Shutdowned!")
 
-	logger.Infof("Running, ENVIRONMENT=%s, APPNAME=%s, APPPATH=%s", ENVIRONMENT, APPNAME, APPPATH)
+	logger.Infof("Running, VERSION=%s, ENVIRONMENT=%s, APPNAME=%s, APPPATH=%s", VERSION, ENVIRONMENT, APPNAME, APPPATH)
 
 	if common.IsExist("/opt/log") {
 		stack.SetupStack(filepath.Join("/opt/log", APPNAME+"_stack.log"))
