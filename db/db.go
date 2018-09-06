@@ -21,9 +21,11 @@ import (
 
 var engineMap = new(sync.Map)
 
-func InitDb(config configs.AllConfig, dbConfigs ...configs.DbConfig) *xorm.Engine {
+func InitDb(config configs.AllConfig, dbConfigs ...configs.DbConfig) (engine xorm.EngineInterface) {
 
 	var dbConfig configs.DbConfig
+	var err error
+	var isNew bool
 
 	if len(dbConfigs) > 0 {
 		dbConfig = dbConfigs[0]
@@ -31,53 +33,80 @@ func InitDb(config configs.AllConfig, dbConfigs ...configs.DbConfig) *xorm.Engin
 		dbConfig = config.Db
 	}
 
-	if dbConfig.Driver == "" {
-		panic("dbConfig Driver is nil")
-	}
+	engine, isNew = getEngine(dbConfig.DbStdConfig)
 
-	driver := dbConfig.Driver
-	dbDsn := getDbDsn(dbConfig)
-
-	if e, ok := engineMap.Load(common.Md5(dbDsn)); ok {
-		return e.(*xorm.Engine)
-	}
-
-	logger.Info("dbDsn:", dbDsn)
-
-	engine, err := xorm.NewEngine(driver, dbDsn)
-	if err != nil {
-		logger.Warn("NewEngine:", dbConfig, err)
-		panic(err)
+	var isnew bool
+	var slaveEngine *xorm.Engine
+	if len(dbConfig.Slaves) > 0 {
+		var slaves []*xorm.Engine
+		for _, val := range dbConfig.Slaves {
+			slaveEngine, isnew = getEngine(val)
+			isNew = isNew || isnew
+			slaves = append(slaves, slaveEngine)
+		}
+		engine, err = xorm.NewEngineGroup(engine, slaves)
+		if err != nil {
+			logger.Warn("NewEngineGroup:", dbConfig, err)
+			panic(err)
+		}
 	}
 
 	engine.SetLogger(&mysqlLog{})
 	engine.ShowSQL(true)
+	engine.ShowExecTime(true)
 
-	err = engine.Ping()
-	if err != nil {
-		logger.Warn("Ping:", dbConfig, err)
-		panic(err)
-	}
+	if isNew {
+		err = engine.Ping()
+		if err != nil {
+			logger.Warn("Ping:", dbConfig, err)
+			panic(err)
+		}
 
-	//连接池的空闲数大小
-	if dbConfig.MaxIdleConns > 0 {
-		engine.SetMaxIdleConns(dbConfig.MaxIdleConns)
-	}
-	//最大打开连接数
-	if dbConfig.MaxOpenConns > 0 {
-		engine.SetMaxOpenConns(dbConfig.MaxOpenConns)
-	}
+		//连接池的空闲数大小
+		if dbConfig.MaxIdleConns > 0 {
+			engine.SetMaxIdleConns(dbConfig.MaxIdleConns)
+		}
+		//最大打开连接数
+		if dbConfig.MaxOpenConns > 0 {
+			engine.SetMaxOpenConns(dbConfig.MaxOpenConns)
+		}
 
-	go keepalive(engine, dbConfig.KeepAlive)
+		go keepalive(engine, dbConfig.KeepAlive)
+	}
 
 	// openCache(engine, config)
 
-	engineMap.Store(common.Md5(dbDsn), engine)
-
 	return engine
 }
+func getEngine(config configs.DbStdConfig) (engine *xorm.Engine, isNew bool) {
 
-func getDbDsn(dbConfig configs.DbConfig) string {
+	if config.Driver == "" {
+		panic("dbConfig Driver is nil")
+	}
+
+	driver := config.Driver
+	dbDsn := getDbDsn(config)
+
+	if e, ok := engineMap.Load(common.Md5(dbDsn)); ok {
+		return e.(*xorm.Engine), isNew
+	}
+
+	logger.Info("dbDsn:", dbDsn)
+	var err error
+
+	engine, err = xorm.NewEngine(driver, dbDsn)
+	if err != nil {
+		logger.Warn("NewEngine:", config, err)
+		panic(err)
+	}
+
+	engineMap.Store(common.Md5(dbDsn), engine)
+	isNew = true
+
+	return
+}
+
+func getDbDsn(dbConfig configs.DbStdConfig) string {
 	switch strings.ToLower(dbConfig.Driver) {
 	case "mysql":
 		if dbConfig.Port != "" {
@@ -169,7 +198,7 @@ func GetCacher(config configs.AllConfig) (cacher *xorm.LRUCacher) {
 	return
 }
 
-func keepalive(engine *xorm.Engine, long time.Duration) {
+func keepalive(engine xorm.EngineInterface, long time.Duration) {
 	if long <= 0 {
 		return
 	}

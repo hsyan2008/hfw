@@ -55,7 +55,7 @@ func NewNoCacheDao(config configs.AllConfig, dbConfigs ...configs.DbConfig) *NoC
 }
 
 type NoCacheDao struct {
-	engine  *xorm.Engine
+	engine  xorm.EngineInterface
 	isCache bool
 	cacher  *xorm.LRUCacher
 }

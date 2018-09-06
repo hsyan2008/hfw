@@ -57,14 +57,7 @@ type LoggerConfig struct {
 
 //DbConfig ..
 type DbConfig struct {
-	Driver       string
-	Username     string
-	Password     string
-	Protocol     string
-	Address      string
-	Port         string
-	Dbname       string
-	Params       string
+	DbStdConfig
 	MaxIdleConns int
 	MaxOpenConns int
 	KeepAlive    time.Duration
@@ -72,6 +65,20 @@ type DbConfig struct {
 	CacheType    string
 	CacheMaxSize int
 	CacheTimeout time.Duration
+
+	//从库
+	Slaves []DbStdConfig
+}
+
+type DbStdConfig struct {
+	Driver   string
+	Username string
+	Password string
+	Protocol string
+	Address  string
+	Port     string
+	Dbname   string
+	Params   string
 }
 
 //CacheConfig ..
