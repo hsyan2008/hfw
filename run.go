@@ -45,17 +45,17 @@ func init() {
 }
 
 func parseFlag() {
-	flag.StringVar(&ENVIRONMENT, "e", "dev", "set env, e.g dev test prod")
-	flag.StringVar(&VERSION, "v", "0.1", "set version")
-	flag.Parse()
-
+	ENVIRONMENT = os.Getenv("ENVIRONMENT")
 	if len(ENVIRONMENT) == 0 {
-		ENVIRONMENT = os.Getenv("ENVIRONMENT")
+		flag.StringVar(&ENVIRONMENT, "e", "dev", "set env, e.g dev test prod")
 	}
 
+	VERSION = os.Getenv("VERSION")
 	if len(VERSION) == 0 {
-		VERSION = os.Getenv("VERSION")
+		flag.StringVar(&VERSION, "v", "0.1", "set version")
 	}
+
+	flag.Parse()
 }
 
 //setLog 初始化log写入文件
