@@ -50,13 +50,13 @@ func (httpCtx *HTTPContext) ReturnFileContent(filename string, file interface{})
 	switch t := file.(type) {
 	case string: //文件路径，http.ServeFile不自动压缩
 		f, err := filepath.Abs(file.(string))
-		httpCtx.ThrowIfError(500, err)
+		httpCtx.ThrowCheck(500, err)
 		if !common.IsExist(f) {
-			httpCtx.ThrowException(500, "file not exist")
+			httpCtx.ThrowCheck(500, "file not exist")
 		}
 		r, err = os.Open(t)
 		defer r.(io.Closer).Close()
-		httpCtx.ThrowIfError(500, err)
+		httpCtx.ThrowCheck(500, err)
 	case io.Reader: //io流，如果是文件内容，可以通过bytes.Buffer包装下
 		r = file.(io.Reader)
 		if f, ok := file.(io.Closer); ok {
@@ -67,7 +67,7 @@ func (httpCtx *HTTPContext) ReturnFileContent(filename string, file interface{})
 	httpCtx.SetDownloadMode(filename)
 
 	_, err = io.Copy(w, r)
-	httpCtx.ThrowIfError(500, err)
+	httpCtx.ThrowCheck(500, err)
 }
 
 var templatesCache = struct {
@@ -96,7 +96,7 @@ func (httpCtx *HTTPContext) Render() {
 	} else {
 		err = t.Execute(httpCtx.ResponseWriter, httpCtx)
 	}
-	httpCtx.ThrowIfError(500, err)
+	httpCtx.ThrowCheck(500, err)
 }
 
 func (httpCtx *HTTPContext) render() (t *template.Template) {
@@ -153,7 +153,7 @@ func (httpCtx *HTTPContext) renderFile() (t *template.Template) {
 		templateFilePath = filepath.Join(Config.Template.HTMLPath, httpCtx.TemplateFile)
 	}
 	if !common.IsExist(templateFilePath) {
-		httpCtx.ThrowException(500, "system error")
+		httpCtx.ThrowCheck(500, "system error")
 	}
 	if len(httpCtx.FuncMap) == 0 {
 		t = template.Must(template.ParseFiles(templateFilePath))
@@ -193,5 +193,5 @@ func (httpCtx *HTTPContext) ReturnJSON() {
 		//err_no + err_msg
 		err = encoding.JSONIO.Marshal(w, httpCtx.Response)
 	}
-	httpCtx.ThrowIfError(500, err)
+	httpCtx.ThrowCheck(500, err)
 }

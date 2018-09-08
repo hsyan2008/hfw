@@ -49,7 +49,7 @@ func (ctl *Controller) Init(httpCtx *HTTPContext) {
 	// _ = httpCtx.Request.ParseMultipartForm(2 * 1024 * 1024)
 
 	httpCtx.Session, err = session.NewSession(httpCtx.Request, DefaultRedisIns, Config)
-	httpCtx.ThrowIfError(500, err)
+	httpCtx.ThrowCheck(500, err)
 }
 
 //Before ..

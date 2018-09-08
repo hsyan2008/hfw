@@ -98,23 +98,23 @@ func (httpCtx *HTTPContext) Redirect(url string) {
 	httpCtx.StopRun()
 }
 
-//ThrowException ..
-func (httpCtx *HTTPContext) ThrowException(errNo int64, errMsg string) {
-	logger.Output(3, "WARN", errNo, errMsg)
-	httpCtx.ErrNo = errNo
-	httpCtx.ErrMsg = GetErrorMap(errNo)
-	if len(httpCtx.ErrMsg) == 0 {
-		httpCtx.ErrMsg = errMsg
-	}
-	httpCtx.StopRun()
-}
-
-//ThrowIfError ..
-func (httpCtx *HTTPContext) ThrowIfError(errNo int64, err error) {
-	if err == nil {
+//ThrowCheck
+func (httpCtx *HTTPContext) ThrowCheck(errNo int64, i interface{}) {
+	if i == nil || errNo <= 0 {
 		return
 	}
-	errMsg := err.Error()
+	var errMsg string
+	if e, ok := i.(error); ok {
+		if e == nil {
+			return
+		}
+		errMsg = e.Error()
+	} else if s, ok := i.(string); ok {
+		errMsg = s
+	} else {
+		panic("err params")
+	}
+
 	logger.Output(3, "WARN", errNo, errMsg)
 	httpCtx.ErrNo = errNo
 	httpCtx.ErrMsg = GetErrorMap(errNo)
