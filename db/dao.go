@@ -313,10 +313,6 @@ func (d *NoCacheDao) QueryInterface(args ...interface{}) ([]map[string]interface
 	return d.engine.QueryInterface(args...)
 }
 
-// func (d *NoCacheDao) Raws() {
-// engine.Where("id >?", 1).Rows(user)
-// }
-
 func (d *NoCacheDao) EnableCache(t interface{}) {
 	_ = d.engine.MapCacher(t, d.cacher)
 }

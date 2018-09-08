@@ -1,21 +1,16 @@
 package {{.Models}}
 
-{{$ilen := len .Imports}}
-{{if gt $ilen 0}}
 import (
     "encoding/gob"
     "fmt"
+{{$ilen := len .Imports}}
+{{if gt $ilen 0}}
 	{{range .Imports}}{{if ne . "time"}}"{{.}}"{{end}}{{end}}
-
+{{end}}
+    "github.com/go-xorm/xorm"
     hfw "github.com/hsyan2008/hfw2"
     "github.com/hsyan2008/hfw2/db"
 )
-{{else}}
-import (
-    "encoding/gob"
-    hfw "github.com/hsyan2008/hfw2"
-)
-{{end}}
 
 {{range .Tables}}
 var {{Mapper .Name}}Model = &{{Mapper .Name}}{}
@@ -79,6 +74,14 @@ func (m *{{Mapper .Name}}) SearchOne(cond db.Cond) (t *{{Mapper .Name}}, err err
 func (m *{{Mapper .Name}}) Search(cond db.Cond) (t []*{{Mapper .Name}}, err error) {
 	err = m.Dao.Search(&t, cond)
 	return
+}
+
+func (m *{{Mapper .Name}}) Rows(cond db.Cond) (rows *xorm.Rows, err error) {
+	return m.Dao.Rows(m, cond)
+}
+
+func (m *{{Mapper .Name}}) Iterate(cond db.Cond, f xorm.IterFunc) (err error) {
+	return m.Dao.Iterate(m, cond, f)
 }
 
 func (m *{{Mapper .Name}}) Count(cond db.Cond) (total int64, err error) {
