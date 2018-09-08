@@ -168,10 +168,15 @@ func (d *NoCacheDao) buildCond(cond map[string]interface{}) (where string, args 
 		args = append(args, v)
 	}
 
-	if where != "" {
-		where = fmt.Sprintf("(%s) AND %s", where, strings.Join(str, " AND "))
-	} else {
-		where = strings.Join(str, " AND ")
+	var strs string
+	if len(str) > 0 {
+		strs = strings.Join(str, " AND ")
+	}
+
+	if len(where) > 0 && len(strs) > 0 {
+		where = fmt.Sprintf("(%s) AND %s", where, strs)
+	} else if len(strs) > 0 {
+		where = strs
 	}
 
 	return where, args, orderby, page, pageSize
