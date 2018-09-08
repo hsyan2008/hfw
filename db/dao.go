@@ -139,30 +139,43 @@ func (d *NoCacheDao) SearchOne(t interface{}) (err error) {
 	return
 }
 
-func (d *NoCacheDao) buildCond(cond map[string]interface{}) (where string, args []interface{}, orderby string, page, pageSize int) {
-	var str []string
-	orderby = "id desc"
-	page = 1
-	pageSize = DefaultPageSize
+func (d *NoCacheDao) buildCond(cond map[string]interface{}) (sess *xorm.Session) {
+	var (
+		str      []string
+		orderby  = "id desc"
+		page     = 1
+		pageSize = DefaultPageSize
+		where    string
+		args     []interface{}
+	)
+	sess = d.engine.NewSession()
+FOR:
 	for k, v := range cond {
 		k = strings.ToLower(k)
-		if k == "orderby" {
+		switch k {
+		case "orderby":
 			orderby = v.(string)
-			continue
-		}
-		if k == "page" {
+			continue FOR
+		case "page":
 			page = common.Max(v.(int), page)
-			continue
-		}
-		if k == "pagesize" {
+			continue FOR
+		case "pagesize":
 			if v.(int) > 0 {
 				pageSize = v.(int)
 			}
-			continue
-		}
-		if k == "where" {
+			continue FOR
+		case "where":
 			where = v.(string)
-			continue
+			continue FOR
+		case "sql":
+			sess.SQL(v)
+			continue FOR
+		case "select":
+			sess.Select(v.(string))
+			continue FOR
+		case "distinct":
+			sess.Distinct(v.(string))
+			continue FOR
 		}
 		str = append(str, fmt.Sprintf("`%s` = ?", k))
 		args = append(args, v)
@@ -179,17 +192,15 @@ func (d *NoCacheDao) buildCond(cond map[string]interface{}) (where string, args 
 		where = strs
 	}
 
-	return where, args, orderby, page, pageSize
+	return sess.Where(where, args...).OrderBy(orderby).
+		Limit(pageSize, (page-1)*pageSize)
 }
 
 func (d *NoCacheDao) Search(t interface{}, cond map[string]interface{}) (err error) {
 
-	where, args, orderby, page, pageSize := d.buildCond(cond)
-
-	sess := d.engine.NewSession()
+	sess := d.buildCond(cond)
 	defer sess.Close()
-	err = sess.Where(where, args...).OrderBy(orderby).
-		Limit(pageSize, (page-1)*pageSize).Find(t)
+	err = sess.Find(t)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
 		logger.Error(err, lastSQL, lastSQLArgs)
@@ -200,12 +211,9 @@ func (d *NoCacheDao) Search(t interface{}, cond map[string]interface{}) (err err
 
 func (d *NoCacheDao) Rows(t interface{}, cond map[string]interface{}) (rows *xorm.Rows, err error) {
 
-	where, args, orderby, page, pageSize := d.buildCond(cond)
-
-	sess := d.engine.NewSession()
+	sess := d.buildCond(cond)
 	defer sess.Close()
-	rows, err = sess.Where(where, args...).OrderBy(orderby).
-		Limit(pageSize, (page-1)*pageSize).Rows(t)
+	rows, err = sess.Rows(t)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
 		logger.Error(err, lastSQL, lastSQLArgs)
@@ -216,12 +224,9 @@ func (d *NoCacheDao) Rows(t interface{}, cond map[string]interface{}) (rows *xor
 
 func (d *NoCacheDao) Iterate(t interface{}, cond map[string]interface{}, f xorm.IterFunc) (err error) {
 
-	where, args, orderby, page, pageSize := d.buildCond(cond)
-
-	sess := d.engine.NewSession()
+	sess := d.buildCond(cond)
 	defer sess.Close()
-	err = sess.Where(where, args...).OrderBy(orderby).
-		Limit(pageSize, (page-1)*pageSize).Iterate(t, f)
+	err = sess.Iterate(t, f)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
 		logger.Error(err, lastSQL, lastSQLArgs)
