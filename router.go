@@ -68,7 +68,7 @@ func router(w http.ResponseWriter, r *http.Request) {
 	var isNotFound bool
 	var instance instance
 	var ok bool
-	if instance, ok = routeMapMethod[httpCtx.Path+"with"+strings.ToLower(r.Method)]; !ok {
+	if instance, ok = routeMapMethod[httpCtx.Path+"for"+strings.ToLower(r.Method)]; !ok {
 		if instance, ok = routeMap[httpCtx.Path]; !ok {
 			isNotFound = true
 			//取默认的
@@ -196,24 +196,31 @@ func Handler(pattern string, handler ControllerInterface) (err error) {
 		switch m {
 		case "Init", "Before", "After", "Finish", "NotFound", "ServerError":
 		default:
+			m = strings.ToLower(m)
 			isMethod := false
 			//必须With+全大写结尾
 			for _, v := range []string{"GET", "POST", "PUT", "DELETE"} {
-				if strings.HasSuffix(m, "With"+v) && strings.LastIndex(m, "With"+v) > 0 {
+				if strings.HasSuffix(m, strings.ToLower("For"+v)) && strings.LastIndex(m, strings.ToLower("For"+v)) > 0 {
 					isMethod = true
 					break
 				}
 			}
-			path := fmt.Sprintf("%s/%s", controller, strings.ToLower(m))
+			path := fmt.Sprintf("%s/%s", controller, m)
 			value := instance{
 				reflectVal:     reflectVal,
 				controllerName: controllerName,
 				methodName:     rt.Method(i).Name,
 			}
 			if isMethod {
+				if _, ok := routeMapMethod[path]; ok {
+					panic(path + " exist")
+				}
 				routeMapMethod[path] = value
 				logger.Infof("pattern: %s register routeMapMethod: %s", pattern, path)
 			} else {
+				if _, ok := routeMap[path]; ok {
+					panic(path + " exist")
+				}
 				routeMap[path] = value
 				logger.Infof("pattern: %s register routeMap: %s", pattern, path)
 			}
