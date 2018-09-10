@@ -63,7 +63,7 @@ func initLog() {
 	lc := Config.Logger
 	logger.SetLogGoID(lc.LogGoID)
 
-	if lc.LogFile != "" {
+	if len(lc.LogFile) > 0 {
 		logger.SetLevelStr(lc.LogLevel)
 		logger.SetConsole(lc.IsConsole)
 		if strings.ToLower(lc.LogType) == "daily" {
@@ -123,7 +123,7 @@ func Run() (err error) {
 	defer signalContext.Shutdowned()
 
 	if randPortListener == nil {
-		if Config.Server.Address == "" {
+		if len(Config.Server.Address) == 0 {
 			return
 		}
 
@@ -160,32 +160,42 @@ func RunRandPort() string {
 
 func initConfig() {
 	//设置默认路由
-	if Config.Route.DefaultController == "" {
+	if len(Config.Route.DefaultController) == 0 {
 		Config.Route.DefaultController = "index"
 	} else {
 		Config.Route.DefaultController = strings.ToLower(Config.Route.DefaultController)
 	}
-	if Config.Route.DefaultAction == "" {
+	if len(Config.Route.DefaultAction) == 0 {
 		Config.Route.DefaultAction = "index"
 	} else {
 		Config.Route.DefaultAction = strings.ToLower(Config.Route.DefaultAction)
 	}
+
 	//转为绝对路径
 	if !filepath.IsAbs(Config.Template.HTMLPath) {
 		Config.Template.HTMLPath = filepath.Join(APPPATH, Config.Template.HTMLPath)
 	}
+	if len(Config.Template.WidgetsPath) > 0 {
+		if !filepath.IsAbs(Config.Template.WidgetsPath) {
+			Config.Template.WidgetsPath = filepath.Join(APPPATH, Config.Template.WidgetsPath)
+		}
+		m, err := filepath.Glob(Config.Template.WidgetsPath)
+		if err != nil || len(m) == 0 {
+			panic("error WidgetsPath")
+		}
+	}
 
-	if Config.Server.Port != "" && !strings.Contains(Config.Server.Port, ":") {
+	if len(Config.Server.Port) > 0 && !strings.Contains(Config.Server.Port, ":") {
 		Config.Server.Port = ":" + Config.Server.Port
 	}
 	//兼容
-	if Config.Server.Address == "" && Config.Server.Port != "" {
+	if len(Config.Server.Address) == 0 && len(Config.Server.Port) > 0 {
 		Config.Server.Address = Config.Server.Port
 	}
 
 	certFile := Config.Server.HTTPSCertFile
 	keyFile := Config.Server.HTTPSKeyFile
-	if certFile != "" && keyFile != "" {
+	if len(certFile) > 0 && len(keyFile) > 0 {
 		if !filepath.IsAbs(certFile) {
 			certFile = filepath.Join(APPPATH, certFile)
 		}
@@ -195,7 +205,7 @@ func initConfig() {
 		}
 	}
 
-	if Config.Redis.Server != "" {
+	if len(Config.Redis.Server) > 0 {
 		DefaultRedisIns = redis.NewRedis(Config.Redis)
 	}
 }

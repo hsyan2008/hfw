@@ -105,8 +105,7 @@ func (httpCtx *HTTPContext) render() (t *template.Template) {
 	var ok bool
 	if httpCtx.Template != "" {
 		key = httpCtx.Path
-		// return httpCtx.renderHtml()
-		render = httpCtx.renderHtml
+		render = httpCtx.renderHTML
 	} else if httpCtx.TemplateFile != "" {
 		key = httpCtx.TemplateFile
 		render = httpCtx.renderFile
@@ -132,15 +131,14 @@ func (httpCtx *HTTPContext) render() (t *template.Template) {
 	return t
 }
 
-func (httpCtx *HTTPContext) renderHtml() (t *template.Template) {
+func (httpCtx *HTTPContext) renderHTML() (t *template.Template) {
 	if len(httpCtx.FuncMap) == 0 {
 		t = template.Must(template.New(httpCtx.Path).Parse(httpCtx.Template))
 	} else {
 		t = template.Must(template.New(httpCtx.Path).Funcs(httpCtx.FuncMap).Parse(httpCtx.Template))
 	}
-	if Config.Template.WidgetsPath != "" {
-		widgetsPath := filepath.Join(Config.Template.HTMLPath, Config.Template.WidgetsPath)
-		t = template.Must(t.ParseGlob(widgetsPath))
+	if len(Config.Template.WidgetsPath) > 0 {
+		t = template.Must(t.ParseGlob(Config.Template.WidgetsPath))
 	}
 
 	return
@@ -160,9 +158,8 @@ func (httpCtx *HTTPContext) renderFile() (t *template.Template) {
 	} else {
 		t = template.Must(template.New(filepath.Base(httpCtx.TemplateFile)).Funcs(httpCtx.FuncMap).ParseFiles(templateFilePath))
 	}
-	if Config.Template.WidgetsPath != "" {
-		widgetsPath := filepath.Join(Config.Template.HTMLPath, Config.Template.WidgetsPath)
-		t = template.Must(t.ParseGlob(widgetsPath))
+	if len(Config.Template.WidgetsPath) > 0 {
+		t = template.Must(t.ParseGlob(Config.Template.WidgetsPath))
 	}
 
 	return
