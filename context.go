@@ -130,13 +130,13 @@ func (httpCtx *HTTPContext) SetDownloadMode(filename string) {
 	httpCtx.isDownload = true
 }
 
-func (httpCtx *HTTPContext) GetCookie(key string) (s string, err error) {
-	cookie, err := httpCtx.Request.Cookie(key)
-	if err != nil {
-		return
+func (httpCtx *HTTPContext) GetCookie(key string) (s string) {
+	cookie, _ := httpCtx.Request.Cookie(key)
+	if cookie != nil {
+		return cookie.Value
 	}
 
-	return cookie.Value, nil
+	return
 }
 func (httpCtx *HTTPContext) SetCookie(key, value string) {
 	cookie := &http.Cookie{
