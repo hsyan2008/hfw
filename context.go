@@ -42,7 +42,7 @@ type HTTPContext struct {
 	FuncMap map[string]interface{} `json:"-"`
 
 	//如果是下载文件，不执行After和Finish
-	isDownload bool
+	IsCloseRender bool
 
 	HasHeader       bool `json:"-"`
 	common.Response `json:"response"`
@@ -60,6 +60,8 @@ func (httpCtx *HTTPContext) Init(w http.ResponseWriter, r *http.Request) {
 	httpCtx.IsError = false
 	httpCtx.Data = make(map[string]interface{})
 	httpCtx.FuncMap = make(map[string]interface{})
+
+	httpCtx.IsCloseRender = false
 
 	httpCtx.HasHeader = false
 	httpCtx.Header = nil
@@ -127,7 +129,7 @@ func (httpCtx *HTTPContext) ThrowCheck(errNo int64, i interface{}) {
 //SetDownloadMode ..
 func (httpCtx *HTTPContext) SetDownloadMode(filename string) {
 	httpCtx.ResponseWriter.Header().Set("Content-Disposition", fmt.Sprintf(`attachment;filename="%s"`, filename))
-	httpCtx.isDownload = true
+	httpCtx.IsCloseRender = true
 }
 
 func (httpCtx *HTTPContext) GetCookie(key string) (s string) {

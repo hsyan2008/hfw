@@ -60,14 +60,14 @@ func (ctl *Controller) Before(httpCtx *HTTPContext) {
 //After ..
 func (ctl *Controller) After(httpCtx *HTTPContext) {
 	// logger.Debug("Controller After")
-	if websocket.IsWebSocketUpgrade(httpCtx.Request) || httpCtx.isDownload {
+	if websocket.IsWebSocketUpgrade(httpCtx.Request) || httpCtx.IsCloseRender {
 		return
 	}
 }
 
 //Finish ..
 func (ctl *Controller) Finish(httpCtx *HTTPContext) {
-	if websocket.IsWebSocketUpgrade(httpCtx.Request) || httpCtx.isDownload {
+	if websocket.IsWebSocketUpgrade(httpCtx.Request) || httpCtx.IsCloseRender {
 		return
 	}
 
