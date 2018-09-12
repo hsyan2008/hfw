@@ -42,7 +42,7 @@ type HTTPContext struct {
 	FuncMap map[string]interface{} `json:"-"`
 
 	//如果是下载文件，不执行After和Finish
-	IsCloseRender bool
+	IsCloseRender bool `json:"-"`
 
 	HasHeader       bool `json:"-"`
 	common.Response `json:"response"`
