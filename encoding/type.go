@@ -1,6 +1,7 @@
 package encoding
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -20,6 +21,11 @@ func (a *Str) UnmarshalJSON(data []byte) (err error) {
 	}
 
 	return
+}
+
+func (a *Str) MarshalJSON() (data []byte, err error) {
+
+	return []byte(strconv.Quote(string(*a))), err
 }
 
 //把纯数字的字符串也解析成数字
@@ -43,4 +49,9 @@ func (a *Int) UnmarshalJSON(data []byte) (err error) {
 	*a = Int(as)
 
 	return
+}
+
+func (a *Int) MarshalJSON() (data []byte, err error) {
+
+	return []byte(fmt.Sprintf("%d", *a)), err
 }
