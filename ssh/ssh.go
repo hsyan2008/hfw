@@ -135,7 +135,10 @@ func (this *SSH) Dial() (err error) {
 	this.c, err = this.dial()
 
 	if err == nil {
+		logger.Warn("dial success:", this.config.Addr, this.config.User)
 		go this.keepalive()
+	} else {
+		logger.Warn("dial success:", this.config.Addr, this.config.User)
 	}
 
 	return

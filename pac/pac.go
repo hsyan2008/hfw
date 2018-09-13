@@ -1,6 +1,7 @@
 package pac
 
 import (
+	"context"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -52,7 +53,7 @@ func parsePac(body string) (err error) {
 
 func updatePacFile() (err error) {
 	c := curl.NewCurl(pacUrl)
-	res, err := c.Request()
+	res, err := c.Request(context.Background())
 	if err != nil {
 		return
 	}
