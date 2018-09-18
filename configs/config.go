@@ -4,15 +4,16 @@ import "time"
 
 //Config 项目配置
 type AllConfig struct {
-	Server   ServerConfig
-	Logger   LoggerConfig
-	Db       DbConfig
-	Cache    CacheConfig
-	Template TemplateConfig
-	Route    RouteConfig
-	Redis    RedisConfig
-	Session  SessionConfig
-	Custom   map[string]string
+	Server    ServerConfig
+	Logger    LoggerConfig
+	Db        DbConfig
+	Cache     CacheConfig
+	Template  TemplateConfig
+	Route     RouteConfig
+	Redis     RedisConfig
+	Session   SessionConfig
+	HotDeploy HotDeployConfig
+	Custom    map[string]string
 }
 
 type RedisConfig struct {
@@ -103,4 +104,15 @@ type TemplateConfig struct {
 type RouteConfig struct {
 	DefaultController string
 	DefaultAction     string
+}
+
+type HotDeployConfig struct {
+	//是否开启监听执行初始命令的目录
+	Enable bool
+	//指定热部署的命令
+	Cmd []string
+	//指定监听的文件名或者后缀(不带.)
+	Exts []string
+	//指定监听的目录深度，默认最大10
+	Dep int
 }

@@ -122,6 +122,10 @@ func Run() (err error) {
 	//等待工作完成
 	defer signalContext.Shutdowned()
 
+	if Config.HotDeploy.Enable {
+		go HotDeploy(Config.HotDeploy)
+	}
+
 	if randPortListener == nil {
 		if len(Config.Server.Address) == 0 {
 			return
