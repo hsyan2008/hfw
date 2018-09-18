@@ -18,6 +18,10 @@ var (
 	isGoRun bool
 )
 
+func IsGoRun() bool {
+	return isGoRun
+}
+
 func GetAppPath() string {
 	if appPath == "" {
 		pwd, _ := filepath.Abs(os.Args[0])
@@ -87,6 +91,15 @@ func IsExist(filepath string) bool {
 		return true
 	}
 	return !os.IsNotExist(err)
+}
+
+//IsDir ...
+func IsDir(filepath string) bool {
+	f, err := os.Stat(filepath)
+	if err != nil {
+		return false
+	}
+	return f.IsDir()
 }
 
 //转换为当前操作系统支持的编码
