@@ -46,28 +46,30 @@ func GetSignalContext() *SignalContext {
 //gracehttp外，增加两个信号支持
 func (ctx *SignalContext) listenSignal() {
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(c, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT)
+
 	logger.Infof("Exec `kill -INT %d` will graceful exit", PID)
-	if ctx.IsHTTP {
-		logger.Infof("Exec `kill -TERM %d` will graceful restart", PID)
-	}
+	logger.Infof("Exec `kill -TERM %d` will graceful restart", PID)
+
 	s := <-c
 	logger.Info("recv signal:", s)
 	go ctx.doShutdownDone()
 	if ctx.IsHTTP {
 		logger.Info("Stopping http server")
-		p, _ := os.FindProcess(os.Getpid())
-		switch s {
-		case syscall.SIGTERM:
-			//给自己发信号，触发gracehttp重启
-			_ = p.Signal(syscall.SIGHUP)
-		case syscall.SIGINT:
-			//给自己发信号，触发gracehttp退出
-			_ = p.Signal(syscall.SIGQUIT)
-		}
 	} else {
 		logger.Info("Stopping console server")
-		//暂时不做重启
+		switch s {
+		case syscall.SIGHUP, syscall.SIGTERM:
+			execSpec := &syscall.ProcAttr{
+				Env:   os.Environ(),
+				Files: []uintptr{os.Stdin.Fd(), os.Stdout.Fd(), os.Stderr.Fd()},
+			}
+			_, err := syscall.ForkExec(os.Args[0], os.Args, execSpec)
+			if err != nil {
+				logger.Errorf("failed to forkexec: %v", err)
+			}
+		case syscall.SIGQUIT, syscall.SIGINT:
+		}
 	}
 }
 
@@ -93,10 +95,13 @@ func (ctx *SignalContext) doShutdownDone() {
 //通知业务方，并等待业务方结束
 func (ctx *SignalContext) waitDone() {
 	//context包来取消，以通知业务方
+	logger.Info("signal ctx cancel")
 	ctx.Cancel()
 	//等待业务方完成退出
+	logger.Info("signal ctx waitgroup wait done start")
 	ctx.WgWait()
 	//表示全部完成
+	logger.Info("signal ctx waitgroup wait done end")
 	close(ctx.done)
 }
 

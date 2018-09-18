@@ -127,8 +127,6 @@ func Run() (err error) {
 			return
 		}
 
-		logger.Info("Listen on", Config.Server.Address)
-
 		signalContext.IsHTTP = true
 
 		if Config.Server.Concurrence > 0 {

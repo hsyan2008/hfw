@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/hsyan2008/go-logger/logger"
 	"github.com/hsyan2008/hfw2/common"
 	"github.com/hsyan2008/hfw2/encoding"
 )
@@ -30,7 +31,7 @@ func (httpCtx *HTTPContext) Output() {
 	httpCtx.ReturnJSON()
 }
 
-//DownloadFile 下载文件服务
+//ReturnFileContent 下载文件服务
 func (httpCtx *HTTPContext) ReturnFileContent(filename string, file interface{}) {
 	httpCtx.IsJSON = false
 	httpCtx.Template = ""
@@ -183,6 +184,7 @@ func (httpCtx *HTTPContext) ReturnJSON() {
 	}
 
 	var err error
+	logger.Debugf("%#v", httpCtx.Response)
 	if httpCtx.HasHeader {
 		//header + response(err_no + err_msg)
 		err = encoding.JSONIO.Marshal(w, httpCtx)
