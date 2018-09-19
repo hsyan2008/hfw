@@ -110,7 +110,7 @@ type HotDeployConfig struct {
 	//是否开启监听执行初始命令的目录
 	Enable bool
 	//指定热部署的命令
-	Cmd []string
+	Cmd string
 	//指定监听的文件名或者后缀(不带.)
 	Exts []string
 	//指定监听的目录深度，默认最大10

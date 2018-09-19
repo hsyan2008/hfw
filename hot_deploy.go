@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -14,10 +15,10 @@ import (
 	"github.com/shirou/gopsutil/process"
 )
 
-func HotDeploy(hotDeploy configs.HotDeployConfig) {
+func HotDeploy(hotDeployConfig configs.HotDeployConfig) {
 
-	if hotDeploy.Dep <= 0 || hotDeploy.Dep > 10 {
-		hotDeploy.Dep = 5
+	if hotDeployConfig.Dep <= 0 || hotDeployConfig.Dep > 10 {
+		hotDeployConfig.Dep = 5
 	}
 
 	signalContext.WgAdd()
@@ -30,7 +31,7 @@ func HotDeploy(hotDeploy configs.HotDeployConfig) {
 	}
 	defer watcher.Close()
 
-	err = addWatch(watcher, APPPATH, 0)
+	err = addWatch(watcher, hotDeployConfig, APPPATH, 0)
 	if err != nil {
 		logger.Fatal(err)
 		return
@@ -42,7 +43,7 @@ func HotDeploy(hotDeploy configs.HotDeployConfig) {
 		return
 	}
 
-	var isRestart bool
+	var isToRestart bool
 	for {
 		select {
 		case <-signalContext.Ctx.Done():
@@ -51,45 +52,29 @@ func HotDeploy(hotDeploy configs.HotDeployConfig) {
 			if !ok {
 				return
 			}
-			logger.Debug("event:", event)
-			if event.Op&fsnotify.Create == fsnotify.Create {
-				logger.Info("modified file:", event.Name)
-			}
-			if event.Op&fsnotify.Write == fsnotify.Write {
-				logger.Info("modified file:", event.Name)
-			}
-			if event.Op&fsnotify.Remove == fsnotify.Remove {
-				logger.Info("modified file:", event.Name)
-			}
-			if event.Op&fsnotify.Rename == fsnotify.Rename {
-				logger.Info("modified file:", event.Name)
-			}
-			if event.Op&fsnotify.Chmod == fsnotify.Chmod {
-				logger.Info("modified file:", event.Name)
-			}
 
 			baseName := filepath.Base(event.Name)
 			if baseName[:1] == "." {
 				continue
 			}
-			if len(hotDeploy.Exts) > 0 {
+			if len(hotDeployConfig.Exts) > 0 {
 				ext := filepath.Ext(event.Name)
 				if len(ext) > 0 {
 					ext = filepath.Ext(event.Name)[1:]
 				}
-				var isFind bool
-				for _, v := range hotDeploy.Exts {
+				var isTrigger bool
+				for _, v := range hotDeployConfig.Exts {
 					if v == ext || v == baseName {
-						isFind = true
+						isTrigger = true
 						break
 					}
 				}
-				if !isFind {
+				if !isTrigger {
 					continue
 				}
 			}
 
-			isRestart = true
+			isToRestart = true
 
 		case err, ok := <-watcher.Errors:
 			if !ok {
@@ -97,7 +82,7 @@ func HotDeploy(hotDeploy configs.HotDeployConfig) {
 			}
 			logger.Warn("error:", err)
 		case <-time.After(time.Second):
-			if !isRestart {
+			if !isToRestart {
 				continue
 			}
 			if common.IsGoRun() {
@@ -106,15 +91,18 @@ func HotDeploy(hotDeploy configs.HotDeployConfig) {
 					logger.Warn("send signal sigterm failed:", err)
 					return
 				}
-				if len(hotDeploy.Cmd) == 0 {
+				var cmd []string
+				if len(hotDeployConfig.Cmd) == 0 {
 					pp, err := process.NewProcess(int32(os.Getppid()))
 					if err != nil {
 						return
 					}
-					hotDeploy.Cmd, err = pp.CmdlineSlice()
+					cmd, err = pp.CmdlineSlice()
 					if err != nil {
 						return
 					}
+				} else {
+					cmd = strings.Fields(hotDeployConfig.Cmd)
 				}
 
 				execSpec := &os.ProcAttr{
@@ -123,11 +111,11 @@ func HotDeploy(hotDeploy configs.HotDeployConfig) {
 					Files: []*os.File{os.Stdin, os.Stdout, os.Stderr},
 				}
 
-				hotDeploy.Cmd[0], err = exec.LookPath(hotDeploy.Cmd[0])
+				cmd[0], err = exec.LookPath(cmd[0])
 				if err != nil {
 					return
 				}
-				_, err = os.StartProcess(hotDeploy.Cmd[0], append(hotDeploy.Cmd, os.Args[1:]...), execSpec)
+				_, err = os.StartProcess(cmd[0], append(cmd, os.Args[1:]...), execSpec)
 				if err != nil {
 					return
 				}
@@ -142,8 +130,8 @@ func HotDeploy(hotDeploy configs.HotDeployConfig) {
 	}
 }
 
-func addWatch(watcher *fsnotify.Watcher, path string, dep int) (err error) {
-	if dep > 5 {
+func addWatch(watcher *fsnotify.Watcher, hotDeployConfig configs.HotDeployConfig, path string, dep int) (err error) {
+	if dep > hotDeployConfig.Dep {
 		return
 	}
 	f, err := os.Open(path)
@@ -169,7 +157,7 @@ func addWatch(watcher *fsnotify.Watcher, path string, dep int) (err error) {
 			if f.Name()[:1] == "." {
 				continue
 			}
-			addWatch(watcher, filepath.Join(path, f.Name()), dep+1)
+			addWatch(watcher, hotDeployConfig, filepath.Join(path, f.Name()), dep+1)
 		}
 	}
 
