@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/axgle/mahonia"
+	"github.com/google/uuid"
 )
 
 var (
@@ -112,4 +113,12 @@ func ToOsCode(text string) string {
 	}
 
 	return text
+}
+
+func Uuid() string {
+	if id, err := uuid.NewRandom(); err == nil {
+		return id.String()
+	}
+
+	return ""
 }
