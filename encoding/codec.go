@@ -6,7 +6,13 @@ import (
 	"io"
 
 	jsoniter "github.com/json-iterator/go"
+	"github.com/json-iterator/go/extra"
 )
+
+func init() {
+	//https://blog.csdn.net/impressionw/article/details/74731888
+	extra.RegisterFuzzyDecoders()
+}
 
 //Codec 参考https://github.com/golang/appengine/blob/master/memcache/memcache.go
 type Codec struct {
