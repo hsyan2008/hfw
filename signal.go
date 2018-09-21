@@ -64,7 +64,7 @@ func (ctx *SignalContext) listenSignal() {
 				Env:   os.Environ(),
 				Files: []uintptr{os.Stdin.Fd(), os.Stdout.Fd(), os.Stderr.Fd()},
 			}
-			_, err := syscall.ForkExec(os.Args[0], os.Args, execSpec)
+			_, _, err := syscall.StartProcess(os.Args[0], os.Args, execSpec)
 			if err != nil {
 				logger.Errorf("failed to forkexec: %v", err)
 			}
