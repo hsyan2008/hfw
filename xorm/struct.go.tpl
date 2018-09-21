@@ -30,6 +30,15 @@ type {{Mapper .Name}} struct {
 {{end}}
 }
 
+{{range .ColumnsSeq}}{{$col := $table.GetColumn .}}
+func (m *{{Mapper $table.Name}}) Get{{Mapper $col.Name}}() (val {{Type $col}}) {
+    if m == nil {
+        return
+    }
+    return m.{{Mapper $col.Name}}
+}
+{{end}}
+
 func (m *{{Mapper .Name}}) TableName() string {
 	return "{{.Name}}"
 }
@@ -65,8 +74,6 @@ func (m *{{Mapper .Name}}) SearchOne(cond db.Cond) (t *{{Mapper .Name}}, err err
     }
 	if len(rs) > 0 {
 		t = rs[0]
-    } else {
-        t = new({{Mapper .Name}})
     }
 	return
 }
@@ -100,8 +107,6 @@ func (m *{{Mapper .Name}}) GetById(id interface{}) (t *{{Mapper .Name}}, err err
     }
 	if len(rs) > 0 {
 		t = rs[0]
-    } else {
-        t = new({{Mapper .Name}})
     }
 	return
 }
