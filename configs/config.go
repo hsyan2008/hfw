@@ -21,8 +21,9 @@ type RedisConfig struct {
 	Server     string
 	Prefix     string
 	Expiration int32
-	Db         int
-	Password   string
+	//以下两个在集群下无效
+	Db       int
+	Password string
 }
 
 type SessionConfig struct {
