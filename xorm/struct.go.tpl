@@ -5,7 +5,7 @@ import (
     "fmt"
 {{$ilen := len .Imports}}
 {{if gt $ilen 0}}
-	{{range .Imports}}{{if ne . "time"}}"{{.}}"{{end}}{{end}}
+{{range .Imports}}"{{.}}"{{end}}
 {{end}}
     "github.com/go-xorm/xorm"
     hfw "github.com/hsyan2008/hfw2"
