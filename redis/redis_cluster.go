@@ -1,66 +1,42 @@
 package redis
 
 import (
+	"errors"
+
 	"github.com/hsyan2008/hfw2/configs"
 	"github.com/hsyan2008/hfw2/encoding"
-	"github.com/mediocregopher/radix.v2/pool"
+	"github.com/mediocregopher/radix.v2/cluster"
 	"github.com/mediocregopher/radix.v2/redis"
 )
 
-type RedisSimple struct {
-	p      *pool.Pool
+type RedisCluster struct {
+	c      *cluster.Cluster
 	prefix string
 }
 
-var _ RedisInterface = &RedisSimple{}
+var _ RedisInterface = &RedisCluster{}
 
-func NewRedisSimple(redisConfig configs.RedisConfig) (rs *RedisSimple, err error) {
-	df := func(network, addr string) (*redis.Client, error) {
-		client, err := redis.Dial(network, addr)
-		if err != nil {
-			return nil, err
-		}
-		if len(redisConfig.Password) > 0 {
-			if err = client.Cmd("AUTH", redisConfig.Password).Err; err != nil {
-				client.Close()
-				return nil, err
-			}
-		}
-		if redisConfig.Db > 0 {
-			if err = client.Cmd("SELECT", redisConfig.Db).Err; err != nil {
-				client.Close()
-				return nil, err
-			}
-		}
-		return client, nil
-	}
-	p, err := pool.NewCustom("tcp", redisConfig.Server, 10, df)
+func NewRedisCluster(redisConfig configs.RedisConfig) (rc *RedisCluster, err error) {
+	cls, err := cluster.NewWithOpts(cluster.Opts{
+		Addr: redisConfig.Server,
+	})
 
 	if err != nil {
 		return
+	} else {
+		return &RedisCluster{c: cls, prefix: redisConfig.Prefix}, nil
 	}
-
-	return &RedisSimple{
-		p:      p,
-		prefix: redisConfig.Prefix,
-	}, nil
 }
 
-func (this *RedisSimple) getKey(key string) string {
+func (this *RedisCluster) getKey(key string) string {
 	return this.prefix + key
 }
 
-func (this *RedisSimple) Cmd(cmd string, args ...interface{}) (resp *redis.Resp) {
-	c, err := this.p.Get()
-	if err != nil {
-		resp.Err = err
-	}
-	defer this.p.Put(c)
-
-	return c.Cmd(cmd, args)
+func (this *RedisCluster) Cmd(cmd string, args ...interface{}) *redis.Resp {
+	return this.c.Cmd(cmd, args)
 }
 
-func (this *RedisSimple) IsExist(key string) (isExist bool, err error) {
+func (this *RedisCluster) IsExist(key string) (isExist bool, err error) {
 	key = this.getKey(key)
 
 	resp := this.Cmd("EXISTS", key)
@@ -72,7 +48,7 @@ func (this *RedisSimple) IsExist(key string) (isExist bool, err error) {
 	return i == 1, nil
 }
 
-func (this *RedisSimple) Set(key string, value interface{}) (err error) {
+func (this *RedisCluster) Set(key string, value interface{}) (err error) {
 	key = this.getKey(key)
 
 	v, err := encoding.Gob.Marshal(&value)
@@ -85,7 +61,7 @@ func (this *RedisSimple) Set(key string, value interface{}) (err error) {
 	return
 }
 
-func (this *RedisSimple) Get(key string) (value interface{}, err error) {
+func (this *RedisCluster) Get(key string) (value interface{}, err error) {
 	key = this.getKey(key)
 
 	resp := this.Cmd("GET", key)
@@ -107,7 +83,7 @@ func (this *RedisSimple) Get(key string) (value interface{}, err error) {
 	return
 }
 
-func (this *RedisSimple) Incr(key string) (value int64, err error) {
+func (this *RedisCluster) Incr(key string) (value int64, err error) {
 	key = this.getKey(key)
 
 	resp := this.Cmd("INCR", key)
@@ -118,7 +94,7 @@ func (this *RedisSimple) Incr(key string) (value int64, err error) {
 	return resp.Int64()
 }
 
-func (this *RedisSimple) Decr(key string) (value int64, err error) {
+func (this *RedisCluster) Decr(key string) (value int64, err error) {
 	key = this.getKey(key)
 
 	resp := this.Cmd("DECR", key)
@@ -129,7 +105,7 @@ func (this *RedisSimple) Decr(key string) (value int64, err error) {
 	return resp.Int64()
 }
 
-func (this *RedisSimple) IncrBy(key string, delta uint64) (value int64, err error) {
+func (this *RedisCluster) IncrBy(key string, delta uint64) (value int64, err error) {
 	key = this.getKey(key)
 
 	resp := this.Cmd("INCRBY", key, delta)
@@ -140,7 +116,7 @@ func (this *RedisSimple) IncrBy(key string, delta uint64) (value int64, err erro
 	return resp.Int64()
 }
 
-func (this *RedisSimple) DecrBy(key string, delta uint64) (value int64, err error) {
+func (this *RedisCluster) DecrBy(key string, delta uint64) (value int64, err error) {
 	key = this.getKey(key)
 
 	resp := this.Cmd("DECRBY", key, delta)
@@ -152,7 +128,7 @@ func (this *RedisSimple) DecrBy(key string, delta uint64) (value int64, err erro
 	return resp.Int64()
 }
 
-func (this *RedisSimple) Del(key string) (isOk bool, err error) {
+func (this *RedisCluster) Del(key string) (isOk bool, err error) {
 	key = this.getKey(key)
 
 	resp := this.Cmd("DEL", key)
@@ -168,7 +144,7 @@ func (this *RedisSimple) Del(key string) (isOk bool, err error) {
 	return i > 0, err
 }
 
-func (this *RedisSimple) SetNx(key string, value interface{}) (isOk bool, err error) {
+func (this *RedisCluster) SetNx(key string, value interface{}) (isOk bool, err error) {
 	key = this.getKey(key)
 
 	v, err := encoding.Gob.Marshal(&value)
@@ -190,7 +166,7 @@ func (this *RedisSimple) SetNx(key string, value interface{}) (isOk bool, err er
 }
 
 //set的复杂格式，支持过期时间
-func (this *RedisSimple) SetEx(key string, value interface{}, expiration int) (err error) {
+func (this *RedisCluster) SetEx(key string, value interface{}, expiration int) (err error) {
 	key = this.getKey(key)
 
 	v, err := encoding.Gob.Marshal(&value)
@@ -208,7 +184,7 @@ func (this *RedisSimple) SetEx(key string, value interface{}, expiration int) (e
 }
 
 //set的复杂格式，支持过期时间，当key存在的时候不保存
-func (this *RedisSimple) SetNxEx(key string, value interface{}, expiration int) (isOk bool, err error) {
+func (this *RedisCluster) SetNxEx(key string, value interface{}, expiration int) (isOk bool, err error) {
 	key = this.getKey(key)
 
 	v, err := encoding.Gob.Marshal(&value)
@@ -230,7 +206,7 @@ func (this *RedisSimple) SetNxEx(key string, value interface{}, expiration int) 
 }
 
 //当key存在，但不是hash类型，会报错AppErr
-func (this *RedisSimple) Hexists(key, field string) (value bool, err error) {
+func (this *RedisCluster) Hexists(key, field string) (value bool, err error) {
 	key = this.getKey(key)
 
 	resp := this.Cmd("HEXISTS", key, field)
@@ -243,7 +219,7 @@ func (this *RedisSimple) Hexists(key, field string) (value bool, err error) {
 	return i == 1, err
 }
 
-func (this *RedisSimple) Hset(key, field string, value interface{}) (err error) {
+func (this *RedisCluster) Hset(key, field string, value interface{}) (err error) {
 	key = this.getKey(key)
 
 	v, err := encoding.Gob.Marshal(&value)
@@ -261,7 +237,7 @@ func (this *RedisSimple) Hset(key, field string, value interface{}) (err error) 
 	return
 }
 
-func (this *RedisSimple) Hget(key, field string) (value interface{}, err error) {
+func (this *RedisCluster) Hget(key, field string) (value interface{}, err error) {
 	key = this.getKey(key)
 
 	resp := this.Cmd("HGET", key, field)
@@ -283,7 +259,7 @@ func (this *RedisSimple) Hget(key, field string) (value interface{}, err error) 
 	return
 }
 
-func (this *RedisSimple) Hdel(key, field string) (err error) {
+func (this *RedisCluster) Hdel(key, field string) (err error) {
 	key = this.getKey(key)
 
 	resp := this.Cmd("HDEL", key, field)
@@ -296,33 +272,75 @@ func (this *RedisSimple) Hdel(key, field string) (err error) {
 	return
 }
 
-func (this *RedisSimple) Rename(oldKey, newKey string) (err error) {
+//集群不支持RENAME
+func (this *RedisCluster) Rename(oldKey, newKey string) (err error) {
 	oldKey = this.getKey(oldKey)
 	newKey = this.getKey(newKey)
 
-	resp := this.Cmd("RENAME", oldKey, newKey)
+	// resp := this.Cmd("RENAME", oldKey, newKey)
+	// if resp.Err != nil {
+	// 	return resp.Err
+	// }
+	resp := this.Cmd("GET", oldKey)
 	if resp.Err != nil {
 		return resp.Err
 	}
 
+	if resp.IsType(redis.Nil) {
+		return errors.New(oldKey + " not exist")
+	}
+
+	v, err := resp.Bytes()
+	if err != nil {
+		return
+	}
+
+	_, err = this.Cmd("SET", newKey, v).Str()
+
 	return
 }
 
-func (this *RedisSimple) RenameNx(oldKey, newKey string) (isOk bool, err error) {
+//集群不支持RENAMENX
+func (this *RedisCluster) RenameNx(oldKey, newKey string) (isOk bool, err error) {
 	oldKey = this.getKey(oldKey)
 	newKey = this.getKey(newKey)
 
-	resp := this.Cmd("RENAMENX", oldKey, newKey)
+	// resp := this.Cmd("RENAMENX", oldKey, newKey)
+	// if resp.Err != nil {
+	// 	return isOk, resp.Err
+	// }
+	//
+	// i, err := resp.Int()
+	//
+	// return i == 1, err
+	resp := this.Cmd("GET", oldKey)
 	if resp.Err != nil {
 		return isOk, resp.Err
 	}
 
-	i, err := resp.Int()
+	if resp.IsType(redis.Nil) {
+		return isOk, errors.New(oldKey + " not exist")
+	}
 
-	return i == 1, err
+	v, err := resp.Bytes()
+	if err != nil {
+		return
+	}
+
+	resp = this.Cmd("SET", newKey, v, "NX")
+	if resp.Err != nil {
+		return isOk, resp.Err
+	}
+
+	if resp.IsType(redis.Nil) {
+		return isOk, nil
+	}
+
+	//OK
+	return true, nil
 }
 
-func (this *RedisSimple) Expire(key string, expiration int32) (isOk bool, err error) {
+func (this *RedisCluster) Expire(key string, expiration int32) (isOk bool, err error) {
 	key = this.getKey(key)
 
 	var resp *redis.Resp

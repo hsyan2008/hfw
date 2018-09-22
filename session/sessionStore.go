@@ -8,7 +8,7 @@ import (
 )
 
 type sessRedisStore struct {
-	redisIns   *redis.Redis
+	redisIns   redis.RedisInterface
 	prefix     string
 	expiration int32
 }
@@ -17,7 +17,7 @@ var _ sessionStoreInterface = &sessRedisStore{}
 
 var sessRedisStoreIns *sessRedisStore
 
-func NewSessRedisStore(redisIns *redis.Redis, config configs.AllConfig) (*sessRedisStore, error) {
+func NewSessRedisStore(redisIns redis.RedisInterface, config configs.AllConfig) (*sessRedisStore, error) {
 	if sessRedisStoreIns == nil {
 		redisConfig := config.Redis
 		sessConfig := config.Session
@@ -67,9 +67,13 @@ func (s *sessRedisStore) Destroy(sessid string) (err error) {
 
 func (s *sessRedisStore) Rename(sessid, newid string) (err error) {
 
-	err = s.redisIns.Rename(s.prefix+sessid, s.prefix+newid)
+	b, err := s.redisIns.RenameNx(s.prefix+sessid, s.prefix+newid)
 	if err != nil {
 		return
+	}
+
+	if !b {
+		return errors.New(newid + " is exist")
 	}
 
 	if s.expiration > 0 {

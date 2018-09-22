@@ -35,7 +35,7 @@ var sessPool = sync.Pool{
 	},
 }
 
-func NewSession(request *http.Request, redisIns *redis.Redis, config configs.AllConfig) (s *Session, err error) {
+func NewSession(request *http.Request, redisIns redis.RedisInterface, config configs.AllConfig) (s *Session, err error) {
 	// s := sessPool.Get().(*Session)
 	if config.Session.CookieName == "" || redisIns == nil {
 		logger.Debug("Disabled Session")
@@ -72,9 +72,11 @@ func NewSession(request *http.Request, redisIns *redis.Redis, config configs.All
 func (s *Session) Close(request *http.Request, response http.ResponseWriter) {
 	if s.cookieName != "" {
 		if !s.isNew && s.reName {
-			s.Rename()
-			s.id = s.newid
-			s.isNew = true
+			err := s.Rename()
+			if err == nil {
+				s.id = s.newid
+				s.isNew = true
+			}
 		}
 		if s.isNew {
 			cookie := &http.Cookie{
@@ -111,8 +113,10 @@ func (s *Session) Destroy() {
 	_ = s.store.Destroy(s.id)
 }
 
-func (s *Session) Rename() {
+func (s *Session) Rename() (err error) {
 	if s.id != s.newid {
-		_ = s.store.Rename(s.id, s.newid)
+		return s.store.Rename(s.id, s.newid)
 	}
+
+	return
 }

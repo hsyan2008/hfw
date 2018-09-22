@@ -17,6 +17,7 @@ type AllConfig struct {
 }
 
 type RedisConfig struct {
+	IsCluster  bool
 	Server     string
 	Prefix     string
 	Expiration int32
