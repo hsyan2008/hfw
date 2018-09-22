@@ -40,22 +40,22 @@ func (s *sessRedisStore) SetExpiration(expiration int32) {
 
 func (s *sessRedisStore) IsExist(sessid, key string) (value bool, err error) {
 
-	return s.redisIns.Hexists(s.prefix+sessid, key)
+	return s.redisIns.HExists(s.prefix+sessid, key)
 }
 
 func (s *sessRedisStore) Put(sessid, key string, value interface{}) (err error) {
 
-	return s.redisIns.Hset(s.prefix+sessid, key, value)
+	return s.redisIns.HSet(s.prefix+sessid, key, value)
 }
 
 func (s *sessRedisStore) Get(sessid, key string) (value interface{}, err error) {
 
-	return s.redisIns.Hget(s.prefix+sessid, key)
+	return s.redisIns.HGet(s.prefix+sessid, key)
 }
 
 func (s *sessRedisStore) Del(sessid, key string) (err error) {
 
-	return s.redisIns.Hdel(s.prefix+sessid, key)
+	return s.redisIns.HDel(s.prefix+sessid, key)
 }
 
 func (s *sessRedisStore) Destroy(sessid string) (err error) {

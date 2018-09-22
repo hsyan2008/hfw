@@ -105,7 +105,7 @@ func (this *RedisCluster) Decr(key string) (value int64, err error) {
 	return resp.Int64()
 }
 
-func (this *RedisCluster) IncrBy(key string, delta uint64) (value int64, err error) {
+func (this *RedisCluster) IncrBy(key string, delta int64) (value int64, err error) {
 	key = this.getKey(key)
 
 	resp := this.Cmd("INCRBY", key, delta)
@@ -116,7 +116,7 @@ func (this *RedisCluster) IncrBy(key string, delta uint64) (value int64, err err
 	return resp.Int64()
 }
 
-func (this *RedisCluster) DecrBy(key string, delta uint64) (value int64, err error) {
+func (this *RedisCluster) DecrBy(key string, delta int64) (value int64, err error) {
 	key = this.getKey(key)
 
 	resp := this.Cmd("DECRBY", key, delta)
@@ -206,7 +206,7 @@ func (this *RedisCluster) SetNxEx(key string, value interface{}, expiration int)
 }
 
 //当key存在，但不是hash类型，会报错AppErr
-func (this *RedisCluster) Hexists(key, field string) (value bool, err error) {
+func (this *RedisCluster) HExists(key, field string) (value bool, err error) {
 	key = this.getKey(key)
 
 	resp := this.Cmd("HEXISTS", key, field)
@@ -219,7 +219,7 @@ func (this *RedisCluster) Hexists(key, field string) (value bool, err error) {
 	return i == 1, err
 }
 
-func (this *RedisCluster) Hset(key, field string, value interface{}) (err error) {
+func (this *RedisCluster) HSet(key, field string, value interface{}) (err error) {
 	key = this.getKey(key)
 
 	v, err := encoding.Gob.Marshal(&value)
@@ -237,7 +237,7 @@ func (this *RedisCluster) Hset(key, field string, value interface{}) (err error)
 	return
 }
 
-func (this *RedisCluster) Hget(key, field string) (value interface{}, err error) {
+func (this *RedisCluster) HGet(key, field string) (value interface{}, err error) {
 	key = this.getKey(key)
 
 	resp := this.Cmd("HGET", key, field)
@@ -259,7 +259,19 @@ func (this *RedisCluster) Hget(key, field string) (value interface{}, err error)
 	return
 }
 
-func (this *RedisCluster) Hdel(key, field string) (err error) {
+func (this *RedisCluster) HIncrBy(key, field string, delta int64) (value int64, err error) {
+	key = this.getKey(key)
+
+	resp := this.Cmd("HINCRBY", key, field, delta)
+
+	if resp.Err != nil {
+		return value, resp.Err
+	}
+
+	return resp.Int64()
+}
+
+func (this *RedisCluster) HDel(key, field string) (err error) {
 	key = this.getKey(key)
 
 	resp := this.Cmd("HDEL", key, field)

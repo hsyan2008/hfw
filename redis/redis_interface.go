@@ -6,16 +6,17 @@ type RedisInterface interface {
 	Get(string) (interface{}, error)
 	Incr(string) (int64, error)
 	Decr(string) (int64, error)
-	IncrBy(string, uint64) (int64, error)
-	DecrBy(string, uint64) (int64, error)
+	IncrBy(string, int64) (int64, error)
+	DecrBy(string, int64) (int64, error)
 	Del(string) (bool, error)
 	SetNx(string, interface{}) (bool, error)
 	SetEx(string, interface{}, int) error
 	SetNxEx(string, interface{}, int) (bool, error)
-	Hexists(string, string) (bool, error)
-	Hset(string, string, interface{}) error
-	Hget(string, string) (interface{}, error)
-	Hdel(string, string) error
+	HExists(string, string) (bool, error)
+	HSet(string, string, interface{}) error
+	HGet(string, string) (interface{}, error)
+	HIncrBy(string, string, int64) (int64, error)
+	HDel(string, string) error
 	Rename(string, string) error
 	RenameNx(string, string) (bool, error)
 	Expire(string, int32) (bool, error)

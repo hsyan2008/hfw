@@ -16,6 +16,7 @@ import (
 	hfw "github.com/hsyan2008/hfw2"
 	"github.com/hsyan2008/hfw2/common"
 	"github.com/hsyan2008/hfw2/configs"
+	"github.com/hsyan2008/hfw2/db/cache"
 	"github.com/hsyan2008/hfw2/encoding"
 )
 
@@ -177,21 +178,15 @@ func GetCacher(config configs.AllConfig) (cacher *xorm.LRUCacher) {
 		}
 		cacher = xorm.NewLRUCacher(cachestore.NewMemCache(config.Cache.Servers), config.Db.CacheMaxSize)
 	case "redis":
-		if config.Redis.Server == "" {
+		cacheStore, err := cache.NewRedisCache(config.Redis)
+		if err != nil {
+			logger.Warn(err)
 			return
 		}
-		cf := map[string]string{
-			"key":      config.Redis.Prefix + "mysqlCache",
-			"password": config.Redis.Password,
-			"conn":     config.Redis.Server,
-		}
-		cacher = xorm.NewLRUCacher(cachestore.NewRedisCache(cf), config.Db.CacheMaxSize)
-		// case "leveldb":
-		// 	cacher = xorm.NewLRUCacher(cachestore.NewLevelDBStore(cacheServers), config.Db.CacheMaxSize)
+		cacher = xorm.NewLRUCacher(cacheStore, config.Db.CacheMaxSize)
 	}
 	if cacher != nil {
 		cacherMap.Store(key, cacher)
-		//可以指定缓存有效时间，如下
 		cacher.Expired = config.Db.CacheTimeout * time.Second
 	}
 
