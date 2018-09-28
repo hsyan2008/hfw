@@ -117,7 +117,7 @@ func recoverPanic(reflectVal reflect.Value, initValue []reflect.Value) {
 		}
 		buf := make([]byte, 1<<20)
 		num := runtime.Stack(buf, false)
-		logger.Warn(err, num, string(buf))
+		logger.Fatal(err, num, string(buf))
 
 		reflectVal.MethodByName("ServerError").Call(initValue)
 	}
