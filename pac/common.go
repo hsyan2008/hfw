@@ -11,6 +11,7 @@ var isLoad bool
 
 func Reset() (err error) {
 	pac = make(map[string]bool)
+	isLoad = false
 
 	return LoadDefault()
 }
