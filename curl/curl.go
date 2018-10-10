@@ -33,6 +33,7 @@ type Response struct {
 }
 
 func (resp *Response) ReadBody() (body []byte, err error) {
+	defer resp.BodyReader.Close()
 	body, err = ioutil.ReadAll(resp.BodyReader)
 	if err != nil {
 		return
