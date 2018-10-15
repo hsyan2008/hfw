@@ -12,10 +12,5 @@ func LoadGwflist() (err error) {
 		add(v, true)
 	}
 
-	//不通过代理
-	for _, v := range gfwlist.WHITE_LIST {
-		add(v, false)
-	}
-
 	return
 }
