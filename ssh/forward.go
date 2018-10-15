@@ -1,7 +1,6 @@
 package ssh
 
 import (
-	"errors"
 	"io"
 	"net"
 	"strings"
@@ -17,23 +16,43 @@ type ForwardIni struct {
 type LocalForward struct {
 	fi     ForwardIni
 	c      *SSH
+	c2     *SSH
+	step   uint8
 	lister net.Listener
 }
 
 func NewLocalForward(sshConfig SSHConfig, fi ForwardIni) (l *LocalForward, err error) {
-	if fi.Bind == "" || fi.Addr == "" {
-		return nil, errors.New("err ini")
-	}
-	if !strings.Contains(fi.Bind, ":") {
-		fi.Bind = ":" + fi.Bind
-	}
 	l = &LocalForward{
-		fi: fi,
+		step: 1,
 	}
 
 	l.c, err = NewSSH(sshConfig)
 
 	if err == nil {
+		return l, l.start(fi)
+	}
+
+	return
+}
+
+func (l *LocalForward) Dial(sshConfig SSHConfig, fi ForwardIni) (err error) {
+	l.step++
+	if l.step == 2 {
+		l.c2, err = l.c.DialRemote(sshConfig)
+	}
+	if err == nil {
+		return l.start(fi)
+	}
+
+	return
+}
+
+func (l *LocalForward) start(fi ForwardIni) (err error) {
+	if len(fi.Addr) != 0 && len(fi.Bind) != 0 {
+		if !strings.Contains(fi.Bind, ":") {
+			fi.Bind = ":" + fi.Bind
+		}
+		l.fi = fi
 		err = l.Bind()
 		if err == nil {
 			go l.Accept()
