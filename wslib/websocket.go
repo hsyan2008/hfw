@@ -64,13 +64,13 @@ FOR:
 		select {
 		case <-wsIns.HTTPCtx.Ctx.Done():
 			//发送个信号给客户端，由客户端关闭
-			err := wsIns.WriteCloseMessage(websocket.CloseServiceRestart, "restart!")
-			logger.Warn("keep ctx done:", err)
-			//在这里，会影响ReadMessage和WriteMessage
-			// ws.Close()
+			err := wsIns.WriteCloseMessage(websocket.CloseServiceRestart, "keep ctx done")
+			if err != nil {
+				logger.Warn("keep ctx done:", err)
+			}
 			break FOR
 		case <-time.After(wsIns.keepTimeout * time.Second):
-			err := wsIns.ws.WriteMessage(websocket.PingMessage, nil)
+			err := wsIns.WritePingMessage()
 			if err != nil {
 				logger.Warnf("keep error: %v", err)
 				break FOR
@@ -80,6 +80,10 @@ FOR:
 }
 func (wsIns *WsIns) ReadMessage() (messageType int, p []byte, err error) {
 	return wsIns.ws.ReadMessage()
+}
+
+func (wsIns *WsIns) WritePingMessage() (err error) {
+	return wsIns.ws.WriteMessage(websocket.PingMessage, nil)
 }
 
 func (wsIns *WsIns) WriteTextMessage(data []byte) (err error) {
