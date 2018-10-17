@@ -157,17 +157,9 @@ func (curls *Curl) Request(ctx context.Context) (rs Response, err error) {
 	var httpRequest *http.Request
 	var httpResponse *http.Response
 
-	if curls.PostReader != nil || len(curls.PostBytes) > 0 || "" != curls.PostString || len(curls.PostFields) > 0 || len(curls.PostFiles) > 0 {
-		curls.Method = "post"
-	}
-
-	if curls.Method == "post" {
-		httpRequest, err = curls.postForm()
-		if err != nil {
-			return
-		}
-	} else {
-		httpRequest, _ = http.NewRequest("GET", curls.Url, nil)
+	httpRequest, err = curls.CreateRequest()
+	if err != nil {
+		return
 	}
 
 	if curls.Headers != nil {
@@ -217,17 +209,29 @@ func (curls *Curl) Request(ctx context.Context) (rs Response, err error) {
 	return curls.curlResponse(httpResponse)
 }
 
-func (curls *Curl) postForm() (httpRequest *http.Request, err error) {
+func (curls *Curl) CreateRequest() (httpRequest *http.Request, err error) {
+	if curls.PostReader != nil || len(curls.PostBytes) > 0 ||
+		"" != curls.PostString || len(curls.PostFields) > 0 || len(curls.PostFiles) > 0 {
+		curls.Method = "post"
+	}
 
+	if curls.Method == "post" {
+		return curls.createPostRequest()
+	}
+
+	return http.NewRequest("GET", curls.Url, nil)
+}
+
+func (curls *Curl) createPostRequest() (httpRequest *http.Request, err error) {
 	var hasSetHeader bool
 	if curls.PostReader != nil {
-		httpRequest, _ = http.NewRequest("POST", curls.Url, curls.PostReader)
+		httpRequest, err = http.NewRequest("POST", curls.Url, curls.PostReader)
 	} else if len(curls.PostBytes) > 0 {
 		b := bytes.NewReader(curls.PostBytes)
-		httpRequest, _ = http.NewRequest("POST", curls.Url, b)
+		httpRequest, err = http.NewRequest("POST", curls.Url, b)
 	} else if curls.PostString != "" {
 		b := strings.NewReader(curls.PostString)
-		httpRequest, _ = http.NewRequest("POST", curls.Url, b)
+		httpRequest, err = http.NewRequest("POST", curls.Url, b)
 	} else {
 		var b = &bytes.Buffer{}
 		bodyWriter := multipart.NewWriter(b)
@@ -262,9 +266,15 @@ func (curls *Curl) postForm() (httpRequest *http.Request, err error) {
 			}
 		}
 		//必须在这里，不能defer
-		_ = bodyWriter.Close()
+		err = bodyWriter.Close()
+		if err != nil {
+			return
+		}
 
-		httpRequest, _ = http.NewRequest("POST", curls.Url, b)
+		httpRequest, err = http.NewRequest("POST", curls.Url, b)
+		if err != nil {
+			return
+		}
 		httpRequest.Header.Set("Content-Type", bodyWriter.FormDataContentType())
 		hasSetHeader = true
 	}
@@ -272,6 +282,9 @@ func (curls *Curl) postForm() (httpRequest *http.Request, err error) {
 		if v, ok := curls.Headers["Content-Type"]; ok {
 			httpRequest.Header.Set("Content-Type", v)
 		}
+	}
+	if err != nil {
+		return
 	}
 
 	delete(curls.Headers, "Content-Type")
@@ -284,8 +297,8 @@ func (curls *Curl) curlResponse(resp *http.Response) (response Response, err err
 	response.Headers = curls.rcHeader(resp.Header)
 	location, _ := resp.Location()
 	if nil != location {
-		location_url := location.String()
-		response.Headers["Location"] = location_url
+		locationUrl := location.String()
+		response.Headers["Location"] = locationUrl
 
 		//如果不自动重定向，就直接返回
 		if curls.Options["redirect"] {
@@ -293,7 +306,7 @@ func (curls *Curl) curlResponse(resp *http.Response) (response Response, err err
 				curls.Referer = curls.Url
 				curls.RedirectCount++
 				curls.followUrls = append(curls.followUrls, curls.Url)
-				curls.Url = location_url
+				curls.Url = locationUrl
 				curls.Method = "get"
 				curls.PostBytes = nil
 				curls.PostString = ""
@@ -343,14 +356,14 @@ func (curls *Curl) getReader(resp *http.Response) (r io.ReadCloser, err error) {
 //返回结果的时候，转换cookie为字符串
 func (curls *Curl) afterCookie(resp *http.Response) string {
 	//去掉重复
-	rs_tmp := make(map[string]string)
+	rsTmp := make(map[string]string)
 
 	//先处理传进来的cookie
 	if curls.Cookie != "" {
 		tmp := strings.Split(curls.Cookie, "; ")
 		for _, v := range tmp {
-			tmp_one := strings.SplitN(v, "=", 2)
-			rs_tmp[tmp_one[0]] = tmp_one[1]
+			tmpOne := strings.SplitN(v, "=", 2)
+			rsTmp[tmpOne[0]] = tmpOne[1]
 		}
 	}
 
@@ -358,15 +371,15 @@ func (curls *Curl) afterCookie(resp *http.Response) string {
 	for _, v := range resp.Cookies() {
 		//过期
 		if v.Value == "EXPIRED" {
-			delete(rs_tmp, v.Name)
+			delete(rsTmp, v.Name)
 			continue
 		}
-		rs_tmp[v.Name] = v.Value
+		rsTmp[v.Name] = v.Value
 	}
 	//用于join
-	rs := make([]string, len(rs_tmp))
+	rs := make([]string, len(rsTmp))
 	i := 0
-	for k, v := range rs_tmp {
+	for k, v := range rsTmp {
 		rs[i] = k + "=" + v
 		i++
 	}
