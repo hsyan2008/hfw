@@ -162,19 +162,6 @@ func (curls *Curl) Request(ctx context.Context) (rs Response, err error) {
 		return
 	}
 
-	if curls.Headers != nil {
-		for key, value := range curls.Headers {
-			httpRequest.Header.Add(key, value)
-		}
-	}
-
-	if curls.Cookie != "" {
-		httpRequest.Header.Add("Cookie", curls.Cookie)
-	}
-	if curls.Referer != "" {
-		httpRequest.Header.Add("Referer", curls.Referer)
-	}
-
 	//使用WithTimeout会导致io读取中断
 	curls.ctx, curls.cancel = context.WithCancel(ctx)
 	httpRequest = httpRequest.WithContext(curls.ctx)
@@ -216,10 +203,25 @@ func (curls *Curl) CreateRequest() (httpRequest *http.Request, err error) {
 	}
 
 	if curls.Method == "post" {
-		return curls.createPostRequest()
+		httpRequest, err = curls.createPostRequest()
+	} else {
+		httpRequest, err = http.NewRequest("GET", curls.Url, nil)
 	}
 
-	return http.NewRequest("GET", curls.Url, nil)
+	if curls.Headers != nil {
+		for key, value := range curls.Headers {
+			httpRequest.Header.Add(key, value)
+		}
+	}
+
+	if len(curls.Cookie) > 0 {
+		httpRequest.Header.Add("Cookie", curls.Cookie)
+	}
+	if len(curls.Referer) > 0 {
+		httpRequest.Header.Add("Referer", curls.Referer)
+	}
+
+	return
 }
 
 func (curls *Curl) createPostRequest() (httpRequest *http.Request, err error) {
@@ -229,10 +231,10 @@ func (curls *Curl) createPostRequest() (httpRequest *http.Request, err error) {
 	} else if len(curls.PostBytes) > 0 {
 		b := bytes.NewReader(curls.PostBytes)
 		httpRequest, err = http.NewRequest("POST", curls.Url, b)
-	} else if curls.PostString != "" {
+	} else if len(curls.PostString) > 0 {
 		b := strings.NewReader(curls.PostString)
 		httpRequest, err = http.NewRequest("POST", curls.Url, b)
-	} else {
+	} else if len(curls.PostFields) > 0 || len(curls.PostFiles) > 0 {
 		var b = &bytes.Buffer{}
 		bodyWriter := multipart.NewWriter(b)
 
@@ -277,14 +279,18 @@ func (curls *Curl) createPostRequest() (httpRequest *http.Request, err error) {
 		}
 		httpRequest.Header.Set("Content-Type", bodyWriter.FormDataContentType())
 		hasSetHeader = true
+	} else {
+		httpRequest, err = http.NewRequest("POST", curls.Url, nil)
 	}
+
+	if err != nil {
+		return
+	}
+
 	if !hasSetHeader {
 		if v, ok := curls.Headers["Content-Type"]; ok {
 			httpRequest.Header.Set("Content-Type", v)
 		}
-	}
-	if err != nil {
-		return
 	}
 
 	delete(curls.Headers, "Content-Type")
