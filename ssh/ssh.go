@@ -138,7 +138,7 @@ func (this *SSH) Dial() (err error) {
 		logger.Warn("dial success:", this.config.Addr, this.config.User)
 		go this.keepalive()
 	} else {
-		logger.Warn("dial success:", this.config.Addr, this.config.User)
+		logger.Warn("dial faild:", this.config.Addr, this.config.User, err)
 	}
 
 	return
