@@ -25,7 +25,7 @@ var httpCtxPool = &sync.Pool{
 
 var concurrenceChan chan bool
 
-func router(w http.ResponseWriter, r *http.Request) {
+func Router(w http.ResponseWriter, r *http.Request) {
 	if logger.Level() == logger.DEBUG {
 		logger.Debug(r.Method, r.URL.String(), "start")
 		startTime := time.Now()
@@ -38,8 +38,8 @@ func router(w http.ResponseWriter, r *http.Request) {
 	signalContext.WgAdd()
 	defer signalContext.WgDone()
 
-	if len(routeMap) == 0 {
-		panic("nil router")
+	if len(routeMap) == 0 && len(routeMapMethod) == 0 {
+		panic("nil router map")
 	}
 
 	//放入pool里
@@ -176,7 +176,7 @@ func Handler(pattern string, handler ControllerInterface) (err error) {
 
 	if !routeInit {
 		routeInit = true
-		http.HandleFunc("/", router)
+		http.HandleFunc("/", Router)
 	}
 
 	controller, _, leave := formatURL(pattern)
