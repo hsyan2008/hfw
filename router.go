@@ -54,7 +54,7 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	//如果用户关闭连接
 	go closeNotify(httpCtx)
 
-	if Config.Server.Concurrence > 0 {
+	if !common.IsGoTest() && Config.Server.Concurrence > 0 {
 		err := holdConcurrenceChan(httpCtx)
 		if err != nil {
 			logger.Warn(err)
@@ -142,9 +142,6 @@ func closeNotify(httpCtx *HTTPContext) {
 }
 
 func holdConcurrenceChan(httpCtx *HTTPContext) (err error) {
-	if common.IsGoTest() {
-		return
-	}
 	select {
 	//用户关闭连接
 	case <-httpCtx.Ctx.Done():
