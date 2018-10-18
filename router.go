@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/hsyan2008/go-logger/logger"
+	"github.com/hsyan2008/hfw2/common"
 )
 
 var httpCtxPool = &sync.Pool{
@@ -124,6 +125,9 @@ func recoverPanic(reflectVal reflect.Value, initValue []reflect.Value) {
 }
 
 func closeNotify(httpCtx *HTTPContext) {
+	if common.IsGoTest() {
+		return
+	}
 	//panic: net/http: CloseNotify called after ServeHTTP finished
 	defer func() {
 		_ = recover()
@@ -138,13 +142,16 @@ func closeNotify(httpCtx *HTTPContext) {
 }
 
 func holdConcurrenceChan(httpCtx *HTTPContext) (err error) {
+	if common.IsGoTest() {
+		return
+	}
 	select {
 	//用户关闭连接
 	case <-httpCtx.Ctx.Done():
 		return httpCtx.Ctx.Err()
 	//服务关闭
 	case <-signalContext.Ctx.Done():
-		return errors.New("shutdown")
+		return errors.New("server shutdown")
 	case <-time.After(3 * time.Second):
 		hj, ok := httpCtx.ResponseWriter.(http.Hijacker)
 		if !ok {
