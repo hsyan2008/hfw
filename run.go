@@ -3,11 +3,10 @@ package hfw
 import (
 	"flag"
 	"net"
-	"os"
-	"strings"
-
 	"net/http"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 	"github.com/hsyan2008/go-logger/logger"
@@ -80,6 +79,11 @@ func initLog() {
 		} else {
 			logger.SetRollingDaily(filepath.Join(APPPATH, APPNAME+".log"))
 		}
+	}
+
+	if common.IsGoTest() {
+		// if !testing.Verbose() {
+		logger.SetConsole(false)
 	}
 
 	// logger.SetPrefix(fmt.Sprintf("Pid:%d", PID))
