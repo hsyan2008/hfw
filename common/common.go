@@ -10,25 +10,48 @@ import (
 
 	"github.com/axgle/mahonia"
 	"github.com/google/uuid"
+	"github.com/shirou/gopsutil/process"
 )
 
 var (
 	appPath string
 	appName string
-	//是否go run执行
+	//是否go run运行
 	isGoRun bool
+	//是否go test运行
+	isGoTest bool
 )
 
 func IsGoRun() bool {
 	return isGoRun
 }
 
+func IsGoTest() bool {
+	return isGoTest
+}
+
 func GetAppPath() string {
 	if appPath == "" {
+		var err error
 		pwd, _ := filepath.Abs(os.Args[0])
 		if strings.Contains(pwd, "go-build") {
-			appPath, _ = os.Getwd()
-			isGoRun = true
+			if strings.HasSuffix(pwd, ".test") {
+				pp, err := process.NewProcess(int32(os.Getppid()))
+				if err != nil {
+					panic(err)
+				}
+				appPath, err = pp.Cwd()
+				if err != nil {
+					panic(err)
+				}
+				isGoTest = true
+			} else {
+				appPath, err = os.Getwd()
+				if err != nil {
+					panic(err)
+				}
+				isGoRun = true
+			}
 		} else {
 			appPath = filepath.Dir(pwd)
 		}
