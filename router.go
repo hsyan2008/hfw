@@ -173,6 +173,7 @@ type instance struct {
 
 var routeMap = make(map[string]instance)
 var routeMapMethod = make(map[string]instance)
+var routeMapRegister = make(map[string]string)
 var routeInit bool
 
 //Handler 暂时只支持2段
@@ -193,6 +194,14 @@ func Handler(pattern string, handler ControllerInterface) (err error) {
 	//controllerName和controller不一定相等
 	controllerName := reflect.Indirect(reflectVal).Type().Name()
 
+	if c, ok := routeMapRegister[pattern]; ok {
+		if c != controllerName {
+			panic(fmt.Sprintf("%s has register controller:%s", pattern, c))
+		}
+		return
+	}
+	routeMapRegister[pattern] = controllerName
+
 	numMethod := rt.NumMethod()
 	//注意方法必须是大写开头，否则无法调用
 	for i := 0; i < numMethod; i++ {
@@ -202,7 +211,7 @@ func Handler(pattern string, handler ControllerInterface) (err error) {
 		default:
 			m = strings.ToLower(m)
 			isMethod := false
-			//必须With+全大写结尾
+			//必须For+全大写结尾
 			for _, v := range []string{"GET", "POST", "PUT", "DELETE"} {
 				if strings.HasSuffix(m, strings.ToLower("For"+v)) && strings.LastIndex(m, strings.ToLower("For"+v)) > 0 {
 					isMethod = true
