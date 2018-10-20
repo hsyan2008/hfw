@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/hsyan2008/go-logger/logger"
+	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw2/common"
 	"github.com/hsyan2008/hfw2/encoding"
 )

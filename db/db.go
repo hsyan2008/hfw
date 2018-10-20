@@ -12,7 +12,7 @@ import (
 	"github.com/go-xorm/cachestore"
 	"github.com/go-xorm/core"
 	"github.com/go-xorm/xorm"
-	"github.com/hsyan2008/go-logger/logger"
+	logger "github.com/hsyan2008/go-logger"
 	hfw "github.com/hsyan2008/hfw2"
 	"github.com/hsyan2008/hfw2/common"
 	"github.com/hsyan2008/hfw2/configs"

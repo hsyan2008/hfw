@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hsyan2008/go-logger/logger"
+	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw2/common"
 )
 
@@ -182,6 +182,7 @@ func Handler(pattern string, handler ControllerInterface) (err error) {
 	if !routeInit {
 		routeInit = true
 		http.HandleFunc("/", Router)
+		http.HandleFunc("/logger/adjust", loggerAdjust)
 	}
 
 	controller, _, leave := formatURL(pattern)
@@ -284,4 +285,10 @@ func formatURL(url string) (controller string, action string, leave string) {
 	}
 
 	return urls[0], urls[1], leave
+}
+
+//调整logger的设置
+func loggerAdjust(w http.ResponseWriter, r *http.Request) {
+	logger.Info("change logger level to", r.FormValue("level"))
+	logger.SetLevelStr(r.FormValue("level"))
 }

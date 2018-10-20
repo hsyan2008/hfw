@@ -5,7 +5,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/hsyan2008/go-logger/logger"
+	logger "github.com/hsyan2008/go-logger"
 )
 
 type ForwardIni struct {

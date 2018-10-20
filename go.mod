@@ -15,8 +15,8 @@ require (
 	github.com/google/uuid v1.0.0
 	github.com/gorilla/websocket v1.4.0
 	github.com/gwuhaolin/gfwlist4go v0.0.0-20180827075531-0f64ebcd990d
-	github.com/hsyan2008/go-logger v0.0.0-20180914083914-b22585231abc
-	github.com/hsyan2008/gracehttp v0.0.0-20180921085712-c81d5d2a36e9
+	github.com/hsyan2008/go-logger v0.0.0-20181020094845-49906498be16
+	github.com/hsyan2008/gracehttp v0.0.0-20181020095239-2f290fb99640
 	github.com/json-iterator/go v1.1.5
 	github.com/mediocregopher/radix.v2 v0.0.0-20180603022615-94360be26253
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect

@@ -5,7 +5,7 @@ package serve
 import (
 	"time"
 
-	"github.com/hsyan2008/go-logger/logger"
+	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/gracehttp"
 	"github.com/hsyan2008/hfw2/common"
 	"github.com/hsyan2008/hfw2/configs"

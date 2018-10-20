@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hsyan2008/go-logger/logger"
+	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw2/pac"
 )
 
