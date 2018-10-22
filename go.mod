@@ -12,12 +12,14 @@ require (
 	github.com/go-xorm/core v0.0.0-20180322150003-0177c08cee88
 	github.com/go-xorm/xorm v0.7.0
 	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db // indirect
+	github.com/google/gops v0.3.5
 	github.com/google/uuid v1.0.0
 	github.com/gorilla/websocket v1.4.0
 	github.com/gwuhaolin/gfwlist4go v0.0.0-20180827075531-0f64ebcd990d
 	github.com/hsyan2008/go-logger v0.0.0-20181020094845-49906498be16
 	github.com/hsyan2008/gracehttp v0.0.0-20181020095239-2f290fb99640
 	github.com/json-iterator/go v1.1.5
+	github.com/kardianos/osext v0.0.0-20170510131534-ae77be60afb1 // indirect
 	github.com/mediocregopher/radix.v2 v0.0.0-20180603022615-94360be26253
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect

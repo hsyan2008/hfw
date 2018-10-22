@@ -9,12 +9,12 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
+	"github.com/google/gops/agent"
 	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw2/common"
 	"github.com/hsyan2008/hfw2/configs"
 	"github.com/hsyan2008/hfw2/redis"
 	"github.com/hsyan2008/hfw2/serve"
-	"github.com/hsyan2008/hfw2/stack"
 )
 
 //ENVIRONMENT 环境
@@ -114,10 +114,9 @@ func Run() (err error) {
 
 	logger.Infof("Running, VERSION=%s, ENVIRONMENT=%s, APPNAME=%s, APPPATH=%s", VERSION, ENVIRONMENT, APPNAME, APPPATH)
 
-	if common.IsExist("/opt/log") {
-		stack.SetupStack(filepath.Join("/opt/log", APPNAME+"_stack.log"))
-	} else {
-		stack.SetupStack(filepath.Join(APPPATH, APPNAME+"_stack.log"))
+	if err = agent.Listen(agent.Options{}); err != nil {
+		logger.Fatal(err)
+		return
 	}
 
 	//监听信号
