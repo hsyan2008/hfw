@@ -2,7 +2,6 @@ package hfw
 
 import (
 	"flag"
-	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -104,10 +103,6 @@ func loadConfig() {
 
 //Run start
 func Run() (err error) {
-	//防止被挂起，如webview
-	if randPortListener != nil {
-		defer os.Exit(0)
-	}
 
 	logger.Info("Starting ...")
 	defer logger.Info("Shutdowned!")
@@ -129,21 +124,18 @@ func Run() (err error) {
 		go HotDeploy(Config.HotDeploy)
 	}
 
-	if randPortListener == nil {
-		if len(Config.Server.Address) == 0 {
-			return
-		}
-
-		signalContext.IsHTTP = true
-
-		if Config.Server.Concurrence > 0 {
-			concurrenceChan = make(chan bool, Config.Server.Concurrence)
-		}
-
-		err = serve.Start(Config)
-	} else {
-		err = http.Serve(randPortListener, nil)
+	if len(Config.Server.Address) == 0 {
+		return
 	}
+
+	signalContext.IsHTTP = true
+
+	if Config.Server.Concurrence > 0 {
+		concurrenceChan = make(chan bool, Config.Server.Concurrence)
+	}
+
+	err = serve.Start(Config)
+
 	//如果未启动服务，就触发退出
 	if err != nil && err != http.ErrServerClosed {
 		logger.Warn(err)
@@ -151,16 +143,6 @@ func Run() (err error) {
 	}
 
 	return
-}
-
-var randPortListener net.Listener
-
-func RunRandPort() string {
-	randPortListener, _ = net.Listen("tcp", "127.0.0.1:0")
-	go func() {
-		_ = Run()
-	}()
-	return randPortListener.Addr().String()
 }
 
 func initConfig() {

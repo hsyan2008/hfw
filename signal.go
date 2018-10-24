@@ -79,10 +79,6 @@ func (ctx *SignalContext) doShutdownDone() {
 
 	go ctx.waitDone()
 
-	if randPortListener != nil {
-		_ = randPortListener.Close()
-	}
-
 	timeout := 30
 	select {
 	case <-time.After(time.Duration(timeout) * time.Second):
