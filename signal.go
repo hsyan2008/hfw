@@ -23,6 +23,9 @@ type SignalContext struct {
 	//done 业务方调用Shutdowned函数获取所有任务已经退出的通知
 	done chan bool
 
+	mu    *sync.Mutex
+	doing bool
+
 	//Shutdown 业务方手动监听此通道获知通知
 	Ctx    context.Context    `json:"-"`
 	Cancel context.CancelFunc `json:"-"`
@@ -34,6 +37,7 @@ func init() {
 	signalContext = &SignalContext{
 		Wg:   new(sync.WaitGroup),
 		done: make(chan bool),
+		mu:   new(sync.Mutex),
 	}
 	signalContext.Ctx, signalContext.Cancel = context.WithCancel(context.Background())
 }
@@ -74,6 +78,13 @@ func (ctx *SignalContext) listenSignal() {
 }
 
 func (ctx *SignalContext) doShutdownDone() {
+	ctx.mu.Lock()
+	defer ctx.mu.Unlock()
+	if ctx.doing {
+		return
+	}
+	ctx.doing = true
+
 	logger.Info("doShutdownDone start.")
 	defer logger.Info("doShutdownDone done.")
 
@@ -103,6 +114,7 @@ func (ctx *SignalContext) waitDone() {
 
 //Shutdowned 获取是否已经全部结束，暂时只有run.go里用到
 func (ctx *SignalContext) Shutdowned() {
+	go ctx.doShutdownDone()
 	<-ctx.done
 }
 

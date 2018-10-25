@@ -125,6 +125,7 @@ func Run() (err error) {
 	}
 
 	if len(Config.Server.Address) == 0 {
+		logger.Warn("server address is nil")
 		return
 	}
 
@@ -138,8 +139,7 @@ func Run() (err error) {
 
 	//如果未启动服务，就触发退出
 	if err != nil && err != http.ErrServerClosed {
-		logger.Warn(err)
-		signalContext.doShutdownDone()
+		logger.Fatal(err)
 	}
 
 	return
