@@ -308,6 +308,7 @@ func (curls *Curl) curlResponse(resp *http.Response) (response Response, err err
 
 		//如果不自动重定向，就直接返回
 		if curls.Options["redirect"] {
+			defer resp.Body.Close()
 			if curls.RedirectCount < 5 {
 				curls.Referer = curls.Url
 				curls.RedirectCount++
@@ -337,7 +338,7 @@ func (curls *Curl) curlResponse(resp *http.Response) (response Response, err err
 
 	response.BodyReader, err = curls.getReader(resp)
 	if err != nil {
-		response.BodyReader.Close()
+		resp.Body.Close()
 	} else if !curls.isStream {
 		response.Body, err = response.ReadBody()
 	}
@@ -347,18 +348,13 @@ func (curls *Curl) curlResponse(resp *http.Response) (response Response, err err
 
 //需要调用方手动关闭
 func (curls *Curl) getReader(resp *http.Response) (r io.ReadCloser, err error) {
-	//如果出现302或301，已经表示是不自动重定向 或者出现200才读
-	if resp.StatusCode == http.StatusOK || resp.StatusCode == 299 {
-		if strings.Contains(resp.Header.Get("Content-Encoding"), "gzip") {
-			return gzip.NewReader(resp.Body)
-		} else if strings.Contains(resp.Header.Get("Content-Encoding"), "deflate") {
-			return flate.NewReader(resp.Body), nil
-		} else {
-			return resp.Body, nil
-		}
+	if strings.Contains(resp.Header.Get("Content-Encoding"), "gzip") {
+		return gzip.NewReader(resp.Body)
+	} else if strings.Contains(resp.Header.Get("Content-Encoding"), "deflate") {
+		return flate.NewReader(resp.Body), nil
 	}
 
-	return nil, fmt.Errorf("got http status:%s, no body get", resp.Status)
+	return resp.Body, nil
 }
 
 //返回结果的时候，转换cookie为字符串
