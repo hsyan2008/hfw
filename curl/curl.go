@@ -336,7 +336,9 @@ func (curls *Curl) curlResponse(resp *http.Response) (response Response, err err
 	response.FollowUrls = curls.followUrls
 
 	response.BodyReader, err = curls.getReader(resp)
-	if err == nil && !curls.isStream {
+	if err != nil {
+		response.BodyReader.Close()
+	} else if !curls.isStream {
 		response.Body, err = response.ReadBody()
 	}
 
