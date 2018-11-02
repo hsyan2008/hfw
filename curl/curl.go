@@ -33,7 +33,6 @@ type Response struct {
 }
 
 func (resp *Response) ReadBody() (body []byte, err error) {
-	defer resp.BodyReader.Close()
 	body, err = ioutil.ReadAll(resp.BodyReader)
 	if err != nil {
 		return
@@ -300,6 +299,11 @@ func (curls *Curl) createPostRequest() (httpRequest *http.Request, err error) {
 
 //处理获取的页面
 func (curls *Curl) curlResponse(resp *http.Response) (response Response, err error) {
+	defer func() {
+		if err != nil {
+			resp.Body.Close()
+		}
+	}()
 	response.Headers = curls.rcHeader(resp.Header)
 	location, _ := resp.Location()
 	if nil != location {
@@ -308,7 +312,6 @@ func (curls *Curl) curlResponse(resp *http.Response) (response Response, err err
 
 		//如果不自动重定向，就直接返回
 		if curls.Options["redirect"] {
-			defer resp.Body.Close()
 			if curls.RedirectCount < 5 {
 				curls.Referer = curls.Url
 				curls.RedirectCount++
@@ -321,10 +324,12 @@ func (curls *Curl) curlResponse(resp *http.Response) (response Response, err err
 				curls.PostFiles = nil
 				curls.PostReader = nil
 				curls.Cookie = curls.afterCookie(resp)
+				resp.Body.Close()
 
 				return curls.Request(curls.ctx)
 			} else {
-				return response, errors.New("重定向次数过多")
+				err = errors.New("too much redirect")
+				return
 			}
 		}
 	}
@@ -337,10 +342,11 @@ func (curls *Curl) curlResponse(resp *http.Response) (response Response, err err
 	response.FollowUrls = curls.followUrls
 
 	response.BodyReader, err = curls.getReader(resp)
-	if err != nil {
-		resp.Body.Close()
-	} else if !curls.isStream {
+	if err == nil && !curls.isStream {
 		response.Body, err = response.ReadBody()
+		if err == nil {
+			resp.Body.Close()
+		}
 	}
 
 	return response, err
