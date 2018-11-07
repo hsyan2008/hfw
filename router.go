@@ -50,6 +50,10 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	httpCtx.SignalContext = signalContext
 	httpCtx.Ctx, httpCtx.Cancel = context.WithCancel(signalContext.Ctx)
 	defer httpCtx.Cancel()
+	//初始化httpCtx
+	initValue := []reflect.Value{
+		reflect.ValueOf(httpCtx),
+	}
 
 	//如果用户关闭连接
 	go closeNotify(httpCtx)
@@ -65,29 +69,9 @@ func Router(w http.ResponseWriter, r *http.Request) {
 		}()
 	}
 
-	var reflectVal reflect.Value
-	var isNotFound bool
-	var instance instance
-	var ok bool
-	if instance, ok = routeMapMethod[httpCtx.Path+"for"+strings.ToLower(r.Method)]; !ok {
-		if instance, ok = routeMap[httpCtx.Path]; !ok {
-			isNotFound = true
-			//取默认的
-			p := Config.Route.DefaultController + "/" + Config.Route.DefaultAction
-			if instance, ok = routeMap[p]; !ok {
-				//如果拿不到默认的，就取现有的第一个
-				for _, instance = range routeMap {
-					break
-				}
-			}
-		}
-	}
-	reflectVal = instance.reflectVal
+	instance, action := findInstance(httpCtx)
 
-	//初始化Controller
-	initValue := []reflect.Value{
-		reflect.ValueOf(httpCtx),
-	}
+	reflectVal := instance.reflectVal
 
 	//注意方法必须是大写开头，否则无法调用
 	reflectVal.MethodByName("Init").Call(initValue)
@@ -98,12 +82,6 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	reflectVal.MethodByName("Before").Call(initValue)
 	defer reflectVal.MethodByName("After").Call(initValue)
 
-	var action string
-	if isNotFound {
-		action = "NotFound"
-	} else {
-		action = instance.methodName
-	}
 	logger.Debugf("Query Path: %s -> Call: %s/%s", r.URL.String(), instance.controllerName, action)
 	reflectVal.MethodByName(action).Call(initValue)
 
@@ -164,17 +142,6 @@ func holdConcurrenceChan(httpCtx *HTTPContext) (err error) {
 		return
 	}
 }
-
-type instance struct {
-	reflectVal     reflect.Value
-	controllerName string
-	methodName     string
-}
-
-var routeMap = make(map[string]instance)
-var routeMapMethod = make(map[string]instance)
-var routeMapRegister = make(map[string]string)
-var routeInit bool
 
 //Handler 暂时只支持2段
 func Handler(pattern string, handler ControllerInterface) (err error) {
