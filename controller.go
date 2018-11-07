@@ -29,7 +29,7 @@ var _ ControllerInterface = &Controller{}
 type Controller struct {
 }
 
-//Init ..
+//Init 请不要实现Init方法
 func (ctl *Controller) Init(httpCtx *HTTPContext) {
 
 	var err error
@@ -65,7 +65,7 @@ func (ctl *Controller) After(httpCtx *HTTPContext) {
 	}
 }
 
-//Finish ..
+//Finish 请不要实现Finish方法
 func (ctl *Controller) Finish(httpCtx *HTTPContext) {
 	if websocket.IsWebSocketUpgrade(httpCtx.Request) || httpCtx.IsCloseRender {
 		return

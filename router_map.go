@@ -46,5 +46,7 @@ func ReRouter(httpCtx *HTTPContext) {
 	initValue := []reflect.Value{
 		reflect.ValueOf(httpCtx),
 	}
+	reflectVal.MethodByName("Before").Call(initValue)
+	defer reflectVal.MethodByName("After").Call(initValue)
 	reflectVal.MethodByName(action).Call(initValue)
 }
