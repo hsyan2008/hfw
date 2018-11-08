@@ -26,7 +26,7 @@ type HTTPContext struct {
 	Request        *http.Request       `json:"-"`
 	Session        *session.Session    `json:"-"`
 	Layout         string              `json:"-"`
-	Controll       string              `json:"-"`
+	Controller     string              `json:"-"`
 	Action         string              `json:"-"`
 	Path           string              `json:"-"`
 
@@ -69,8 +69,8 @@ func (httpCtx *HTTPContext) Init(w http.ResponseWriter, r *http.Request) {
 	httpCtx.ErrMsg = ""
 	httpCtx.Results = nil
 
-	httpCtx.Controll, httpCtx.Action, _ = formatURL(r.URL.Path)
-	httpCtx.Path = fmt.Sprintf("%s/%s", httpCtx.Controll, httpCtx.Action)
+	httpCtx.Controller, httpCtx.Action, _ = formatURL(r.URL.Path)
+	httpCtx.Path = fmt.Sprintf("%s/%s", httpCtx.Controller, httpCtx.Action)
 	// httpCtx.TemplateFile = fmt.Sprintf("%s.html", httpCtx.Path)
 }
 
