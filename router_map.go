@@ -1,6 +1,7 @@
 package hfw
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -19,22 +20,31 @@ var routeMapRegister = make(map[string]string)
 var routeInit bool
 
 func findInstance(httpCtx *HTTPContext) (instance instance, action string) {
-	var ok bool
-	if instance, ok = routeMapMethod[httpCtx.Path+"for"+strings.ToLower(httpCtx.Request.Method)]; !ok {
-		if instance, ok = routeMap[httpCtx.Path]; !ok {
-			//取默认的
-			p := Config.Route.DefaultController + "/" + Config.Route.DefaultAction
-			if instance, ok = routeMap[p]; !ok {
-				//如果拿不到默认的，就取现有的第一个
-				for _, instance = range routeMap {
-					break
-				}
-			}
-			return instance, "NotFound"
+	if len(httpCtx.Path) == 0 {
+		httpCtx.Path = fmt.Sprintf("%s/%s", httpCtx.Controller, httpCtx.Action)
+	}
+
+	if len(httpCtx.Path) > 0 {
+		var ok bool
+		if instance, ok = routeMapMethod[httpCtx.Path+"for"+strings.ToLower(httpCtx.Request.Method)]; ok {
+			return instance, instance.methodName
+		}
+
+		if instance, ok = routeMap[httpCtx.Path]; ok {
+			return instance, instance.methodName
 		}
 	}
 
-	return instance, instance.methodName
+	//取现有的第一个作为默认
+	for _, instance = range routeMap {
+		return instance, "NotFound"
+	}
+
+	for _, instance = range routeMapMethod {
+		return instance, "NotFound"
+	}
+
+	panic("no route find")
 }
 
 //修改httpCtx.Path后重新寻找执行action
