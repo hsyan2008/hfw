@@ -48,10 +48,10 @@ func findInstance(httpCtx *HTTPContext) (instance instance, action string) {
 }
 
 //修改httpCtx.Path后重新寻找执行action
-func ReRouter(httpCtx *HTTPContext) {
+func DispatchRoute(httpCtx *HTTPContext) {
 	instance, action := findInstance(httpCtx)
 	reflectVal := instance.reflectVal
-	logger.Debugf("Query Path: %s -> Call: %s/%s", httpCtx.Request.URL.String(), instance.controllerName, action)
+	logger.Debugf("Dispatch C:%s M:%s -> Call: %s/%s", httpCtx.Controller, httpCtx.Action, instance.controllerName, action)
 	//初始化httpCtx
 	initValue := []reflect.Value{
 		reflect.ValueOf(httpCtx),
