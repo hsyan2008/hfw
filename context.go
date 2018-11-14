@@ -126,6 +126,21 @@ func (httpCtx *HTTPContext) ThrowCheck(errNo int64, i interface{}) {
 	httpCtx.StopRun()
 }
 
+//ThrowCheck
+func (httpCtx *HTTPContext) ThrowCheckRespErr(respErr *common.RespErr) {
+	if respErr.ErrNo() == 0 {
+		return
+	}
+
+	logger.Output(3, "WARN", respErr.String())
+	httpCtx.ErrNo = respErr.ErrNo()
+	httpCtx.ErrMsg = GetErrorMap(respErr.ErrNo())
+	if len(httpCtx.ErrMsg) == 0 {
+		httpCtx.ErrMsg = respErr.ErrMsg()
+	}
+	httpCtx.StopRun()
+}
+
 //SetDownloadMode ..
 func (httpCtx *HTTPContext) SetDownloadMode(filename string) {
 	httpCtx.ResponseWriter.Header().Set("Content-Disposition", fmt.Sprintf(`attachment;filename="%s"`, filename))

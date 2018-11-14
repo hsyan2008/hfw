@@ -3,21 +3,41 @@ package common
 import "fmt"
 
 type RespErr struct {
-	ErrNo  int64  `json:"err_no"`
-	ErrMsg string `json:"err_msg"`
+	errNo  int64
+	errMsg string
+}
+
+func (repErr *RespErr) ErrNo() int64 {
+	if repErr == nil {
+		return 0
+	}
+	return repErr.errNo
+}
+
+func (repErr *RespErr) ErrMsg() string {
+	if repErr == nil {
+		return ""
+	}
+	return repErr.errMsg
 }
 
 func (repErr *RespErr) Error() string {
-	return repErr.ErrMsg
+	if repErr == nil {
+		return ""
+	}
+	return repErr.errMsg
 }
 
 func (repErr *RespErr) String() string {
-	return fmt.Sprintf("ErrNo:%d ErrMsg:%s", repErr.ErrNo, repErr.ErrMsg)
+	if repErr == nil {
+		return ""
+	}
+	return fmt.Sprintf("ErrNo:%d ErrMsg:%s", repErr.errNo, repErr.errMsg)
 }
 
 func NewRespErr(ErrNo int64, ErrMsg string) *RespErr {
 	return &RespErr{
-		ErrNo:  ErrNo,
-		ErrMsg: ErrMsg,
+		errNo:  ErrNo,
+		errMsg: ErrMsg,
 	}
 }
