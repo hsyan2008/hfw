@@ -45,7 +45,7 @@ func init() {
 func parseFlag() {
 	ENVIRONMENT = os.Getenv("ENVIRONMENT")
 	if len(ENVIRONMENT) == 0 {
-		flag.StringVar(&ENVIRONMENT, "e", "dev", "set env, e.g dev test prod")
+		flag.StringVar(&ENVIRONMENT, "e", "", "set env, e.g dev test prod")
 	}
 
 	VERSION = os.Getenv("VERSION")
@@ -90,6 +90,13 @@ func initLog() {
 }
 
 func loadConfig() {
+	if len(ENVIRONMENT) == 0 {
+		if common.IsGoRun() {
+			ENVIRONMENT = "dev"
+		} else {
+			panic("please specify env")
+		}
+	}
 	configPath := filepath.Join(APPPATH, "config", ENVIRONMENT, "config.toml")
 	if common.IsExist(configPath) {
 		_, err := toml.DecodeFile(configPath, &Config)
