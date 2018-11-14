@@ -91,7 +91,7 @@ func initLog() {
 
 func loadConfig() {
 	if len(ENVIRONMENT) == 0 {
-		if common.IsGoRun() {
+		if common.IsGoRun() || common.IsGoTest() {
 			ENVIRONMENT = "dev"
 		} else {
 			panic("please specify env")
