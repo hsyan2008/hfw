@@ -31,7 +31,7 @@ func Router(w http.ResponseWriter, r *http.Request) {
 		logger.Debug(r.Method, r.URL.String(), "start")
 		startTime := time.Now()
 		defer func() {
-			logger.Debug("ExecTime:", time.Now().Sub(startTime))
+			logger.Debug("CostTime:", time.Now().Sub(startTime))
 			logger.Debug(r.Method, r.URL.String(), "end")
 		}()
 	}
