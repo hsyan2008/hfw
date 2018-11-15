@@ -102,11 +102,17 @@ func (httpCtx *HTTPContext) Redirect(url string) {
 
 //ThrowCheck
 func (httpCtx *HTTPContext) ThrowCheck(errNo int64, i interface{}) {
-	if i == nil || errNo <= 0 {
+	if i == nil || errNo == 0 {
 		return
 	}
 	var errMsg string
-	if e, ok := i.(error); ok {
+	if e, ok := i.(*common.RespErr); ok {
+		errNo = e.ErrNo()
+		errMsg = e.ErrMsg()
+		if errNo == 0 {
+			return
+		}
+	} else if e, ok := i.(error); ok {
 		if e == nil {
 			return
 		}
@@ -122,21 +128,6 @@ func (httpCtx *HTTPContext) ThrowCheck(errNo int64, i interface{}) {
 	httpCtx.ErrMsg = GetErrorMap(errNo)
 	if len(httpCtx.ErrMsg) == 0 {
 		httpCtx.ErrMsg = errMsg
-	}
-	httpCtx.StopRun()
-}
-
-//ThrowCheck
-func (httpCtx *HTTPContext) ThrowCheckRespErr(respErr *common.RespErr) {
-	if respErr.ErrNo() == 0 {
-		return
-	}
-
-	logger.Output(3, "WARN", respErr.String())
-	httpCtx.ErrNo = respErr.ErrNo()
-	httpCtx.ErrMsg = GetErrorMap(respErr.ErrNo())
-	if len(httpCtx.ErrMsg) == 0 {
-		httpCtx.ErrMsg = respErr.ErrMsg()
 	}
 	httpCtx.StopRun()
 }
