@@ -28,11 +28,11 @@ var concurrenceChan chan bool
 
 func Router(w http.ResponseWriter, r *http.Request) {
 	if logger.Level() == logger.DEBUG {
-		logger.Debug(r.Method, r.URL.String(), "start")
+		logger.Debugf("From: %s, Host: %s, Uri: %s, Method: %s, Url: %s %s", r.RemoteAddr, r.Host, r.RequestURI, r.Method, r.URL.String(), "start")
 		startTime := time.Now()
 		defer func() {
 			logger.Debug("CostTime:", time.Now().Sub(startTime))
-			logger.Debug(r.Method, r.URL.String(), "end")
+			logger.Debugf("From: %s, Host: %s, Uri: %s, Method: %s, Url: %s %s", r.RemoteAddr, r.Host, r.RequestURI, r.Method, r.URL.String(), "end")
 		}()
 	}
 
