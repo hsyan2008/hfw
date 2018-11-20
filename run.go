@@ -83,6 +83,8 @@ func initLog() {
 	if common.IsGoTest() {
 		// if !testing.Verbose() {
 		logger.SetConsole(false)
+	} else if common.IsGoRun() {
+		logger.SetConsole(true)
 	}
 
 	// logger.SetPrefix(fmt.Sprintf("Pid:%d", PID))
