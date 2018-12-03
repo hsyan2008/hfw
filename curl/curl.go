@@ -144,9 +144,12 @@ func (curls *Curl) SetOption(key string, val bool) {
 	curls.Options[key] = val
 }
 
-func (curls *Curl) Request(ctx context.Context) (rs Response, err error) {
-	if ctx == nil {
-		return rs, errors.New("err context")
+func (curls *Curl) Request(ctxs ...context.Context) (rs Response, err error) {
+	var ctx context.Context
+	if len(ctxs) == 0 || ctxs[0] == nil {
+		ctx = context.Background()
+	} else {
+		ctx = ctxs[0]
 	}
 
 	if curls.timeout <= 0 {
