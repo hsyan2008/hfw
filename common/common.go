@@ -10,7 +10,6 @@ import (
 
 	"github.com/axgle/mahonia"
 	"github.com/google/uuid"
-	"github.com/shirou/gopsutil/process"
 )
 
 var (
@@ -35,22 +34,24 @@ func GetAppPath() string {
 		var err error
 		pwd, _ := filepath.Abs(os.Args[0])
 		if strings.Contains(pwd, "go-build") {
+			pwd = stripSuffix(pwd)
 			if strings.HasSuffix(pwd, ".test") {
-				pp, err := process.NewProcess(int32(os.Getppid()))
-				if err != nil {
-					panic(err)
-				}
-				appPath, err = pp.Cwd()
-				if err != nil {
-					panic(err)
-				}
 				isGoTest = true
 			} else {
-				appPath, err = os.Getwd()
-				if err != nil {
-					panic(err)
-				}
 				isGoRun = true
+			}
+			appPath, err = os.Getwd()
+			if err != nil {
+				panic(err)
+			}
+			for len(appPath) > 0 {
+				if IsExist(filepath.Join(appPath, "config")) ||
+					IsExist(filepath.Join(appPath, "main.go")) ||
+					IsExist(filepath.Join(appPath, "controllers")) {
+					return appPath
+				} else {
+					appPath = filepath.Dir(appPath)
+				}
 			}
 		} else {
 			appPath = filepath.Dir(pwd)
@@ -68,12 +69,18 @@ func GetAppName() string {
 		} else {
 			pwd, _ := filepath.Abs(os.Args[0])
 			appName = strings.ToLower(filepath.Base(pwd))
-			if runtime.GOOS == "windows" {
-				appName = strings.TrimSuffix(appName, ".exe")
-			}
+			appName = stripSuffix(appName)
 		}
 	}
 	return appName
+}
+
+func stripSuffix(path string) string {
+	if runtime.GOOS == "windows" {
+		path = strings.TrimSuffix(path, ".exe")
+	}
+
+	return path
 }
 
 //Response ..

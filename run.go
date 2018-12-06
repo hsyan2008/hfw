@@ -105,6 +105,8 @@ func loadConfig() {
 		if err != nil {
 			panic(err)
 		}
+	} else {
+		logger.Warnf("config file: %s not exist", configPath)
 	}
 
 	initConfig()
