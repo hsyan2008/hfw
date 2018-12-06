@@ -64,7 +64,7 @@ func GetAppPath() string {
 func GetAppName() string {
 	if appName == "" {
 		GetAppPath()
-		if isGoRun {
+		if IsGoRun() || IsGoTest() {
 			appName = filepath.Base(appPath)
 		} else {
 			pwd, _ := filepath.Abs(os.Args[0])
