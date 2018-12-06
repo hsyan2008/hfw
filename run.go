@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"testing"
 
 	"github.com/BurntSushi/toml"
 	"github.com/google/gops/agent"
@@ -81,8 +82,11 @@ func initLog() {
 	}
 
 	if common.IsGoTest() {
-		// if !testing.Verbose() {
-		logger.SetConsole(false)
+		if testing.Verbose() {
+			logger.SetConsole(true)
+		} else {
+			logger.SetConsole(false)
+		}
 	} else if common.IsGoRun() {
 		logger.SetConsole(true)
 	}
