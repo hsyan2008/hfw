@@ -2,6 +2,7 @@ package redis
 
 import (
 	"errors"
+	"math"
 
 	"github.com/hsyan2008/hfw2/configs"
 	"github.com/hsyan2008/hfw2/encoding"
@@ -61,6 +62,25 @@ func (this *RedisCluster) Set(key string, value interface{}) (err error) {
 	return
 }
 
+func (this *RedisCluster) MSet(items ...interface{}) (err error) {
+	for key, val := range items {
+		if int(math.Mod(float64(key), 2)) == 0 {
+			items[key] = this.getKey(val.(string))
+		} else {
+			v, err := encoding.Gob.Marshal(&val)
+			if err != nil {
+				return err
+			}
+			items[key] = v
+		}
+	}
+
+	//OK
+	_, err = this.Cmd("MSET", items).Str()
+
+	return
+}
+
 func (this *RedisCluster) Get(key string) (value interface{}, err error) {
 	key = this.getKey(key)
 
@@ -79,6 +99,47 @@ func (this *RedisCluster) Get(key string) (value interface{}, err error) {
 	}
 
 	err = encoding.Gob.Unmarshal(v, &value)
+
+	return
+}
+
+func (this *RedisCluster) MGet(keys ...string) (values map[string]interface{}, err error) {
+	newKeys := make([]string, len(keys))
+	for k, v := range keys {
+		newKeys[k] = this.getKey(v)
+	}
+
+	resp := this.Cmd("MGET", newKeys)
+	if resp.Err != nil {
+		return values, resp.Err
+	}
+
+	if resp.IsType(redis.Array) {
+		values = make(map[string]interface{})
+		var value interface{}
+		resps, err := resp.Array()
+		if err != nil {
+			return values, err
+		}
+		for k, resp1 := range resps {
+			if resp1.IsType(redis.Nil) {
+				continue
+			}
+
+			v, err := resp1.Bytes()
+			if err != nil {
+				return values, err
+			}
+
+			err = encoding.Gob.Unmarshal(v, &value)
+			if err != nil {
+				return values, err
+			}
+			values[keys[k]] = value
+		}
+	} else {
+		return values, errors.New("mget error: not array")
+	}
 
 	return
 }
@@ -128,10 +189,12 @@ func (this *RedisCluster) DecrBy(key string, delta int64) (value int64, err erro
 	return resp.Int64()
 }
 
-func (this *RedisCluster) Del(key string) (isOk bool, err error) {
-	key = this.getKey(key)
+func (this *RedisCluster) Del(keys ...string) (isOk bool, err error) {
+	for k, v := range keys {
+		keys[k] = this.getKey(v)
+	}
 
-	resp := this.Cmd("DEL", key)
+	resp := this.Cmd("DEL", keys)
 	if resp.Err != nil {
 		return isOk, resp.Err
 	}
@@ -271,10 +334,10 @@ func (this *RedisCluster) HIncrBy(key, field string, delta int64) (value int64, 
 	return resp.Int64()
 }
 
-func (this *RedisCluster) HDel(key, field string) (err error) {
+func (this *RedisCluster) HDel(key string, fields ...string) (err error) {
 	key = this.getKey(key)
 
-	resp := this.Cmd("HDEL", key, field)
+	resp := this.Cmd("HDEL", key, fields)
 	if resp.Err != nil {
 		return resp.Err
 	}
