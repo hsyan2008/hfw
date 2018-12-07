@@ -3,6 +3,7 @@ package {{.Models}}
 import (
     "encoding/gob"
     "fmt"
+    "database/sql"
 {{$ilen := len .Imports}}
 {{if gt $ilen 0}}
 {{range .Imports}}"{{.}}"{{end}}
@@ -17,7 +18,9 @@ var {{Mapper .Name}}Model = &{{Mapper .Name}}{}
 {{end}}
 
 func init() {
-    {{range .Tables}}{{Mapper .Name}}Model.Dao = db.NewNoCacheDao(hfw.Config)
+    {{range .Tables}}{{Mapper .Name}}Model.Dao = db.NewXormDao(hfw.Config)
+    {{Mapper .Name}}Model.Dao.EnableCache({{Mapper .Name}}Model)
+    //{{Mapper .Name}}Model.Dao.DisableCache({{Mapper .Name}}Model)
 	//gob: type not registered for interface
     gob.Register({{Mapper .Name}}Model){{end}}
 }
@@ -25,6 +28,7 @@ func init() {
 {{range .Tables}}
 type {{Mapper .Name}} struct {
     db.Models `xorm:"extends"`
+	Dao *db.XormDao `json:"-" xorm:"-"`
 {{$table := .}}
 {{range .ColumnsSeq}}{{$col := $table.GetColumn .}}	{{if eq $col.Name "id" "is_deleted" "updated_at" "created_at"}}{{else}}{{Mapper $col.Name}}	{{Type $col}} {{Tag $table $col}}{{end}}
 {{end}}
@@ -116,6 +120,24 @@ func (m *{{Mapper .Name}}) GetById(id interface{}) (t *{{Mapper .Name}}, err err
 }
 
 func (m *{{Mapper .Name}}) Replace(cond db.Cond) (int64, error) {
+	defer m.Dao.ClearCache(m)
     return m.Dao.Replace(fmt.Sprintf("REPLACE `%s` SET ", m.TableName()), cond)
+}
+
+func (m *{{Mapper .Name}}) Exec(sqlState string, args ...interface{}) (sql.Result, error) {
+	defer m.Dao.ClearCache(m)
+	return m.Dao.Exec(sqlState, args...)
+}
+
+func (m *{{Mapper .Name}}) Query(args ...interface{}) ([]map[string][]byte, error) {
+	return m.Dao.Query(args...)
+}
+
+func (m *{{Mapper .Name}}) QueryString(args ...interface{}) ([]map[string]string, error) {
+	return m.Dao.QueryString(args...)
+}
+
+func (m *{{Mapper .Name}}) QueryInterface(args ...interface{}) ([]map[string]interface{}, error) {
+	return m.Dao.QueryInterface(args...)
 }
 {{end}}

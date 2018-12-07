@@ -10,8 +10,8 @@ require (
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/go-sql-driver/mysql v1.4.0
 	github.com/go-xorm/cachestore v0.0.0-20170409031804-adfa3466c8e4
-	github.com/go-xorm/core v0.0.0-20180322150003-0177c08cee88
-	github.com/go-xorm/xorm v0.7.0
+	github.com/go-xorm/core v0.6.0
+	github.com/go-xorm/xorm v0.7.1
 	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db // indirect
 	github.com/google/gops v0.3.5
 	github.com/google/uuid v1.0.0
