@@ -62,6 +62,7 @@ func (this *RedisCluster) Set(key string, value interface{}) (err error) {
 	return
 }
 
+//cluster 不支持多key
 func (this *RedisCluster) MSet(items ...interface{}) (err error) {
 	for key, val := range items {
 		if int(math.Mod(float64(key), 2)) == 0 {
@@ -103,6 +104,7 @@ func (this *RedisCluster) Get(key string) (value interface{}, err error) {
 	return
 }
 
+//cluster 不支持多key
 func (this *RedisCluster) MGet(keys ...string) (values map[string]interface{}, err error) {
 	newKeys := make([]string, len(keys))
 	for k, v := range keys {
@@ -189,6 +191,7 @@ func (this *RedisCluster) DecrBy(key string, delta int64) (value int64, err erro
 	return resp.Int64()
 }
 
+//cluster 不支持多key
 func (this *RedisCluster) Del(keys ...string) (isOk bool, err error) {
 	for k, v := range keys {
 		keys[k] = this.getKey(v)
