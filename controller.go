@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gorilla/websocket"
+	"github.com/hsyan2008/hfw2/redis"
 	"github.com/hsyan2008/hfw2/session"
 )
 
@@ -48,7 +49,7 @@ func (ctl *Controller) Init(httpCtx *HTTPContext) {
 
 	// _ = httpCtx.Request.ParseMultipartForm(2 * 1024 * 1024)
 
-	httpCtx.Session, err = session.NewSession(httpCtx.Request, DefaultRedisIns, Config)
+	httpCtx.Session, err = session.NewSession(httpCtx.Request, redis.DefaultRedisIns, Config)
 	httpCtx.ThrowCheck(500, err)
 }
 
