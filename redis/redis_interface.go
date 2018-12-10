@@ -1,6 +1,10 @@
 package redis
 
+import "github.com/mediocregopher/radix.v2/redis"
+
 type RedisInterface interface {
+	getKey(string) string
+	Cmd(string, ...interface{}) *redis.Resp
 	IsExist(string) (bool, error)
 	Set(string, interface{}) error
 	MSet(...interface{}) error

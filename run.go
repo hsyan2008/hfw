@@ -35,8 +35,6 @@ var PID = os.Getpid()
 
 var Config configs.AllConfig
 
-var DefaultRedisIns redis.RedisInterface
-
 func init() {
 	parseFlag()
 	loadConfig()
@@ -209,7 +207,7 @@ func initConfig() {
 
 	var err error
 	if len(Config.Redis.Server) > 0 {
-		DefaultRedisIns, err = redis.NewRedis(Config.Redis)
+		redis.DefaultRedisIns, err = redis.NewRedis(Config.Redis)
 		if err != nil {
 			panic("error redis config:" + err.Error())
 		}
