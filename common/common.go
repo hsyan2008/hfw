@@ -55,7 +55,7 @@ func GetAppPath() string {
 					return appPath
 				} else {
 					if len(appPath) <= minLen {
-						panic("not find appPath")
+						return appPath
 					}
 					appPath = filepath.Dir(appPath)
 				}
