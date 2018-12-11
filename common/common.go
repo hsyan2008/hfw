@@ -44,12 +44,19 @@ func GetAppPath() string {
 			if err != nil {
 				panic(err)
 			}
-			for len(appPath) > 0 {
+			minLen := 1
+			if runtime.GOOS == "windows" {
+				minLen = 3
+			}
+			for {
 				if IsExist(filepath.Join(appPath, "config")) ||
 					IsExist(filepath.Join(appPath, "main.go")) ||
 					IsExist(filepath.Join(appPath, "controllers")) {
 					return appPath
 				} else {
+					if len(appPath) <= minLen {
+						panic("not find appPath")
+					}
 					appPath = filepath.Dir(appPath)
 				}
 			}
