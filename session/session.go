@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"sync"
 
-	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw2/common"
 	"github.com/hsyan2008/hfw2/configs"
 	"github.com/hsyan2008/hfw2/redis"
@@ -38,7 +37,6 @@ var sessPool = sync.Pool{
 func NewSession(request *http.Request, redisIns redis.RedisInterface, config configs.AllConfig) (s *Session, err error) {
 	// s := sessPool.Get().(*Session)
 	if config.Session.CookieName == "" || redisIns == nil {
-		logger.Debug("Disabled Session")
 		return
 	}
 
