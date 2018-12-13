@@ -10,22 +10,21 @@ import (
 {{end}}
     "github.com/go-xorm/xorm"
     hfw "github.com/hsyan2008/hfw2"
+    "github.com/hsyan2008/hfw2/configs"
     "github.com/hsyan2008/hfw2/db"
 )
 
 {{range .Tables}}
 var {{Mapper .Name}}Model = &{{Mapper .Name}}{}
-{{end}}
 
 func init() {
-    {{range .Tables}}{{Mapper .Name}}Model.Dao = db.NewXormDao(hfw.Config)
+    {{Mapper .Name}}Model.Dao = db.NewXormDao(hfw.Config)
     {{Mapper .Name}}Model.Dao.EnableCache({{Mapper .Name}}Model)
     //{{Mapper .Name}}Model.Dao.DisableCache({{Mapper .Name}}Model)
 	//gob: type not registered for interface
-    gob.Register({{Mapper .Name}}Model){{end}}
+    gob.Register({{Mapper .Name}}Model)
 }
 
-{{range .Tables}}
 type {{Mapper .Name}} struct {
     db.Models `xorm:"extends"`
 	Dao *db.XormDao `json:"-" xorm:"-"`
@@ -47,12 +46,26 @@ func (m *{{Mapper .Name}}) TableName() string {
 	return "{{.Name}}"
 }
 
-func (m *{{Mapper .Name}}) Save(t *{{Mapper .Name}}) (err error) {
-	if t.Id > 0 {
-		err = m.Dao.UpdateById(t)
-	} else {
-		err = m.Dao.Insert(t)
-	}
+func (m *{{Mapper .Name}}) Save(t ...*{{Mapper .Name}}) (err error) {
+    if len(t) > 1 {
+        return m.Dao.Insert(t)
+    } else {
+        var i *{{Mapper .Name}}
+        if len(t) == 0 {
+            if m.Dao == nil {
+                panic("dao not init")
+            }
+            i = m
+        } else if len(t) == 1 {
+            i = t[0]
+        }
+	    if i.Id > 0 {
+		    err = m.Dao.UpdateById(i)
+    	} else {
+            err = m.Dao.Insert(i)
+    	}
+    }
+
 	return
 }
 
@@ -60,8 +73,23 @@ func (m *{{Mapper .Name}}) Saves(t []*{{Mapper .Name}}) (err error) {
     return m.Dao.Insert(t)
 }
 
-func (m *{{Mapper .Name}}) Insert(t *{{Mapper .Name}}) (err error) {
-    return m.Dao.Insert(t)
+func (m *{{Mapper .Name}}) Insert(t ...*{{Mapper .Name}}) (err error) {
+    if len(t) > 1 {
+        return m.Dao.Insert(t)
+    } else {
+        var i *{{Mapper .Name}}
+        if len(t) == 0 {
+            if m.Dao == nil {
+                panic("dao not init")
+            }
+            i = m
+        } else if len(t) == 1 {
+            i = t[0]
+        }
+        err = m.Dao.Insert(i)
+    }
+
+	return
 }
 
 func (m *{{Mapper .Name}}) Update(params db.Cond,
@@ -139,5 +167,30 @@ func (m *{{Mapper .Name}}) QueryString(args ...interface{}) ([]map[string]string
 
 func (m *{{Mapper .Name}}) QueryInterface(args ...interface{}) ([]map[string]interface{}, error) {
 	return m.Dao.QueryInterface(args...)
+}
+
+//以下用于事务，注意同个实例不能在多个goroutine同时使用
+//使用完毕需要执行Close()，当Close的时候如果没有commit，会自动rollback
+func New{{Mapper .Name}}(dbConfigs ...configs.DbConfig) (m *{{Mapper .Name}}) {
+    m = &{{Mapper .Name}}{}
+    m.Dao = db.NewXormDao(hfw.Config, dbConfigs...)
+    m.Dao.NewSession()
+    return
+}
+
+func (m *{{Mapper .Name}}) Close() {
+    m.Dao.Close()
+}
+
+func (m *{{Mapper .Name}}) Begin() error {
+    return m.Dao.Begin()
+}
+
+func (m *{{Mapper .Name}}) Rollback() error {
+    return m.Dao.Rollback()
+}
+
+func (m *{{Mapper .Name}}) Commit() error {
+    return m.Dao.Commit()
 }
 {{end}}

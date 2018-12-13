@@ -40,11 +40,15 @@ type XormDao struct {
 	engine  xorm.EngineInterface
 	isCache bool
 	cacher  *xorm.LRUCacher
+	sess    *xorm.Session
 }
 
 func (d *XormDao) UpdateById(t interface{}) (err error) {
-	sess := d.engine.NewSession()
-	defer sess.Close()
+	sess := d.sess
+	if sess == nil {
+		sess = d.engine.NewSession()
+		defer sess.Close()
+	}
 
 	id := reflect.ValueOf(t).Elem().FieldByName("Id").Int()
 	_, err = sess.Id(id).AllCols().Update(t)
@@ -63,8 +67,12 @@ func (d *XormDao) UpdateByIds(t interface{}, params map[string]interface{},
 		return errors.New("ids parameters error")
 	}
 
-	sess := d.engine.NewSession()
-	defer sess.Close()
+	sess := d.sess
+	if sess == nil {
+		sess = d.engine.NewSession()
+		defer sess.Close()
+	}
+
 	_, err = sess.Table(t).In("id", ids).Update(params)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
@@ -89,8 +97,12 @@ func (d *XormDao) UpdateByWhere(t interface{}, params map[string]interface{},
 		args = append(args, v)
 	}
 
-	sess := d.engine.NewSession()
-	defer sess.Close()
+	sess := d.sess
+	if sess == nil {
+		sess = d.engine.NewSession()
+		defer sess.Close()
+	}
+
 	_, err = sess.Table(t).Where(strings.Join(str, " AND "), args...).Update(params)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
@@ -100,8 +112,12 @@ func (d *XormDao) UpdateByWhere(t interface{}, params map[string]interface{},
 }
 
 func (d *XormDao) Insert(t interface{}) (err error) {
-	sess := d.engine.NewSession()
-	defer sess.Close()
+	sess := d.sess
+	if sess == nil {
+		sess = d.engine.NewSession()
+		defer sess.Close()
+	}
+
 	_, err = sess.Insert(t)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
@@ -110,9 +126,28 @@ func (d *XormDao) Insert(t interface{}) (err error) {
 	return
 }
 
+func (d *XormDao) InsertMulti(t interface{}) (err error) {
+	sess := d.sess
+	if sess == nil {
+		sess = d.engine.NewSession()
+		defer sess.Close()
+	}
+
+	_, err = sess.InsertMulti(t)
+	if err != nil {
+		lastSQL, lastSQLArgs := sess.LastSQL()
+		logger.Error(err, lastSQL, lastSQLArgs)
+	}
+	return
+}
+
 func (d *XormDao) SearchOne(t interface{}) (err error) {
-	sess := d.engine.NewSession()
-	defer sess.Close()
+	sess := d.sess
+	if sess == nil {
+		sess = d.engine.NewSession()
+		defer sess.Close()
+	}
+
 	_, err = sess.Get(t)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
@@ -121,7 +156,7 @@ func (d *XormDao) SearchOne(t interface{}) (err error) {
 	return
 }
 
-func (d *XormDao) buildCond(cond map[string]interface{}) (sess *xorm.Session) {
+func (d *XormDao) buildCond(sess *xorm.Session, cond map[string]interface{}) (session *xorm.Session) {
 	var (
 		str      []string
 		orderby  = "id desc"
@@ -130,7 +165,6 @@ func (d *XormDao) buildCond(cond map[string]interface{}) (sess *xorm.Session) {
 		where    string
 		args     []interface{}
 	)
-	sess = d.engine.NewSession()
 FOR:
 	for k, v := range cond {
 		k = strings.ToLower(k)
@@ -174,15 +208,20 @@ FOR:
 		where = strs
 	}
 
-	return sess.Where(where, args...).OrderBy(orderby).
+	sess.Where(where, args...).OrderBy(orderby).
 		Limit(pageSize, (page-1)*pageSize)
+
+	return sess
 }
 
 func (d *XormDao) Search(t interface{}, cond map[string]interface{}) (err error) {
+	sess := d.sess
+	if sess == nil {
+		sess = d.engine.NewSession()
+		defer sess.Close()
+	}
 
-	sess := d.buildCond(cond)
-	defer sess.Close()
-	err = sess.Find(t)
+	err = d.buildCond(sess, cond).Find(t)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
 		logger.Error(err, lastSQL, lastSQLArgs)
@@ -192,10 +231,13 @@ func (d *XormDao) Search(t interface{}, cond map[string]interface{}) (err error)
 }
 
 func (d *XormDao) Rows(t interface{}, cond map[string]interface{}) (rows *xorm.Rows, err error) {
+	sess := d.sess
+	if sess == nil {
+		sess = d.engine.NewSession()
+		defer sess.Close()
+	}
 
-	sess := d.buildCond(cond)
-	defer sess.Close()
-	rows, err = sess.Rows(t)
+	rows, err = d.buildCond(sess, cond).Rows(t)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
 		logger.Error(err, lastSQL, lastSQLArgs)
@@ -205,10 +247,13 @@ func (d *XormDao) Rows(t interface{}, cond map[string]interface{}) (rows *xorm.R
 }
 
 func (d *XormDao) Iterate(t interface{}, cond map[string]interface{}, f xorm.IterFunc) (err error) {
+	sess := d.sess
+	if sess == nil {
+		sess = d.engine.NewSession()
+		defer sess.Close()
+	}
 
-	sess := d.buildCond(cond)
-	defer sess.Close()
-	err = sess.Iterate(t, f)
+	err = d.buildCond(sess, cond).Iterate(t, f)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
 		logger.Error(err, lastSQL, lastSQLArgs)
@@ -218,10 +263,17 @@ func (d *XormDao) Iterate(t interface{}, cond map[string]interface{}, f xorm.Ite
 }
 
 func (d *XormDao) GetMulti(t interface{}, ids ...interface{}) (err error) {
-	sess := d.engine.NewSession()
-	defer sess.Close()
+	sess := d.sess
+	if sess == nil {
+		sess = d.engine.NewSession()
+		defer sess.Close()
+	}
 
 	err = sess.In("id", ids...).Find(t)
+	if err != nil {
+		lastSQL, lastSQLArgs := sess.LastSQL()
+		logger.Error(err, lastSQL, lastSQLArgs)
+	}
 
 	return
 }
@@ -251,8 +303,12 @@ func (d *XormDao) Count(t interface{}, cond map[string]interface{}) (total int64
 		where = strings.Join(str, " AND ")
 	}
 
-	sess := d.engine.NewSession()
-	defer sess.Close()
+	sess := d.sess
+	if sess == nil {
+		sess = d.engine.NewSession()
+		defer sess.Close()
+	}
+
 	total, err = sess.Where(where, args...).Count(t)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
@@ -284,25 +340,69 @@ func (d *XormDao) Replace(sql string, cond map[string]interface{}) (id int64, er
 	return rs.LastInsertId()
 }
 
-//必须确保执行Exec后，再执行ClearCache
-func (d *XormDao) Exec(sqlStr string, args ...interface{}) (sql.Result, error) {
-	tmp := make([]interface{}, len(args)+1)
+//调用方必须确保执行Exec后，再执行ClearCache
+func (d *XormDao) Exec(sqlStr string, args ...interface{}) (rs sql.Result, err error) {
+	tmp := make([]interface{}, 0)
 	tmp = append(tmp, sqlStr)
 	tmp = append(tmp, args...)
 
-	return d.engine.Exec(args...)
+	sess := d.sess
+	if sess == nil {
+		sess = d.engine.NewSession()
+		defer sess.Close()
+	}
+	rs, err = sess.Exec(args...)
+	if err != nil {
+		lastSQL, lastSQLArgs := sess.LastSQL()
+		logger.Error(err, lastSQL, lastSQLArgs)
+	}
+
+	return
 }
 
-func (d *XormDao) Query(args ...interface{}) ([]map[string][]byte, error) {
-	return d.engine.Query(args...)
+func (d *XormDao) Query(args ...interface{}) (rs []map[string][]byte, err error) {
+	sess := d.sess
+	if sess == nil {
+		sess = d.engine.NewSession()
+		defer sess.Close()
+	}
+	rs, err = sess.Query(args...)
+	if err != nil {
+		lastSQL, lastSQLArgs := sess.LastSQL()
+		logger.Error(err, lastSQL, lastSQLArgs)
+	}
+
+	return
 }
 
-func (d *XormDao) QueryString(args ...interface{}) ([]map[string]string, error) {
-	return d.engine.QueryString(args...)
+func (d *XormDao) QueryString(args ...interface{}) (rs []map[string]string, err error) {
+	sess := d.sess
+	if sess == nil {
+		sess = d.engine.NewSession()
+		defer sess.Close()
+	}
+	rs, err = sess.QueryString(args...)
+	if err != nil {
+		lastSQL, lastSQLArgs := sess.LastSQL()
+		logger.Error(err, lastSQL, lastSQLArgs)
+	}
+
+	return
 }
 
-func (d *XormDao) QueryInterface(args ...interface{}) ([]map[string]interface{}, error) {
-	return d.engine.QueryInterface(args...)
+func (d *XormDao) QueryInterface(args ...interface{}) (rs []map[string]interface{}, err error) {
+	sess := d.sess
+	if sess == nil {
+		sess = d.engine.NewSession()
+		defer sess.Close()
+	}
+	rs, err = sess.QueryInterface(args...)
+	if err != nil {
+		lastSQL, lastSQLArgs := sess.LastSQL()
+		logger.Error(err, lastSQL, lastSQLArgs)
+	}
+
+	return
 }
 
 func (d *XormDao) EnableCache(t interface{}) {
@@ -322,4 +422,35 @@ func (d *XormDao) ClearCache(t interface{}) {
 	if d.isCache {
 		_ = d.engine.ClearCache(t)
 	}
+}
+
+//以下主要用于事务
+//用法
+//首先NewSession，然后defer Close
+//然后Begin，如果不Commit，会自动在Close里Rollback掉
+func (d *XormDao) NewSession() {
+	d.sess = d.engine.NewSession()
+}
+
+func (d *XormDao) Close() {
+	if d.sess != nil {
+		d.sess.Close()
+		d.sess = nil
+	}
+}
+
+func (d *XormDao) Begin() error {
+	if d.sess == nil {
+		return errors.New("please NewSession at first")
+	}
+
+	return d.sess.Begin()
+}
+
+func (d *XormDao) Rollback() error {
+	return d.sess.Rollback()
+}
+
+func (d *XormDao) Commit() error {
+	return d.sess.Commit()
 }
