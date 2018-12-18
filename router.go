@@ -230,7 +230,7 @@ func StaticHandler(pattern string, dir string) {
 }
 
 //StaticStripHandler ...
-//如pattern=css,dir=./static/cssd，则css在./static/cssd下
+//如pattern=css,dir=./static/css，则css在./static/css下
 func StaticStripHandler(pattern string, dir string) {
 	if !filepath.IsAbs(dir) {
 		dir = filepath.Join(APPPATH, dir)
