@@ -212,6 +212,12 @@ func Handler(pattern string, handler ControllerInterface) (err error) {
 	return
 }
 
+//HandlerFunc register HandleFunc
+func HandlerFunc(pattern string, h http.HandlerFunc) {
+	logger.Infof("HandlerFunc: %s", pattern)
+	http.HandleFunc(pattern, h)
+}
+
 //StaticHandler ...
 //如pattern=css,dir=./static，则css在./static下
 func StaticHandler(pattern string, dir string) {
