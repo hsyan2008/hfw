@@ -113,7 +113,7 @@ func closeNotify(httpCtx *HTTPContext) {
 	select {
 	case <-httpCtx.Ctx.Done():
 		return
-	case <-httpCtx.ResponseWriter.(http.CloseNotifier).CloseNotify():
+	case <-httpCtx.Request.Context().Done():
 		httpCtx.Cancel()
 		return
 	}
