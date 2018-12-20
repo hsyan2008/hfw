@@ -176,15 +176,14 @@ func (curls *Curl) Request(ctxs ...context.Context) (rs Response, err error) {
 
 	select {
 	case <-time.After(curls.timeout):
-		tr.CancelRequest(httpRequest)
 		curls.cancel()
 		<-c
 		err = errors.New("do request time out")
 	case <-curls.ctx.Done():
-		tr.CancelRequest(httpRequest)
 		<-c
 		err = ctx.Err()
 	case <-c:
+		defer curls.cancel()
 	}
 
 	if nil != err {
