@@ -21,6 +21,7 @@ type RedisConfig struct {
 	Server     string
 	Prefix     string
 	Expiration int32
+	PoolSize   int
 	//以下两个在集群下无效
 	Db       int
 	Password string

@@ -3,6 +3,7 @@ package redis
 import (
 	"errors"
 	"math"
+	"time"
 
 	"github.com/hsyan2008/hfw2/configs"
 	"github.com/hsyan2008/hfw2/encoding"
@@ -37,7 +38,10 @@ func NewRedisSimple(redisConfig configs.RedisConfig) (rs *RedisSimple, err error
 		}
 		return client, nil
 	}
-	p, err := pool.NewCustom("tcp", redisConfig.Server, 10, df)
+	if redisConfig.PoolSize <= 0 {
+		redisConfig.PoolSize = 10
+	}
+	p, err := pool.NewCustom("tcp", redisConfig.Server, redisConfig.PoolSize, df, pool.PingInterval(time.Hour))
 
 	if err != nil {
 		return
@@ -47,6 +51,10 @@ func NewRedisSimple(redisConfig configs.RedisConfig) (rs *RedisSimple, err error
 		p:      p,
 		prefix: redisConfig.Prefix,
 	}, nil
+}
+
+func (this *RedisSimple) Close() {
+	this.p.Empty()
 }
 
 func (this *RedisSimple) getKey(key string) string {

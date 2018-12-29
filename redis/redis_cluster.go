@@ -3,10 +3,12 @@ package redis
 import (
 	"errors"
 	"math"
+	"time"
 
 	"github.com/hsyan2008/hfw2/configs"
 	"github.com/hsyan2008/hfw2/encoding"
 	"github.com/mediocregopher/radix.v2/cluster"
+	"github.com/mediocregopher/radix.v2/pool"
 	"github.com/mediocregopher/radix.v2/redis"
 )
 
@@ -18,8 +20,15 @@ type RedisCluster struct {
 var _ RedisInterface = &RedisCluster{}
 
 func NewRedisCluster(redisConfig configs.RedisConfig) (rc *RedisCluster, err error) {
+	if redisConfig.PoolSize <= 0 {
+		redisConfig.PoolSize = 10
+	}
 	cls, err := cluster.NewWithOpts(cluster.Opts{
-		Addr: redisConfig.Server,
+		Addr:     redisConfig.Server,
+		PoolSize: redisConfig.PoolSize,
+		PoolOpts: []pool.Opt{
+			pool.PingInterval(time.Hour),
+		},
 	})
 
 	if err != nil {
@@ -27,6 +36,10 @@ func NewRedisCluster(redisConfig configs.RedisConfig) (rc *RedisCluster, err err
 	} else {
 		return &RedisCluster{c: cls, prefix: redisConfig.Prefix}, nil
 	}
+}
+
+func (this *RedisCluster) Close() {
+	this.c.Close()
 }
 
 func (this *RedisCluster) getKey(key string) string {
