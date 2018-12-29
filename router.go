@@ -108,7 +108,9 @@ func closeNotify(httpCtx *HTTPContext) {
 	}
 	//panic: net/http: CloseNotify called after ServeHTTP finished
 	defer func() {
-		_ = recover()
+		if err := recover(); err != nil {
+			logger.Warn("closeNotify: ", err)
+		}
 	}()
 	select {
 	case <-httpCtx.Ctx.Done():
