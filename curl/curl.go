@@ -343,11 +343,14 @@ func (curls *Curl) curlResponse(resp *http.Response) (response Response, err err
 	response.Url = curls.Url
 	response.FollowUrls = curls.followUrls
 
-	response.BodyReader, err = curls.getReader(resp)
-	if err == nil && !curls.isStream {
-		response.Body, err = response.ReadBody()
-		if err == nil {
-			resp.Body.Close()
+	//目前只有200才需要读取body
+	if resp.StatusCode == http.StatusOK {
+		response.BodyReader, err = curls.getReader(resp)
+		if err == nil && !curls.isStream {
+			response.Body, err = response.ReadBody()
+			if err == nil {
+				resp.Body.Close()
+			}
 		}
 	}
 
