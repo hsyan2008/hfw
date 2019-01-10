@@ -95,10 +95,14 @@ func initLog() {
 
 func loadConfig() {
 	if len(ENVIRONMENT) == 0 {
-		if common.IsGoRun() || common.IsGoTest() {
-			ENVIRONMENT = "dev"
+		if common.IsExist(filepath.Join(APPPATH, "config")) {
+			if common.IsGoRun() || common.IsGoTest() {
+				ENVIRONMENT = "dev"
+			} else {
+				panic("please specify env")
+			}
 		} else {
-			panic("please specify env")
+			return
 		}
 	}
 	configPath := filepath.Join(APPPATH, "config", ENVIRONMENT, "config.toml")
