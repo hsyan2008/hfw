@@ -32,7 +32,7 @@ func (httpCtx *HTTPContext) Output() {
 }
 
 //ReturnFileContent 下载文件服务
-func (httpCtx *HTTPContext) ReturnFileContent(filename string, file interface{}) {
+func (httpCtx *HTTPContext) ReturnFileContent(contentType, filename string, file interface{}) {
 	httpCtx.IsJSON = false
 	httpCtx.Template = ""
 	httpCtx.TemplateFile = ""
@@ -65,6 +65,7 @@ func (httpCtx *HTTPContext) ReturnFileContent(filename string, file interface{})
 		}
 	}
 
+	httpCtx.ResponseWriter.Header().Set("Content-Type", contentType)
 	httpCtx.SetDownloadMode(filename)
 
 	_, err = io.Copy(w, r)
