@@ -16,6 +16,7 @@ import (
 
 	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw2/common"
+	"github.com/hsyan2008/hfw2/grpc/server"
 )
 
 var httpCtxPool = &sync.Pool{
@@ -38,6 +39,11 @@ func Router(w http.ResponseWriter, r *http.Request) {
 
 	signalContext.WgAdd()
 	defer signalContext.WgDone()
+
+	if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") && server.GetGrpcServer() != nil {
+		server.GetGrpcServer().ServeHTTP(w, r) // gRPC Server
+		return
+	}
 
 	if len(routeMap) == 0 && len(routeMapMethod) == 0 {
 		panic("nil router map")

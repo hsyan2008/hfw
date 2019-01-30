@@ -146,6 +146,7 @@ func Run() (err error) {
 		return
 	}
 
+	//启动http
 	signalContext.IsHTTP = true
 
 	if Config.Server.Concurrence > 0 {

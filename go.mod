@@ -17,4 +17,5 @@ require (
 	github.com/robfig/cron v0.0.0-20180505203441-b41be1df6967
 	github.com/shirou/gopsutil v2.18.12+incompatible
 	golang.org/x/sys v0.0.0-20190109145017-48ac38b7c8cb // indirect
+	google.golang.org/grpc v1.18.0
 )
