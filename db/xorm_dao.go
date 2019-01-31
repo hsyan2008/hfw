@@ -147,7 +147,7 @@ func (d *XormDao) SearchOne(t interface{}, cond Cond) (err error) {
 		sess = d.engine.NewSession()
 		defer sess.Close()
 	}
-	sess, err = d.buildCond(sess, cond)
+	sess, err = d.buildCond(sess, cond, true, false)
 	if err != nil {
 		return
 	}
@@ -160,7 +160,7 @@ func (d *XormDao) SearchOne(t interface{}, cond Cond) (err error) {
 	return
 }
 
-func (d *XormDao) buildCond(sess *xorm.Session, cond Cond) (session *xorm.Session, err error) {
+func (d *XormDao) buildCond(sess *xorm.Session, cond Cond, isOrder, isPaging bool) (session *xorm.Session, err error) {
 	var (
 		str      []string
 		orderby  = "id desc"
@@ -174,14 +174,20 @@ FOR:
 		k = strings.ToLower(k)
 		switch k {
 		case "orderby":
-			orderby = v.(string)
+			if isOrder {
+				orderby = v.(string)
+			}
 			continue FOR
 		case "page":
-			page = common.Max(v.(int), page)
+			if isPaging {
+				page = common.Max(v.(int), page)
+			}
 			continue FOR
 		case "pagesize":
-			if v.(int) > 0 {
-				pageSize = v.(int)
+			if isPaging {
+				if v.(int) > 0 {
+					pageSize = v.(int)
+				}
 			}
 			continue FOR
 		case "where":
@@ -228,8 +234,13 @@ FOR:
 		where = strs
 	}
 
-	sess.Where(where, args...).OrderBy(orderby).
-		Limit(pageSize, (page-1)*pageSize)
+	sess.Where(where, args...)
+	if isOrder {
+		sess.OrderBy(orderby)
+	}
+	if isPaging {
+		sess.Limit(pageSize, (page-1)*pageSize)
+	}
 
 	return sess, nil
 }
@@ -240,7 +251,7 @@ func (d *XormDao) Search(t interface{}, cond Cond) (err error) {
 		sess = d.engine.NewSession()
 		defer sess.Close()
 	}
-	sess, err = d.buildCond(sess, cond)
+	sess, err = d.buildCond(sess, cond, true, true)
 	if err != nil {
 		return
 	}
@@ -260,7 +271,7 @@ func (d *XormDao) Rows(t interface{}, cond Cond) (rows *xorm.Rows, err error) {
 		sess = d.engine.NewSession()
 		defer sess.Close()
 	}
-	sess, err = d.buildCond(sess, cond)
+	sess, err = d.buildCond(sess, cond, true, true)
 	if err != nil {
 		return
 	}
@@ -280,7 +291,7 @@ func (d *XormDao) Iterate(t interface{}, cond Cond, f xorm.IterFunc) (err error)
 		sess = d.engine.NewSession()
 		defer sess.Close()
 	}
-	sess, err = d.buildCond(sess, cond)
+	sess, err = d.buildCond(sess, cond, true, true)
 	if err != nil {
 		return
 	}
@@ -311,37 +322,17 @@ func (d *XormDao) GetMulti(t interface{}, ids ...interface{}) (err error) {
 }
 
 func (d *XormDao) Count(t interface{}, cond Cond) (total int64, err error) {
-	var (
-		str   []string
-		args  []interface{}
-		where string
-	)
-	for k, v := range cond {
-		k = strings.ToLower(k)
-		if k == "orderby" || k == "page" || k == "pagesize" {
-			continue
-		}
-		if k == "where" {
-			where = v.(string)
-			continue
-		}
-		str = append(str, fmt.Sprintf("`%s` = ?", k))
-		args = append(args, v)
-	}
-
-	if where != "" {
-		where = fmt.Sprintf("(%s) AND %s", where, strings.Join(str, " AND "))
-	} else {
-		where = strings.Join(str, " AND ")
-	}
-
 	sess := d.sess
 	if sess == nil {
 		sess = d.engine.NewSession()
 		defer sess.Close()
 	}
+	sess, err = d.buildCond(sess, cond, false, false)
+	if err != nil {
+		return
+	}
 
-	total, err = sess.Where(where, args...).Count(t)
+	total, err = sess.Count(t)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
 		logger.Error(err, lastSQL, lastSQLArgs)
