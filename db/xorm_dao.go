@@ -141,7 +141,7 @@ func (d *XormDao) InsertMulti(t interface{}) (affected int64, err error) {
 	return
 }
 
-func (d *XormDao) SearchOne(t interface{}, cond Cond) (err error) {
+func (d *XormDao) SearchOne(t interface{}, cond Cond) (has bool, err error) {
 	sess := d.sess
 	if sess == nil {
 		sess = d.engine.NewSession()
@@ -152,7 +152,7 @@ func (d *XormDao) SearchOne(t interface{}, cond Cond) (err error) {
 		return
 	}
 
-	_, err = sess.Get(t)
+	has, err = sess.Get(t)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
 		logger.Error(err, lastSQL, lastSQLArgs)

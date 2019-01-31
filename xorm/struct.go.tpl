@@ -65,8 +65,6 @@ func (m *{{Mapper .Name}}) Save(t ...*{{Mapper .Name}}) (affected int64, err err
             return m.Dao.Insert(i)
     	}
     }
-
-	return
 }
 
 func (m *{{Mapper .Name}}) Saves(t []*{{Mapper .Name}}) (affected int64, err error) {
@@ -88,8 +86,6 @@ func (m *{{Mapper .Name}}) Insert(t ...*{{Mapper .Name}}) (affected int64, err e
         }
         return m.Dao.Insert(i)
     }
-
-	return
 }
 
 func (m *{{Mapper .Name}}) Update(params db.Cond,
@@ -101,12 +97,18 @@ func (m *{{Mapper .Name}}) SearchOne(cond db.Cond) (t *{{Mapper .Name}}, err err
     if cond == nil {
         cond = db.Cond{}
     }
+	cond["page"] = 1
+	cond["pagesize"] = 1
 
-    s := new({{Mapper .Name}})
+	rs, err := m.Search(cond)
+	if err != nil {
+        return
+    }
+	if len(rs) > 0 {
+		t = rs[0]
+    }
 
-	err = m.Dao.SearchOne(s, cond)
-
-	return s, err
+	return
 }
 
 func (m *{{Mapper .Name}}) Search(cond db.Cond) (t []*{{Mapper .Name}}, err error) {

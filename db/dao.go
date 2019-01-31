@@ -7,7 +7,7 @@ type Dao interface {
 	UpdateByIds(interface{}, Cond, []interface{}) (int64, error)
 	UpdateByWhere(interface{}, Cond, Cond) (int64, error)
 	Insert(interface{}) (int64, error)
-	SearchOne(interface{}, Cond) error
+	SearchOne(interface{}, Cond) (bool, error)
 	Search(interface{}, Cond) error
 	GetMulti(interface{}, ...interface{}) error
 	Count(interface{}, Cond) (int64, error)
