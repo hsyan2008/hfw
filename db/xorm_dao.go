@@ -156,7 +156,7 @@ func (d *XormDao) SearchOne(t interface{}) (err error) {
 	return
 }
 
-func (d *XormDao) buildCond(sess *xorm.Session, cond map[string]interface{}) (session *xorm.Session) {
+func (d *XormDao) buildCond(sess *xorm.Session, cond map[string]interface{}) (session *xorm.Session, err error) {
 	var (
 		str      []string
 		orderby  = "id desc"
@@ -193,8 +193,24 @@ FOR:
 			sess.Distinct(v.(string))
 			continue FOR
 		}
-		str = append(str, fmt.Sprintf("`%s` = ?", k))
-		args = append(args, v)
+
+		keys := strings.Fields(k)
+		switch len(keys) {
+		case 1:
+			str = append(str, fmt.Sprintf("`%s` = ?", k))
+			args = append(args, v)
+			continue FOR
+		case 2:
+			switch keys[1] {
+			case "in":
+				sess.In(keys[0], v.([]interface{}))
+			default:
+				return nil, errors.New("error cond key")
+			}
+			continue FOR
+		default:
+			return nil, errors.New("error cond")
+		}
 	}
 
 	var strs string
@@ -211,7 +227,7 @@ FOR:
 	sess.Where(where, args...).OrderBy(orderby).
 		Limit(pageSize, (page-1)*pageSize)
 
-	return sess
+	return sess, nil
 }
 
 func (d *XormDao) Search(t interface{}, cond map[string]interface{}) (err error) {
@@ -220,8 +236,12 @@ func (d *XormDao) Search(t interface{}, cond map[string]interface{}) (err error)
 		sess = d.engine.NewSession()
 		defer sess.Close()
 	}
+	sess, err = d.buildCond(sess, cond)
+	if err != nil {
+		return
+	}
 
-	err = d.buildCond(sess, cond).Find(t)
+	err = sess.Find(t)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
 		logger.Error(err, lastSQL, lastSQLArgs)
@@ -236,8 +256,12 @@ func (d *XormDao) Rows(t interface{}, cond map[string]interface{}) (rows *xorm.R
 		sess = d.engine.NewSession()
 		defer sess.Close()
 	}
+	sess, err = d.buildCond(sess, cond)
+	if err != nil {
+		return
+	}
 
-	rows, err = d.buildCond(sess, cond).Rows(t)
+	rows, err = sess.Rows(t)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
 		logger.Error(err, lastSQL, lastSQLArgs)
@@ -252,8 +276,12 @@ func (d *XormDao) Iterate(t interface{}, cond map[string]interface{}, f xorm.Ite
 		sess = d.engine.NewSession()
 		defer sess.Close()
 	}
+	sess, err = d.buildCond(sess, cond)
+	if err != nil {
+		return
+	}
 
-	err = d.buildCond(sess, cond).Iterate(t, f)
+	err = sess.Iterate(t, f)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
 		logger.Error(err, lastSQL, lastSQLArgs)
