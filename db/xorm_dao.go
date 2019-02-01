@@ -213,7 +213,7 @@ FOR:
 		case 2:
 			switch keys[1] {
 			case "in":
-				sess.In(keys[0], v.([]interface{}))
+				sess.In(keys[0], v)
 			default:
 				return nil, errors.New("error cond key")
 			}
