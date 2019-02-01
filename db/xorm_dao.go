@@ -374,7 +374,7 @@ func (d *XormDao) Exec(sqlStr string, args ...interface{}) (rs sql.Result, err e
 		sess = d.engine.NewSession()
 		defer sess.Close()
 	}
-	rs, err = sess.Exec(args...)
+	rs, err = sess.Exec(tmp...)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
 		logger.Error(err, lastSQL, lastSQLArgs)
