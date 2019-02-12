@@ -33,7 +33,7 @@ func Router(w http.ResponseWriter, r *http.Request) {
 		startTime := time.Now()
 		defer func() {
 			logger.Debugf("From: %s, Host: %s, Method: %s, Uri: %s %s CostTime: %s",
-				r.RemoteAddr, r.Host, r.Method, r.URL.String(), "end", time.Now().Sub(startTime))
+				r.RemoteAddr, r.Host, r.Method, r.URL.String(), "end", time.Since(startTime))
 		}()
 	}
 
