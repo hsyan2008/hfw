@@ -11,7 +11,6 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
-	"sync"
 	"time"
 
 	logger "github.com/hsyan2008/go-logger"
@@ -19,14 +18,7 @@ import (
 	"github.com/hsyan2008/hfw2/grpc/server"
 )
 
-var httpCtxPool = &sync.Pool{
-	New: func() interface{} {
-		return new(HTTPContext)
-	},
-}
-
-var concurrenceChan chan bool
-
+//Router 写测试用例会调用
 func Router(w http.ResponseWriter, r *http.Request) {
 	if logger.Level() == logger.DEBUG {
 		logger.Debugf("From: %s, Host: %s, Method: %s, Uri: %s %s", r.RemoteAddr, r.Host, r.Method, r.URL.String(), "start")
@@ -49,14 +41,13 @@ func Router(w http.ResponseWriter, r *http.Request) {
 		panic("nil router map")
 	}
 
-	//放入pool里
 	httpCtx := httpCtxPool.Get().(*HTTPContext)
 	defer httpCtxPool.Put(httpCtx)
-	httpCtx.Init(w, r)
+	//初始化httpCtx
+	httpCtx.init(w, r)
 	httpCtx.SignalContext = signalContext
 	httpCtx.Ctx, httpCtx.Cancel = context.WithCancel(signalContext.Ctx)
 	defer httpCtx.Cancel()
-	//初始化httpCtx
 	initValue := []reflect.Value{
 		reflect.ValueOf(httpCtx),
 	}
@@ -185,36 +176,30 @@ func Handler(pattern string, handler ControllerInterface) (err error) {
 		switch m {
 		case "Init", "Before", "After", "Finish", "NotFound", "ServerError":
 		default:
-			m = strings.ToLower(m)
-			isMethod := false
-			//必须For+全大写结尾
-			for _, v := range []string{"GET", "POST", "PUT", "DELETE"} {
-				if strings.HasSuffix(m, strings.ToLower("For"+v)) && strings.LastIndex(m, strings.ToLower("For"+v)) > 0 {
-					isMethod = true
-					break
-				}
-			}
-			path := fmt.Sprintf("%s/%s", controller, m)
+			actions, method, isMethod := getRequestMethod(m)
 			value := instance{
 				reflectVal:     reflectVal,
 				controllerName: controllerName,
 				methodName:     rt.Method(i).Name,
 			}
-			if isMethod {
-				if _, ok := routeMapMethod[path]; ok {
-					panic(path + " exist")
+			for _, action := range actions {
+				if isMethod {
+					path := fmt.Sprintf("%s/%sfor%s", controller, action, method)
+					if _, ok := routeMapMethod[path]; ok {
+						panic(path + " exist")
+					}
+					routeMapMethod[path] = value
+					logger.Infof("pattern: %s register routeMapMethod: %s", pattern, path)
+				} else {
+					path := fmt.Sprintf("%s/%s", controller, action)
+					if _, ok := routeMap[path]; ok {
+						panic(path + " exist")
+					}
+					routeMap[path] = value
+					logger.Infof("pattern: %s register routeMap: %s", pattern, path)
 				}
-				routeMapMethod[path] = value
-				logger.Infof("pattern: %s register routeMapMethod: %s", pattern, path)
-			} else {
-				if _, ok := routeMap[path]; ok {
-					panic(path + " exist")
-				}
-				routeMap[path] = value
-				logger.Infof("pattern: %s register routeMap: %s", pattern, path)
 			}
 		}
-
 	}
 
 	return

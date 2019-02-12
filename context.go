@@ -49,7 +49,7 @@ type HTTPContext struct {
 	Header          interface{} `json:"header"`
 }
 
-func (httpCtx *HTTPContext) Init(w http.ResponseWriter, r *http.Request) {
+func (httpCtx *HTTPContext) init(w http.ResponseWriter, r *http.Request) {
 	httpCtx.ResponseWriter = w
 	httpCtx.Request = r
 	httpCtx.Layout = ""
@@ -68,10 +68,6 @@ func (httpCtx *HTTPContext) Init(w http.ResponseWriter, r *http.Request) {
 	httpCtx.ErrNo = 0
 	httpCtx.ErrMsg = ""
 	httpCtx.Results = nil
-
-	httpCtx.Controller, httpCtx.Action, _ = formatURL(r.URL.Path)
-	httpCtx.Path = fmt.Sprintf("%s/%s", httpCtx.Controller, httpCtx.Action)
-	// httpCtx.TemplateFile = fmt.Sprintf("%s.html", httpCtx.Path)
 }
 
 //GetForm 优先post和put,然后get
