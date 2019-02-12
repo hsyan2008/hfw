@@ -106,6 +106,16 @@ func (curls *Curl) SetStream() {
 	curls.isStream = true
 }
 
+func (curls *Curl) SetMethod(method string) error {
+	curls.Method = strings.ToUpper(method)
+	switch curls.Method {
+	case "OPTIONS", "GET", "HEAD", "POST", "PUT", "DELETE", "TRACE", "CONNECT":
+		return nil
+	default:
+		return fmt.Errorf("net/http: invalid method %q", method)
+	}
+}
+
 func (curls *Curl) SetHeaders(headers map[string]string) {
 	curls.Headers["Accept"] = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
 	curls.Headers["Accept-Encoding"] = "gzip, deflate"
@@ -200,13 +210,13 @@ func (curls *Curl) Request(ctxs ...context.Context) (rs Response, err error) {
 func (curls *Curl) CreateRequest() (httpRequest *http.Request, err error) {
 	if curls.PostReader != nil || len(curls.PostBytes) > 0 ||
 		"" != curls.PostString || len(curls.PostFields) > 0 || len(curls.PostFiles) > 0 {
-		curls.Method = "post"
-	}
-
-	if curls.Method == "post" {
 		httpRequest, err = curls.createPostRequest()
 	} else {
-		httpRequest, err = http.NewRequest("GET", curls.Url, nil)
+		if len(curls.Method) == 0 {
+			httpRequest, err = http.NewRequest("GET", curls.Url, nil)
+		} else {
+			httpRequest, err = http.NewRequest(curls.Method, curls.Url, nil)
+		}
 	}
 
 	if curls.Headers != nil {
@@ -227,14 +237,19 @@ func (curls *Curl) CreateRequest() (httpRequest *http.Request, err error) {
 
 func (curls *Curl) createPostRequest() (httpRequest *http.Request, err error) {
 	var hasSetHeader bool
+	if len(curls.Method) == 0 {
+		curls.Method = "POST"
+	} else {
+		curls.Method = strings.ToUpper(curls.Method)
+	}
 	if curls.PostReader != nil {
-		httpRequest, err = http.NewRequest("POST", curls.Url, curls.PostReader)
+		httpRequest, err = http.NewRequest(curls.Method, curls.Url, curls.PostReader)
 	} else if len(curls.PostBytes) > 0 {
 		b := bytes.NewReader(curls.PostBytes)
-		httpRequest, err = http.NewRequest("POST", curls.Url, b)
+		httpRequest, err = http.NewRequest(curls.Method, curls.Url, b)
 	} else if len(curls.PostString) > 0 {
 		b := strings.NewReader(curls.PostString)
-		httpRequest, err = http.NewRequest("POST", curls.Url, b)
+		httpRequest, err = http.NewRequest(curls.Method, curls.Url, b)
 	} else if len(curls.PostFields) > 0 || len(curls.PostFiles) > 0 {
 		var b = &bytes.Buffer{}
 		bodyWriter := multipart.NewWriter(b)
@@ -274,14 +289,14 @@ func (curls *Curl) createPostRequest() (httpRequest *http.Request, err error) {
 			return
 		}
 
-		httpRequest, err = http.NewRequest("POST", curls.Url, b)
+		httpRequest, err = http.NewRequest(curls.Method, curls.Url, b)
 		if err != nil {
 			return
 		}
 		httpRequest.Header.Set("Content-Type", bodyWriter.FormDataContentType())
 		hasSetHeader = true
 	} else {
-		httpRequest, err = http.NewRequest("POST", curls.Url, nil)
+		httpRequest, err = http.NewRequest(curls.Method, curls.Url, nil)
 	}
 
 	if err != nil {
@@ -319,7 +334,7 @@ func (curls *Curl) curlResponse(resp *http.Response) (response Response, err err
 				curls.RedirectCount++
 				curls.followUrls = append(curls.followUrls, curls.Url)
 				curls.Url = locationUrl
-				curls.Method = "get"
+				curls.Method = "GET"
 				curls.PostBytes = nil
 				curls.PostString = ""
 				curls.PostFields = nil
