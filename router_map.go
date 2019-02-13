@@ -34,7 +34,6 @@ var (
 //controller如果有下划线，可以直接在注册的时候指定
 //action的下划线，可以自动处理
 func findInstance(httpCtx *HTTPContext) (instance instance, action string) {
-	httpCtx.Controller, httpCtx.Action, _ = formatURL(httpCtx.Request.URL.Path)
 	httpCtx.Path = fmt.Sprintf("%s/%s", httpCtx.Controller, httpCtx.Action)
 
 	var ok bool

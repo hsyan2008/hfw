@@ -45,6 +45,7 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	defer httpCtxPool.Put(httpCtx)
 	//初始化httpCtx
 	httpCtx.init(w, r)
+	httpCtx.Controller, httpCtx.Action, _ = formatURL(httpCtx.Request.URL.Path)
 	httpCtx.SignalContext = signalContext
 	httpCtx.Ctx, httpCtx.Cancel = context.WithCancel(signalContext.Ctx)
 	defer httpCtx.Cancel()
