@@ -17,9 +17,6 @@ import (
 	"github.com/hsyan2008/hfw2/serve"
 )
 
-//ENVIRONMENT 环境
-var ENVIRONMENT string
-
 //VERSION 版本
 var VERSION string
 
