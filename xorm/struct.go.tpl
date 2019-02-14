@@ -2,6 +2,7 @@ package {{.Models}}
 
 import (
     "encoding/gob"
+    "errors"
     "fmt"
     "database/sql"
 {{$ilen := len .Imports}}
@@ -172,18 +173,32 @@ func (m *{{Mapper .Name}}) QueryInterface(args ...interface{}) ([]map[string]int
 
 //以下用于事务，注意同个实例不能在多个goroutine同时使用
 //使用完毕需要执行Close()，当Close的时候如果没有commit，会自动rollback
-func New{{Mapper .Name}}(dbConfig configs.DbConfig, daos ...*db.XormDao) (m *{{Mapper .Name}}, err error) {
-    m = &{{Mapper .Name}}{}
-    if len(daos) > 0 {
-        m.Dao = daos[0]
-    } else {
-        m.Dao, err = db.NewXormDao(hfw.Config, dbConfig)
-            if err != nil {
-                return nil, err    
-            }
-        m.Dao.NewSession()
-    }
-    return
+//参数只能是0-1个，可以是
+//  configs.DbConfig    新生成dao
+//  *db.XormDao         使用现有的dao
+//  空                  使用默认的数据库配置
+func New{{Mapper .Name}}(c ...interface{}) (m *{{Mapper .Name}}, err error) {
+	m = &{{Mapper .Name}}{}
+	var dbConfig configs.DbConfig
+	if len(c) > 1 {
+		return nil, errors.New("too many configs")
+	} else if len(c) == 1 {
+		switch c[0].(type) {
+		case configs.DbConfig:
+			dbConfig = c[0].(configs.DbConfig)
+		case *db.XormDao:
+			m.Dao = c[0].(*db.XormDao)
+			return
+		}
+	}
+
+	m.Dao, err = db.NewXormDao(hfw.Config, dbConfig)
+	if err != nil {
+		return nil, err
+	}
+	m.Dao.NewSession()
+
+	return
 }
 
 func (m *{{Mapper .Name}}) Close() {
