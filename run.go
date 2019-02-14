@@ -94,7 +94,7 @@ func loadConfig() {
 	if len(ENVIRONMENT) == 0 {
 		if common.IsExist(filepath.Join(APPPATH, "config")) {
 			if common.IsGoRun() || common.IsGoTest() {
-				ENVIRONMENT = "dev"
+				ENVIRONMENT = DEV
 			} else {
 				panic("please specify env")
 			}
