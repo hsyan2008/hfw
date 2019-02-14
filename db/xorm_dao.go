@@ -15,25 +15,26 @@ import (
 
 var _ Dao = &XormDao{}
 
-func NewXormDao(config configs.AllConfig, dbConfigs ...configs.DbConfig) *XormDao {
-	dbConfig := config.Db
+//config用于缓存，dbConfig用于数据库配置
+func NewXormDao(config configs.AllConfig, dbConfig configs.DbConfig) (instance *XormDao, err error) {
 
-	instance := &XormDao{}
-
-	//允许默认配置为空
-	if dbConfig.Driver == "" && len(dbConfigs) == 0 {
-		return instance
+	if dbConfig.Driver == "" {
+		return nil, errors.New("nil db config")
 	}
 
-	if len(dbConfigs) > 0 {
-		dbConfig = dbConfigs[0]
+	instance = &XormDao{}
+
+	instance.engine, err = InitDb(config, dbConfig)
+	if err != nil {
+		return nil, err
 	}
-	instance.engine = InitDb(config, dbConfig)
 
 	//开启缓存
-	instance.cacher = GetCacher(config)
+	if len(dbConfig.CacheType) > 0 {
+		instance.cacher, err = GetCacher(config, dbConfig)
+	}
 
-	return instance
+	return instance, err
 }
 
 type XormDao struct {
@@ -451,6 +452,7 @@ func (d *XormDao) ClearCache(t interface{}) {
 //用法
 //首先NewSession，然后defer Close
 //然后Begin，如果不Commit，会自动在Close里Rollback掉
+//Notice: 注意并发不安全，请勿在全局上使用
 func (d *XormDao) NewSession() {
 	d.sess = d.engine.NewSession()
 }
@@ -471,9 +473,17 @@ func (d *XormDao) Begin() error {
 }
 
 func (d *XormDao) Rollback() error {
+	if d.sess == nil {
+		return errors.New("please NewSession at first")
+	}
+
 	return d.sess.Rollback()
 }
 
 func (d *XormDao) Commit() error {
+	if d.sess == nil {
+		return errors.New("please NewSession at first")
+	}
+
 	return d.sess.Commit()
 }

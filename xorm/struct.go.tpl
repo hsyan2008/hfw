@@ -18,7 +18,11 @@ import (
 var {{Mapper .Name}}Model = &{{Mapper .Name}}{}
 
 func init() {
-    {{Mapper .Name}}Model.Dao = db.NewXormDao(hfw.Config)
+    var err error
+    {{Mapper .Name}}Model.Dao, err = db.NewXormDao(hfw.Config, hfw.Config.Db)
+    if err != nil {
+        panic(err)    
+    }
     {{Mapper .Name}}Model.Dao.EnableCache({{Mapper .Name}}Model)
     //{{Mapper .Name}}Model.Dao.DisableCache({{Mapper .Name}}Model)
 	//gob: type not registered for interface
@@ -168,10 +172,17 @@ func (m *{{Mapper .Name}}) QueryInterface(args ...interface{}) ([]map[string]int
 
 //以下用于事务，注意同个实例不能在多个goroutine同时使用
 //使用完毕需要执行Close()，当Close的时候如果没有commit，会自动rollback
-func New{{Mapper .Name}}(dbConfigs ...configs.DbConfig) (m *{{Mapper .Name}}) {
+func New{{Mapper .Name}}(dbConfig configs.DbConfig, daos ...*db.XormDao) (m *{{Mapper .Name}}, err error) {
     m = &{{Mapper .Name}}{}
-    m.Dao = db.NewXormDao(hfw.Config, dbConfigs...)
-    m.Dao.NewSession()
+    if len(daos) > 0 {
+        m.Dao = daos[0]
+    } else {
+        m.Dao, err = db.NewXormDao(hfw.Config, dbConfig)
+            if err != nil {
+                return nil, err    
+            }
+        m.Dao.NewSession()
+    }
     return
 }
 
