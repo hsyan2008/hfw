@@ -188,7 +188,12 @@ func New{{Mapper .Name}}(c ...interface{}) (m *{{Mapper .Name}}, err error) {
 			dbConfig = c[0].(configs.DbConfig)
 		case *db.XormDao:
 			m.Dao = c[0].(*db.XormDao)
+            if m.Dao == nil {
+                return nil, errors.New("nil dao")    
+            }
 			return
+        default:
+            return nil, errors.New("error configs")
 		}
 	}
 
