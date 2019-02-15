@@ -11,7 +11,6 @@ import (
 	_ "github.com/denisenkom/go-mssqldb"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/go-xorm/cachestore"
-	"github.com/go-xorm/core"
 	"github.com/go-xorm/xorm"
 	logger "github.com/hsyan2008/go-logger"
 	hfw "github.com/hsyan2008/hfw2"
@@ -50,7 +49,7 @@ func InitDb(config configs.AllConfig, dbConfig configs.DbConfig) (engine xorm.En
 		}
 	}
 
-	engine.SetLogger(&mysqlLog{})
+	engine.SetLogger(&xormLog{})
 	engine.ShowSQL(true)
 	engine.ShowExecTime(true)
 
@@ -192,48 +191,4 @@ FOR:
 			break FOR
 		}
 	}
-}
-
-type mysqlLog struct {
-	isShowSQL bool
-}
-
-func (mlog *mysqlLog) Debug(v ...interface{}) {
-	logger.Output(4, "DEBUG", v...)
-}
-func (mlog *mysqlLog) Debugf(format string, v ...interface{}) {
-	logger.Output(4, "DEBUG", fmt.Sprintf(format, v...))
-}
-func (mlog *mysqlLog) Info(v ...interface{}) {
-	logger.Output(4, "INFO", v...)
-}
-func (mlog *mysqlLog) Infof(format string, v ...interface{}) {
-	logger.Output(4, "INFO", fmt.Sprintf(format, v...))
-}
-func (mlog *mysqlLog) Warn(v ...interface{}) {
-	logger.Output(4, "WARN", v...)
-}
-func (mlog *mysqlLog) Warnf(format string, v ...interface{}) {
-	logger.Output(4, "WARN", fmt.Sprintf(format, v...))
-}
-func (mlog *mysqlLog) Error(v ...interface{}) {
-	logger.Output(4, "ERROR", v...)
-}
-func (mlog *mysqlLog) Errorf(format string, v ...interface{}) {
-	logger.Output(4, "ERROR", fmt.Sprintf(format, v...))
-}
-
-func (mlog *mysqlLog) Level() core.LogLevel {
-	return core.LogLevel(logger.Level())
-}
-
-func (mlog *mysqlLog) SetLevel(l core.LogLevel) {
-	logger.SetLevel(logger.LEVEL(l))
-}
-
-func (mlog *mysqlLog) ShowSQL(show ...bool) {
-	mlog.isShowSQL = show[0]
-}
-func (mlog *mysqlLog) IsShowSQL() bool {
-	return mlog.isShowSQL
 }
