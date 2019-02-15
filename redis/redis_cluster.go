@@ -2,7 +2,6 @@ package redis
 
 import (
 	"errors"
-	"math"
 	"time"
 
 	"github.com/hsyan2008/hfw2/configs"
@@ -62,23 +61,40 @@ func (this *RedisCluster) IsExist(key string) (isExist bool, err error) {
 	return i == 1, nil
 }
 
-func (this *RedisCluster) Set(key string, value interface{}) (err error) {
+//args可以是以下任意组合
+// NX
+// XX
+// EX seconds
+// PX milliseconds
+func (this *RedisCluster) Set(key string, value interface{}, args ...interface{}) (isOk bool, err error) {
 	key = this.getKey(key)
 
 	v, err := encoding.Gob.Marshal(&value)
 	if err != nil {
-		return err
+		return false, err
 	}
-	//OK
-	_, err = this.Cmd("SET", key, v).Str()
+	var resp *redis.Resp
+	if len(args) > 0 {
+		tmp := []interface{}{key, v}
+		tmp = append(tmp, args...)
+		resp = this.Cmd("SET", tmp...)
+	} else {
+		resp = this.Cmd("SET", key, v)
+	}
+	if resp.Err != nil {
+		return false, resp.Err
+	}
+	if resp.IsType(redis.Nil) {
+		return false, nil
+	}
 
-	return
+	return true, nil
 }
 
 //cluster 不支持多key
 func (this *RedisCluster) MSet(items ...interface{}) (err error) {
 	for key, val := range items {
-		if int(math.Mod(float64(key), 2)) == 0 {
+		if key%2 == 0 {
 			items[key] = this.getKey(val.(string))
 		} else {
 			v, err := encoding.Gob.Marshal(&val)
@@ -88,8 +104,6 @@ func (this *RedisCluster) MSet(items ...interface{}) (err error) {
 			items[key] = v
 		}
 	}
-
-	//OK
 	_, err = this.Cmd("MSET", items).Str()
 
 	return
@@ -111,7 +125,6 @@ func (this *RedisCluster) Get(key string) (value interface{}, err error) {
 	if err != nil {
 		return
 	}
-
 	err = encoding.Gob.Unmarshal(v, &value)
 
 	return
@@ -152,8 +165,6 @@ func (this *RedisCluster) MGet(keys ...string) (values map[string]interface{}, e
 			}
 			values[keys[k]] = value
 		}
-	} else {
-		return values, errors.New("mget error: not array")
 	}
 
 	return
@@ -196,7 +207,6 @@ func (this *RedisCluster) DecrBy(key string, delta int64) (value int64, err erro
 	key = this.getKey(key)
 
 	resp := this.Cmd("DECRBY", key, delta)
-
 	if resp.Err != nil {
 		return value, resp.Err
 	}
@@ -233,14 +243,13 @@ func (this *RedisCluster) SetNx(key string, value interface{}) (isOk bool, err e
 
 	resp := this.Cmd("SET", key, v, "NX")
 	if resp.Err != nil {
-		return isOk, resp.Err
+		return false, resp.Err
 	}
 
 	if resp.IsType(redis.Nil) {
-		return isOk, nil
+		return false, nil
 	}
 
-	//OK
 	return true, nil
 }
 
@@ -258,7 +267,6 @@ func (this *RedisCluster) SetEx(key string, value interface{}, expiration int) (
 		return resp.Err
 	}
 
-	//OK
 	return
 }
 
@@ -271,16 +279,15 @@ func (this *RedisCluster) SetNxEx(key string, value interface{}, expiration int)
 		return
 	}
 
-	resp := this.Cmd("SET", key, v, "NX")
+	resp := this.Cmd("SET", key, v, "NX", "EX", expiration)
 	if resp.Err != nil {
-		return isOk, resp.Err
+		return false, resp.Err
 	}
 
 	if resp.IsType(redis.Nil) {
-		return isOk, nil
+		return false, nil
 	}
 
-	//OK
 	return true, nil
 }
 
@@ -310,7 +317,6 @@ func (this *RedisCluster) HSet(key, field string, value interface{}) (err error)
 	if resp.Err != nil {
 		return resp.Err
 	}
-
 	_, err = resp.Int()
 
 	return
@@ -332,7 +338,6 @@ func (this *RedisCluster) HGet(key, field string) (value interface{}, err error)
 	if err != nil {
 		return value, err
 	}
-
 	err = encoding.Gob.Unmarshal(v, &value)
 
 	return
@@ -342,7 +347,6 @@ func (this *RedisCluster) HIncrBy(key, field string, delta int64) (value int64, 
 	key = this.getKey(key)
 
 	resp := this.Cmd("HINCRBY", key, field, delta)
-
 	if resp.Err != nil {
 		return value, resp.Err
 	}
@@ -363,15 +367,99 @@ func (this *RedisCluster) HDel(key string, fields ...string) (err error) {
 	return
 }
 
+func (this *RedisCluster) ZIncrBy(key, member string, increment float64) (value string, err error) {
+	key = this.getKey(key)
+
+	resp := this.Cmd("ZINCRBY", key, increment, member)
+	if resp.Err != nil {
+		return "", resp.Err
+	}
+	_, err = resp.Str()
+
+	return
+}
+
+func (this *RedisCluster) ZRange(key string, start, stop int64) (values map[string]string, err error) {
+	key = this.getKey(key)
+
+	resp := this.Cmd("ZRANGE", key, start, stop, "WITHSCORES")
+	if resp.Err != nil {
+		return nil, resp.Err
+	}
+
+	if resp.IsType(redis.Array) {
+		values = make(map[string]string)
+		resps, err := resp.Array()
+		if err != nil {
+			return nil, err
+		}
+		arrLen := len(resps)
+		if arrLen%2 != 0 {
+			return nil, errors.New("err resp num")
+		}
+		for i := 0; i < arrLen; i += 2 {
+			if resps[i].IsType(redis.Nil) || resps[i+1].IsType(redis.Nil) {
+				continue
+			}
+			k, err := resps[i].Str()
+			if err != nil {
+				return nil, err
+			}
+			v, err := resps[i+1].Str()
+			if err != nil {
+				return nil, err
+			}
+
+			values[k] = v
+		}
+	}
+
+	return
+}
+
+func (this *RedisCluster) ZRevRange(key string, start, stop int64) (values map[string]string, err error) {
+	key = this.getKey(key)
+
+	resp := this.Cmd("ZREVRANGE", key, start, stop, "WITHSCORES")
+	if resp.Err != nil {
+		return nil, resp.Err
+	}
+
+	if resp.IsType(redis.Array) {
+		values = make(map[string]string)
+		resps, err := resp.Array()
+		if err != nil {
+			return nil, err
+		}
+		arrLen := len(resps)
+		if arrLen%2 != 0 {
+			return nil, errors.New("err resp num")
+		}
+		for i := 0; i < arrLen; i += 2 {
+			if resps[i].IsType(redis.Nil) || resps[i+1].IsType(redis.Nil) {
+				continue
+			}
+			k, err := resps[i].Str()
+			if err != nil {
+				return nil, err
+			}
+			v, err := resps[i+1].Str()
+			if err != nil {
+				return nil, err
+			}
+
+			values[k] = v
+		}
+	}
+
+	return
+}
+
 //集群不支持RENAME
 func (this *RedisCluster) Rename(oldKey, newKey string) (err error) {
 	oldKey = this.getKey(oldKey)
 	newKey = this.getKey(newKey)
 
-	// resp := this.Cmd("RENAME", oldKey, newKey)
-	// if resp.Err != nil {
-	// 	return resp.Err
-	// }
 	resp := this.Cmd("GET", oldKey)
 	if resp.Err != nil {
 		return resp.Err
@@ -385,7 +473,6 @@ func (this *RedisCluster) Rename(oldKey, newKey string) (err error) {
 	if err != nil {
 		return
 	}
-
 	_, err = this.Cmd("SET", newKey, v).Str()
 
 	return
@@ -396,14 +483,6 @@ func (this *RedisCluster) RenameNx(oldKey, newKey string) (isOk bool, err error)
 	oldKey = this.getKey(oldKey)
 	newKey = this.getKey(newKey)
 
-	// resp := this.Cmd("RENAMENX", oldKey, newKey)
-	// if resp.Err != nil {
-	// 	return isOk, resp.Err
-	// }
-	//
-	// i, err := resp.Int()
-	//
-	// return i == 1, err
 	resp := this.Cmd("GET", oldKey)
 	if resp.Err != nil {
 		return isOk, resp.Err
@@ -427,7 +506,6 @@ func (this *RedisCluster) RenameNx(oldKey, newKey string) (isOk bool, err error)
 		return isOk, nil
 	}
 
-	//OK
 	return true, nil
 }
 
@@ -444,7 +522,6 @@ func (this *RedisCluster) Expire(key string, expiration int32) (isOk bool, err e
 	if resp.Err != nil {
 		return isOk, resp.Err
 	}
-
 	i, err := resp.Int()
 
 	return i == 1, err
