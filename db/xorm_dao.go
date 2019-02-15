@@ -89,22 +89,17 @@ func (d *XormDao) UpdateByWhere(t interface{}, params Cond,
 		return 0, errors.New("where paramters error")
 	}
 
-	var (
-		str  []string
-		args []interface{}
-	)
-	for k, v := range where {
-		str = append(str, fmt.Sprintf("`%s` = ?", k))
-		args = append(args, v)
-	}
-
 	sess := d.sess
 	if sess == nil {
 		sess = d.engine.NewSession()
 		defer sess.Close()
 	}
+	sess, err = d.buildCond(sess, where, false, false)
+	if err != nil {
+		return
+	}
 
-	affected, err = sess.Table(t).Where(strings.Join(str, " AND "), args...).Update(params)
+	affected, err = sess.Table(t).Update(params)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
 		logger.Error(err, lastSQL, lastSQLArgs)
