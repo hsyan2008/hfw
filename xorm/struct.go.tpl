@@ -180,8 +180,8 @@ func (m *{{Mapper .Name}}) QueryInterface(args ...interface{}) ([]map[string]int
 func New{{Mapper .Name}}(c ...interface{}) (m *{{Mapper .Name}}, err error) {
 	m = &{{Mapper .Name}}{}
 	var dbConfig configs.DbConfig
-	if len(c) > 1 {
-		return nil, errors.New("too many configs")
+	if len(c) == 0 {
+        dbConfig = hfw.Config.Db
 	} else if len(c) == 1 {
 		switch c[0].(type) {
 		case configs.DbConfig:
@@ -195,7 +195,9 @@ func New{{Mapper .Name}}(c ...interface{}) (m *{{Mapper .Name}}, err error) {
         default:
             return nil, errors.New("error configs")
 		}
-	}
+	} else {
+		return nil, errors.New("too many configs")
+    }
 
 	m.Dao, err = db.NewXormDao(hfw.Config, dbConfig)
 	if err != nil {
