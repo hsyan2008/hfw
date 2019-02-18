@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"sync"
 
 	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw2/encoding"
@@ -21,14 +20,6 @@ var (
 	routeMapMethod   = make(map[string]instance)
 	routeMapRegister = make(map[string]string)
 	routeInit        bool
-
-	concurrenceChan chan bool
-
-	httpCtxPool = &sync.Pool{
-		New: func() interface{} {
-			return new(HTTPContext)
-		},
-	}
 )
 
 //controller如果有下划线，可以直接在注册的时候指定

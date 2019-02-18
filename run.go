@@ -146,10 +146,6 @@ func Run() (err error) {
 	//启动http
 	signalContext.IsHTTP = true
 
-	if Config.Server.Concurrence > 0 {
-		concurrenceChan = make(chan bool, Config.Server.Concurrence)
-	}
-
 	err = serve.Start(Config)
 
 	//如果未启动服务，就触发退出

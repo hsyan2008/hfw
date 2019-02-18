@@ -11,6 +11,8 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	logger "github.com/hsyan2008/go-logger"
@@ -18,8 +20,18 @@ import (
 	"github.com/hsyan2008/hfw2/grpc/server"
 )
 
+var httpCtxPool = &sync.Pool{
+	New: func() interface{} {
+		return new(HTTPContext)
+	},
+}
+
 //Router 写测试用例会调用
 func Router(w http.ResponseWriter, r *http.Request) {
+
+	signalContext.WgAdd()
+	defer signalContext.WgDone()
+
 	if logger.Level() == logger.DEBUG {
 		logger.Debugf("From: %s, Host: %s, Method: %s, Uri: %s %s", r.RemoteAddr, r.Host, r.Method, r.URL.String(), "start")
 		startTime := time.Now()
@@ -29,8 +41,17 @@ func Router(w http.ResponseWriter, r *http.Request) {
 		}()
 	}
 
-	signalContext.WgAdd()
-	defer signalContext.WgDone()
+	onlineNum := atomic.AddUint32(&online, 1)
+	logger.Info("online", onlineNum)
+	defer func() {
+		logger.Info("offline", atomic.AddUint32(&online, ^uint32(0)))
+	}()
+	err := checkConcurrence(onlineNum)
+	if err != nil {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		logger.Warn(err)
+		return
+	}
 
 	if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") && server.GetGrpcServer() != nil {
 		server.GetGrpcServer().ServeHTTP(w, r) // gRPC Server
@@ -56,19 +77,7 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	//如果用户关闭连接
 	go closeNotify(httpCtx)
 
-	if !common.IsGoTest() && Config.Server.Concurrence > 0 {
-		err := holdConcurrenceChan(httpCtx)
-		if err != nil {
-			logger.Warn(err)
-			return
-		}
-		defer func() {
-			<-concurrenceChan
-		}()
-	}
-
 	instance, action := findInstance(httpCtx)
-
 	reflectVal := instance.reflectVal
 
 	//注意方法必须是大写开头，否则无法调用
@@ -119,28 +128,17 @@ func closeNotify(httpCtx *HTTPContext) {
 	}
 }
 
-func holdConcurrenceChan(httpCtx *HTTPContext) (err error) {
-	select {
-	//用户关闭连接
-	case <-httpCtx.Ctx.Done():
-		return httpCtx.Ctx.Err()
-	//服务关闭
-	case <-signalContext.Ctx.Done():
-		return errors.New("server shutdown")
-	case <-time.After(3 * time.Second):
-		hj, ok := httpCtx.ResponseWriter.(http.Hijacker)
-		if !ok {
-			return errors.New("Hijacker err")
-		}
-		conn, _, err := hj.Hijack()
-		if err != nil {
-			return err
-		}
-		_ = conn.Close()
-		return errors.New("timeout")
-	case concurrenceChan <- true:
-		return
+var online uint32
+
+func checkConcurrence(onlineNum uint32) (err error) {
+	if common.IsGoTest() || Config.Server.Concurrence <= 0 {
+		return nil
 	}
+
+	if onlineNum > uint32(Config.Server.Concurrence) {
+		return errors.New("checkConcurrence: too many concurrence")
+	}
+	return nil
 }
 
 //Handler 暂时只支持2段
