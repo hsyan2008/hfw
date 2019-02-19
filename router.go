@@ -78,6 +78,7 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	go closeNotify(httpCtx)
 
 	instance, action := findInstance(httpCtx)
+	logger.Debugf("Query Path: %s -> Call: %s/%s", r.URL.String(), instance.controllerName, action)
 	reflectVal := instance.reflectVal
 
 	//注意方法必须是大写开头，否则无法调用
@@ -89,7 +90,6 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	reflectVal.MethodByName("Before").Call(initValue)
 	defer reflectVal.MethodByName("After").Call(initValue)
 
-	logger.Debugf("Query Path: %s -> Call: %s/%s", r.URL.String(), instance.controllerName, action)
 	reflectVal.MethodByName(action).Call(initValue)
 
 }

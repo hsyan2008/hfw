@@ -78,8 +78,8 @@ func getRequestMethod(funcName string) (actions []string, method string, isMetho
 //修改httpCtx.Path后重新寻找执行action
 func DispatchRoute(httpCtx *HTTPContext) {
 	instance, action := findInstance(httpCtx)
-	reflectVal := instance.reflectVal
 	logger.Debugf("Dispatch C:%s M:%s -> Call: %s/%s", httpCtx.Controller, httpCtx.Action, instance.controllerName, action)
+	reflectVal := instance.reflectVal
 	//初始化httpCtx
 	initValue := []reflect.Value{
 		reflect.ValueOf(httpCtx),
