@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"runtime"
 
 	logger "github.com/hsyan2008/go-logger"
 	"google.golang.org/grpc"
@@ -14,8 +15,10 @@ func unaryFilter(
 	logger.Debug("filter: ", info)
 
 	defer func() {
-		if r := recover(); r != nil {
-			logger.Errorf("panic: %v", r)
+		if err := recover(); err != nil {
+			buf := make([]byte, 1<<20)
+			num := runtime.Stack(buf, false)
+			logger.Fatal(err, num, string(buf))
 		}
 	}()
 
@@ -29,8 +32,10 @@ func streamFilter(
 	logger.Debug("filter: ", info)
 
 	defer func() {
-		if r := recover(); r != nil {
-			logger.Errorf("panic: %v", r)
+		if err := recover(); err != nil {
+			buf := make([]byte, 1<<20)
+			num := runtime.Stack(buf, false)
+			logger.Fatal(err, num, string(buf))
 		}
 	}()
 
