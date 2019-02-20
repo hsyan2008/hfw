@@ -82,12 +82,15 @@ var templatesCache = struct {
 
 //Render ..
 func (httpCtx *HTTPContext) Render() {
-	httpCtx.ResponseWriter.Header().Set("Content-Type", "text/html; charset=utf-8")
 	var (
 		t   *template.Template
 		err error
 	)
 	t = httpCtx.render()
+
+	if len(httpCtx.ResponseWriter.Header().Get("Content-Type")) == 0 {
+		httpCtx.ResponseWriter.Header().Set("Content-Type", "text/html; charset=utf-8")
+	}
 
 	if !httpCtx.IsError && httpCtx.IsZip {
 		httpCtx.ResponseWriter.Header().Del("Content-Length")
