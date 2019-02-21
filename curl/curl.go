@@ -342,13 +342,11 @@ func (curls *Curl) curlResponse(resp *http.Response) (response *Response, err er
 			resp.Body.Close()
 		}
 	}()
+	response = new(Response)
 	response.ctx = curls.ctx
 	response.cancel = curls.cancel
 	response.Headers = curls.rcHeader(resp.Header)
-	location, err := resp.Location()
-	if err != nil {
-		return response, err
-	}
+	location, _ := resp.Location()
 	if nil != location {
 		locationUrl := location.String()
 		response.Headers["Location"] = locationUrl
