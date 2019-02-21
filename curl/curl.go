@@ -219,7 +219,7 @@ func (curls *Curl) CreateRequest() (httpRequest *http.Request, err error) {
 		}
 	}
 	if err != nil {
-		return nil, fmt.Errorf("CreateRequest failed: %#v", err)
+		return nil, fmt.Errorf("CreateRequest failed: %s %#v", err.Error(), err)
 	}
 
 	if curls.Headers != nil {
