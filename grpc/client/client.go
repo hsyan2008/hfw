@@ -35,23 +35,21 @@ func NewClientConn(ctx context.Context, address string, opt ...grpc.DialOption) 
 }
 
 func NewSecurityClientConn(ctx context.Context, address, certFile, serverName string, opt ...grpc.DialOption) (*grpc.ClientConn, error) {
-	if len(address) == 0 || len(serverName) == 0 {
-		return nil, errors.New("nil address or serverName")
+	if len(address) == 0 || len(serverName) == 0 || !common.IsExist(certFile) {
+		return nil, errors.New("nil address or serverName or certFile not exist")
 	}
 
-	if common.IsExist(certFile) {
-		t := &ClientCreds{
-			CertFile:   certFile,
-			ServerName: serverName,
-		}
-
-		creds, err := t.GetCredentials()
-		if err != nil {
-			return nil, err
-		}
-
-		opt = append(opt, grpc.WithTransportCredentials(creds))
+	t := &ClientCreds{
+		CertFile:   certFile,
+		ServerName: serverName,
 	}
+
+	creds, err := t.GetCredentials()
+	if err != nil {
+		return nil, err
+	}
+
+	opt = append(opt, grpc.WithTransportCredentials(creds))
 
 	return grpc.DialContext(ctx, address, opt...)
 }
