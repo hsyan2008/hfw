@@ -1,7 +1,12 @@
-//只支持https+grpc的共享端口版，不需要ca证书
+//支持https+grpc的共享端口版，不需要ca证书
+//获取http+grpc,两个服务必须独立端口
 //Usage:
 //s, err := server.InitGrpcServer(hfw.Config.Server)
 //RegisterHelloServiceServer(s, &HelloServiceImpl{auth: &X{Value: "ab", Key:"x"}})
+//注意X的实现里，要求RequireTransportSecurity=true
+//如果是http，需要另外执行
+//go StartGrpcServer(s, ":1234")
+//注意X的实现里，要求RequireTransportSecurity=false
 package server
 
 import (
@@ -9,6 +14,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"io/ioutil"
+	"net"
 
 	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw2/common"
@@ -25,11 +31,11 @@ type ServerCreds struct {
 
 var grpcServer *grpc.Server
 
-func GetGrpcServer() *grpc.Server {
+func GetServer() *grpc.Server {
 	return grpcServer
 }
 
-func InitGrpcServer(serverConfig configs.ServerConfig, opt ...grpc.ServerOption) (*grpc.Server, error) {
+func NewServer(serverConfig configs.ServerConfig, opt ...grpc.ServerOption) (*grpc.Server, error) {
 	if common.IsExist(serverConfig.HTTPSCertFile) && common.IsExist(serverConfig.HTTPSKeyFile) {
 		logger.Debug("init grpc server with certFile and keyFile")
 		t := &ServerCreds{
@@ -52,6 +58,15 @@ func InitGrpcServer(serverConfig configs.ServerConfig, opt ...grpc.ServerOption)
 	)
 
 	return grpcServer, nil
+}
+
+func StartServer(s *grpc.Server, addr string) error {
+	lis, err := net.Listen("tcp", addr)
+	if err != nil {
+		logger.Fatal("grpc StartServer:", err)
+		return err
+	}
+	return s.Serve(lis)
 }
 
 func (t *ServerCreds) GetCredentials() (credentials.TransportCredentials, error) {

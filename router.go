@@ -53,8 +53,12 @@ func Router(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") && server.GetGrpcServer() != nil {
-		server.GetGrpcServer().ServeHTTP(w, r) // gRPC Server
+	if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") {
+		if server.GetServer() == nil {
+			http.Error(w, "grpc server has not init", http.StatusInternalServerError)
+			return
+		}
+		server.GetServer().ServeHTTP(w, r) // gRPC Server
 		return
 	}
 
