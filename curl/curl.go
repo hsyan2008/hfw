@@ -218,6 +218,9 @@ func (curls *Curl) CreateRequest() (httpRequest *http.Request, err error) {
 			httpRequest, err = http.NewRequest(curls.Method, curls.Url, nil)
 		}
 	}
+	if err != nil {
+		return nil, fmt.Errorf("CreateRequest failed: %#v", err)
+	}
 
 	if curls.Headers != nil {
 		for key, value := range curls.Headers {
