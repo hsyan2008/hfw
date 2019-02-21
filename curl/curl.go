@@ -30,6 +30,9 @@ type Response struct {
 	FollowUrls []string          `json:"follow_urls"`
 	Body       []byte            `json:"body"`
 	BodyReader io.ReadCloser     `json:"-"`
+
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 func (resp *Response) ReadBody() (body []byte, err error) {
@@ -39,6 +42,15 @@ func (resp *Response) ReadBody() (body []byte, err error) {
 	}
 
 	return bytes.TrimSpace(body), nil
+}
+
+func (resp *Response) Close() {
+	if resp.BodyReader != nil {
+		resp.BodyReader.Close()
+	}
+	if resp.cancel != nil {
+		resp.cancel()
+	}
 }
 
 var stopRedirect = errors.New("no redirects allowed")
@@ -131,17 +143,26 @@ func (curls *Curl) SetHeaders(headers map[string]string) {
 		curls.SetHeader(k, v)
 	}
 }
+
+func (curls *Curl) SetContext(ctx context.Context) {
+	if curls.ctx == nil {
+		curls.ctx, curls.cancel = context.WithCancel(ctx)
+	}
+}
+
 func (curls *Curl) SetHeader(key, val string) {
 	curls.Headers[key] = val
 }
 
 //秒
 func (curls *Curl) SetTimeout(t int) {
+	curls.SetContext(context.Background())
 	curls.timeout = time.Duration(t) * time.Second
 }
 
 //毫秒
 func (curls *Curl) SetTimeoutMS(t int) {
+	curls.SetContext(context.Background())
 	curls.timeout = time.Duration(t) * time.Millisecond
 }
 
@@ -154,12 +175,10 @@ func (curls *Curl) SetOption(key string, val bool) {
 	curls.Options[key] = val
 }
 
-func (curls *Curl) Request(ctxs ...context.Context) (rs Response, err error) {
-	var ctx context.Context
-	if len(ctxs) == 0 || ctxs[0] == nil {
-		ctx = context.Background()
-	} else {
-		ctx = ctxs[0]
+//Request 参数不需要传，请使用SetContext
+func (curls *Curl) Request(ctxs ...context.Context) (rs *Response, err error) {
+	if len(ctxs) > 0 && ctxs[0] != nil {
+		curls.SetContext(ctxs[0])
 	}
 
 	if curls.timeout <= 0 {
@@ -175,7 +194,6 @@ func (curls *Curl) Request(ctxs ...context.Context) (rs Response, err error) {
 	}
 
 	//使用WithTimeout会导致io读取中断
-	curls.ctx, curls.cancel = context.WithCancel(ctx)
 	httpRequest = httpRequest.WithContext(curls.ctx)
 
 	c := make(chan bool, 1)
@@ -191,9 +209,9 @@ func (curls *Curl) Request(ctxs ...context.Context) (rs Response, err error) {
 		err = errors.New("do request time out")
 	case <-curls.ctx.Done():
 		<-c
-		err = ctx.Err()
+		err = curls.ctx.Err()
 	case <-c:
-		defer curls.cancel()
+		// defer curls.cancel()
 	}
 
 	if nil != err {
@@ -318,14 +336,19 @@ func (curls *Curl) createPostRequest() (httpRequest *http.Request, err error) {
 }
 
 //处理获取的页面
-func (curls *Curl) curlResponse(resp *http.Response) (response Response, err error) {
+func (curls *Curl) curlResponse(resp *http.Response) (response *Response, err error) {
 	defer func() {
 		if err != nil {
 			resp.Body.Close()
 		}
 	}()
+	response.ctx = curls.ctx
+	response.cancel = curls.cancel
 	response.Headers = curls.rcHeader(resp.Header)
-	location, _ := resp.Location()
+	location, err := resp.Location()
+	if err != nil {
+		return response, err
+	}
 	if nil != location {
 		locationUrl := location.String()
 		response.Headers["Location"] = locationUrl
@@ -346,7 +369,8 @@ func (curls *Curl) curlResponse(resp *http.Response) (response Response, err err
 				curls.Cookie = curls.afterCookie(resp)
 				resp.Body.Close()
 
-				return curls.Request(curls.ctx)
+				response, err = curls.Request()
+				return
 			} else {
 				err = errors.New("too much redirect")
 				return
@@ -364,11 +388,15 @@ func (curls *Curl) curlResponse(resp *http.Response) (response Response, err err
 	//目前只有200才需要读取body
 	if resp.StatusCode == http.StatusOK {
 		response.BodyReader, err = curls.getReader(resp)
-		if err == nil && !curls.isStream {
+		if err != nil {
+			return response, err
+		}
+		if !curls.isStream {
 			response.Body, err = response.ReadBody()
-			if err == nil {
-				resp.Body.Close()
+			if err != nil {
+				return response, err
 			}
+			resp.Body.Close()
 		}
 	}
 
