@@ -204,13 +204,13 @@ func (curls *Curl) Request(ctxs ...context.Context) (rs *Response, err error) {
 
 	select {
 	case <-time.After(curls.timeout):
-		curls.cancel()
 		<-c
 		err = errors.New("do request time out")
 	case <-curls.ctx.Done():
 		<-c
 		err = curls.ctx.Err()
 	case <-c:
+		//会影响读取body
 		// defer curls.cancel()
 	}
 
@@ -218,7 +218,8 @@ func (curls *Curl) Request(ctxs ...context.Context) (rs *Response, err error) {
 		//不是重定向里抛出的错误
 		urlError, ok := err.(*neturl.Error)
 		if !ok || urlError.Err != stopRedirect {
-			return rs, err
+			curls.cancel()
+			return nil, err
 		}
 	}
 
