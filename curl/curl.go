@@ -196,10 +196,10 @@ func (curls *Curl) Request(ctxs ...context.Context) (rs *Response, err error) {
 	//使用WithTimeout会导致io读取中断
 	httpRequest = httpRequest.WithContext(curls.ctx)
 
-	c := make(chan bool, 1)
+	c := make(chan struct{}, 1)
 	go func() {
 		httpResponse, err = httpClient.Do(httpRequest)
-		c <- true
+		c <- struct{}{}
 	}()
 
 	select {
