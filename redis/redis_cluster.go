@@ -75,9 +75,7 @@ func (this *RedisCluster) Set(key string, value interface{}, args ...interface{}
 	}
 	var resp *redis.Resp
 	if len(args) > 0 {
-		tmp := []interface{}{key, v}
-		tmp = append(tmp, args...)
-		resp = this.Cmd("SET", tmp...)
+		resp = this.Cmd("SET", append([]interface{}{key, v}, args...)...)
 	} else {
 		resp = this.Cmd("SET", key, v)
 	}
