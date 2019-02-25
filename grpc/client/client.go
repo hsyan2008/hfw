@@ -11,6 +11,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"io/ioutil"
+	"path/filepath"
 
 	"github.com/hsyan2008/hfw2/common"
 	"google.golang.org/grpc"
@@ -35,6 +36,9 @@ func NewClientConn(ctx context.Context, address string, opt ...grpc.DialOption) 
 }
 
 func NewSecurityClientConn(ctx context.Context, address, certFile, serverName string, opt ...grpc.DialOption) (*grpc.ClientConn, error) {
+	if !common.IsExist(certFile) {
+		certFile = filepath.Join(common.GetAppPath(), certFile)
+	}
 	if len(address) == 0 || len(serverName) == 0 || !common.IsExist(certFile) {
 		return nil, errors.New("nil address or serverName or certFile not exist")
 	}
