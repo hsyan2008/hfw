@@ -361,9 +361,7 @@ func (d *XormDao) Replace(sql string, cond Cond) (id int64, err error) {
 
 //调用方必须确保执行Exec后，再执行ClearCache
 func (d *XormDao) Exec(sqlStr string, args ...interface{}) (rs sql.Result, err error) {
-	tmp := make([]interface{}, 0)
-	tmp = append(tmp, sqlStr)
-	tmp = append(tmp, args...)
+	tmp := append([]interface{}{sqlStr}, args...)
 
 	sess := d.sess
 	if sess == nil {
