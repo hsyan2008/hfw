@@ -44,6 +44,7 @@ type HTTPContext struct {
 	//如果是下载文件，不执行After和Finish
 	IsCloseRender bool `json:"-"`
 
+	//返回的json是否包含Header
 	HasHeader       bool `json:"-"`
 	common.Response `json:"response"`
 	Header          interface{} `json:"header"`
