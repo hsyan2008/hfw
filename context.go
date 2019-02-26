@@ -108,18 +108,20 @@ func (httpCtx *HTTPContext) ThrowCheck(errNo int64, i interface{}) {
 		if errNo == 0 {
 			return
 		}
+		logger.Output(3, "WARN", fmt.Sprintf("[ThrowCheck] %s", e.Error()))
 	} else if e, ok := i.(error); ok {
 		if e == nil {
 			return
 		}
 		errMsg = e.Error()
+		logger.Output(3, "WARN", fmt.Sprintf("[ThrowCheck] No:%d Msg:%s", errNo, errMsg))
 	} else if s, ok := i.(string); ok {
 		errMsg = s
+		logger.Output(3, "WARN", fmt.Sprintf("[ThrowCheck] No:%d Msg:%s", errNo, errMsg))
 	} else {
 		panic("err params")
 	}
 
-	logger.Output(3, "WARN", errNo, errMsg)
 	httpCtx.ErrNo = errNo
 	httpCtx.ErrMsg = GetErrorMap(errNo)
 	if len(httpCtx.ErrMsg) == 0 {

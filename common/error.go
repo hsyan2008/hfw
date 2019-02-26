@@ -1,43 +1,51 @@
 package common
 
-import "fmt"
+import (
+	"fmt"
+	"runtime"
+	"strings"
+)
 
 type RespErr struct {
+	file   string
+	line   int
 	errNo  int64
 	errMsg string
 }
 
-func (repErr *RespErr) ErrNo() int64 {
-	if repErr == nil {
+func (respErr *RespErr) ErrNo() int64 {
+	if respErr == nil {
 		return 0
 	}
-	return repErr.errNo
+	return respErr.errNo
 }
 
-func (repErr *RespErr) ErrMsg() string {
-	if repErr == nil {
+func (respErr *RespErr) ErrMsg() string {
+	if respErr == nil {
 		return ""
 	}
-	return repErr.errMsg
+	return respErr.errMsg
 }
 
-func (repErr *RespErr) Error() string {
-	if repErr == nil {
+func (respErr *RespErr) Error() string {
+	return respErr.String()
+}
+
+func (respErr *RespErr) String() string {
+	if respErr == nil {
 		return ""
 	}
-	return repErr.errMsg
+	return fmt.Sprintf("[RespErr] File:%s Line:%d No:%d Msg:%s",
+		respErr.file, respErr.line, respErr.errNo, respErr.errMsg)
 }
 
-func (repErr *RespErr) String() string {
-	if repErr == nil {
-		return ""
-	}
-	return fmt.Sprintf("ErrNo:%d ErrMsg:%s", repErr.errNo, repErr.errMsg)
-}
-
-func NewRespErr(ErrNo int64, ErrMsg string) *RespErr {
-	return &RespErr{
+func NewRespErr(ErrNo int64, ErrMsg string) (respErr *RespErr) {
+	respErr = &RespErr{
 		errNo:  ErrNo,
 		errMsg: ErrMsg,
 	}
+	_, respErr.file, respErr.line, _ = runtime.Caller(1)
+	respErr.file = strings.Replace(respErr.file, GetAppPath(), "", -1)
+
+	return
 }
