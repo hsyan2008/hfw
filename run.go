@@ -46,7 +46,7 @@ func parseFlag() {
 
 	VERSION = os.Getenv("VERSION")
 	if len(VERSION) == 0 {
-		flag.StringVar(&VERSION, "v", "0.1", "set version")
+		flag.StringVar(&VERSION, "v", "v0.1", "set version")
 	}
 
 	flag.Parse()
@@ -87,7 +87,7 @@ func initLog() {
 	}
 
 	// logger.SetPrefix(fmt.Sprintf("Pid:%d", PID))
-	logger.SetPrefix(HOSTNAME + "/" + VERSION)
+	logger.SetPrefix(filepath.Join(ENVIRONMENT, HOSTNAME, VERSION))
 }
 
 func loadConfig() {
