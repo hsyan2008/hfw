@@ -39,10 +39,10 @@ func (respErr *RespErr) String() string {
 		respErr.file, respErr.line, respErr.errNo, respErr.errMsg)
 }
 
-func NewRespErr(ErrNo int64, ErrMsg string) (respErr *RespErr) {
+func NewRespErr(errNo int64, i interface{}) (respErr *RespErr) {
 	respErr = &RespErr{
-		errNo:  ErrNo,
-		errMsg: ErrMsg,
+		errNo:  errNo,
+		errMsg: fmt.Sprintf("%v", i),
 	}
 	_, respErr.file, respErr.line, _ = runtime.Caller(1)
 	respErr.file = strings.Replace(respErr.file, GetAppPath(), "", -1)
