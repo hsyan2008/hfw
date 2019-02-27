@@ -1,7 +1,6 @@
 module github.com/hsyan2008/hfw2
 
 require (
-	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/axgle/mahonia v0.0.0-20180208002826-3358181d7394
 	github.com/fsnotify/fsnotify v1.4.7 // indirect
 	github.com/google/gops v0.3.6 // indirect
@@ -15,5 +14,5 @@ require (
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/robfig/cron v0.0.0-20180505203441-b41be1df6967 // indirect
 	github.com/shirou/gopsutil v2.18.12+incompatible // indirect
-	google.golang.org/grpc v1.18.0
+	google.golang.org/grpc v1.19.0
 )
