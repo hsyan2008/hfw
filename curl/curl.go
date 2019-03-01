@@ -140,7 +140,7 @@ func (curls *Curl) SetHeaders(headers map[string]string) {
 	curls.Headers["Expect"] = ""
 
 	for k, v := range headers {
-		curls.SetHeader(k, v)
+		curls.SetHeader(http.CanonicalHeaderKey(k), v)
 	}
 }
 
