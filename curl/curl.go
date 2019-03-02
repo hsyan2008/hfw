@@ -68,8 +68,9 @@ type Curl struct {
 	//string格式
 	PostString string
 	//key=>value格式
-	PostFields neturl.Values
-	//文件
+	PostFields       neturl.Values
+	PostFieldReaders map[string]io.Reader
+	//文件，key是字段名，val是文件路径
 	PostFiles neturl.Values
 	//流
 	PostReader io.Reader
@@ -105,12 +106,13 @@ var httpClient = &http.Client{
 
 func NewCurl(url string) *Curl {
 	return &Curl{
-		Headers:    make(map[string]string),
-		Options:    make(map[string]bool),
-		followUrls: make([]string, 0),
-		Url:        url,
-		PostFields: neturl.Values{},
-		PostFiles:  neturl.Values{},
+		Headers:          make(map[string]string),
+		Options:          make(map[string]bool),
+		followUrls:       make([]string, 0),
+		Url:              url,
+		PostFields:       neturl.Values{},
+		PostFieldReaders: make(map[string]io.Reader),
+		PostFiles:        neturl.Values{},
 	}
 }
 
@@ -228,7 +230,7 @@ func (curls *Curl) Request(ctxs ...context.Context) (rs *Response, err error) {
 
 func (curls *Curl) CreateRequest() (httpRequest *http.Request, err error) {
 	if curls.PostReader != nil || len(curls.PostBytes) > 0 ||
-		"" != curls.PostString || len(curls.PostFields) > 0 || len(curls.PostFiles) > 0 {
+		"" != curls.PostString || len(curls.PostFields) > 0 || len(curls.PostFieldReaders) > 0 || len(curls.PostFiles) > 0 {
 		httpRequest, err = curls.createPostRequest()
 	} else {
 		if len(curls.Method) == 0 {
@@ -272,13 +274,20 @@ func (curls *Curl) createPostRequest() (httpRequest *http.Request, err error) {
 	} else if len(curls.PostString) > 0 {
 		b := strings.NewReader(curls.PostString)
 		httpRequest, err = http.NewRequest(curls.Method, curls.Url, b)
-	} else if len(curls.PostFields) > 0 || len(curls.PostFiles) > 0 {
+	} else if len(curls.PostFields) > 0 || len(curls.PostFieldReaders) > 0 || len(curls.PostFiles) > 0 {
 		var b = &bytes.Buffer{}
 		bodyWriter := multipart.NewWriter(b)
 
 		for key, val := range curls.PostFields {
 			for _, v := range val {
 				_ = bodyWriter.WriteField(key, v)
+			}
+		}
+		for key, val := range curls.PostFieldReaders {
+			fileWriter, err := bodyWriter.CreateFormField(key)
+			_, err = io.Copy(fileWriter, val)
+			if err != nil {
+				return nil, err
 			}
 		}
 
@@ -297,9 +306,9 @@ func (curls *Curl) createPostRequest() (httpRequest *http.Request, err error) {
 				if err != nil {
 					return nil, err
 				}
-				defer fh.Close()
 
 				_, err = io.Copy(fileWriter, fh)
+				fh.Close()
 				if err != nil {
 					return nil, err
 				}
@@ -363,6 +372,7 @@ func (curls *Curl) curlResponse(resp *http.Response) (response *Response, err er
 				curls.PostBytes = nil
 				curls.PostString = ""
 				curls.PostFields = nil
+				curls.PostFieldReaders = nil
 				curls.PostFiles = nil
 				curls.PostReader = nil
 				curls.Cookie = curls.afterCookie(resp)
