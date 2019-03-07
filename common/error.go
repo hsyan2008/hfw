@@ -3,7 +3,6 @@ package common
 import (
 	"fmt"
 	"runtime"
-	"strings"
 )
 
 type RespErr struct {
@@ -49,7 +48,7 @@ func NewRespErr(errNo int64, i interface{}) (respErr *RespErr) {
 		errMsg: fmt.Sprintf("%v", i),
 	}
 	_, respErr.file, respErr.line, _ = runtime.Caller(1)
-	respErr.file = strings.Replace(respErr.file, GetAppPath(), "", -1)
+	// respErr.file = strings.Replace(respErr.file, GetAppPath(), "", -1)
 
 	return
 }

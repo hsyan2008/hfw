@@ -10,6 +10,7 @@ import (
 	logger "github.com/hsyan2008/go-logger"
 	hfw "github.com/hsyan2008/hfw2"
 	"github.com/hsyan2008/hfw2/common"
+	"github.com/hsyan2008/hfw2/signal"
 	"github.com/zserge/webview"
 )
 
@@ -30,10 +31,8 @@ func run() (err error) {
 		return
 	}
 
-	signalContext := hfw.GetSignalContext()
-
 	//等待工作完成
-	defer signalContext.Shutdowned()
+	defer signal.GetSignalContext().Shutdowned()
 
 	if hfw.Config.HotDeploy.Enable {
 		go hfw.HotDeploy(hfw.Config.HotDeploy)

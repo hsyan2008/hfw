@@ -1,9 +1,7 @@
 package hfw
 
 import (
-	"flag"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -15,41 +13,17 @@ import (
 	"github.com/hsyan2008/hfw2/configs"
 	"github.com/hsyan2008/hfw2/redis"
 	"github.com/hsyan2008/hfw2/serve"
+	"github.com/hsyan2008/hfw2/signal"
 )
 
-//VERSION 版本
-var VERSION string
-
-//APPPATH 项目路径
-var APPPATH = common.GetAppPath()
-
-//APPNAME 项目名称
-var APPNAME = common.GetAppName()
-
-var HOSTNAME, _ = os.Hostname()
-
-var PID = os.Getpid()
-
-var Config configs.AllConfig
+var (
+	Config configs.AllConfig
+)
 
 func init() {
 	parseFlag()
 	loadConfig()
 	initLog()
-}
-
-func parseFlag() {
-	ENVIRONMENT = os.Getenv("ENVIRONMENT")
-	if len(ENVIRONMENT) == 0 {
-		flag.StringVar(&ENVIRONMENT, "e", "", "set env, e.g dev test prod")
-	}
-
-	VERSION = os.Getenv("VERSION")
-	if len(VERSION) == 0 {
-		flag.StringVar(&VERSION, "v", "v0.1", "set version")
-	}
-
-	flag.Parse()
 }
 
 //setLog 初始化log写入文件
@@ -70,9 +44,9 @@ func initLog() {
 	} else {
 		logger.SetLevelStr("debug")
 		if common.IsExist("/opt/log") {
-			logger.SetRollingDaily(filepath.Join("/opt/log", APPNAME+".log"))
+			logger.SetRollingDaily(filepath.Join("/opt/log", GetAppName()+".log"))
 		} else {
-			logger.SetRollingDaily(filepath.Join(APPPATH, APPNAME+".log"))
+			logger.SetRollingDaily(filepath.Join(APPPATH, GetAppName()+".log"))
 		}
 	}
 
@@ -86,8 +60,8 @@ func initLog() {
 		logger.SetConsole(true)
 	}
 
-	// logger.SetPrefix(fmt.Sprintf("Pid:%d", PID))
-	logger.SetPrefix(filepath.Join(ENVIRONMENT, HOSTNAME, VERSION))
+	// logger.SetPrefix(fmt.Sprintf("Pid:%d", GetPid()))
+	logger.SetPrefix(filepath.Join(GetEnv(), GetHostName(), GetVersion()))
 }
 
 func loadConfig() {
@@ -121,15 +95,18 @@ func Run() (err error) {
 	logger.Info("Starting ...")
 	defer logger.Info("Shutdowned!")
 
-	logger.Infof("Running, VERSION=%s, ENVIRONMENT=%s, APPNAME=%s, APPPATH=%s", VERSION, ENVIRONMENT, APPNAME, APPPATH)
+	logger.Infof("Running, VERSION=%s, ENVIRONMENT=%s, APPNAME=%s, APPPATH=%s",
+		GetVersion(), GetEnv(), GetAppName(), GetAppPath())
 
 	if err = agent.Listen(agent.Options{}); err != nil {
 		logger.Fatal(err)
 		return
 	}
 
+	signalContext := signal.GetSignalContext()
+
 	//监听信号
-	go signalContext.listenSignal()
+	go signalContext.Listen()
 
 	//等待工作完成
 	defer signalContext.Shutdowned()

@@ -3,7 +3,7 @@
 //kill -TERM pid 重启
 //需要调用Wg.Add()
 //需要监听Shutdown通道
-package hfw
+package signal
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 	logger "github.com/hsyan2008/go-logger"
 )
 
-type SignalContext struct {
+type signalContext struct {
 	IsHTTP bool `json:"-"`
 	//Wg 业务方调用此变量注册工作
 	Wg *sync.WaitGroup `json:"-"`
@@ -31,29 +31,29 @@ type SignalContext struct {
 	Cancel context.CancelFunc `json:"-"`
 }
 
-var signalContext *SignalContext
+var scx *signalContext
 
 func init() {
-	signalContext = &SignalContext{
+	scx = &signalContext{
 		Wg:   new(sync.WaitGroup),
 		done: make(chan bool),
 		mu:   new(sync.Mutex),
 	}
-	signalContext.Ctx, signalContext.Cancel = context.WithCancel(context.Background())
+	scx.Ctx, scx.Cancel = context.WithCancel(context.Background())
 }
 
 //GetSignalContext 一般用于其他包或者非http程序
-func GetSignalContext() *SignalContext {
-	return signalContext
+func GetSignalContext() *signalContext {
+	return scx
 }
 
 //gracehttp外，增加两个信号支持
-func (ctx *SignalContext) listenSignal() {
+func (ctx *signalContext) Listen() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT)
 
-	logger.Infof("Exec `kill -INT %d` will graceful exit", PID)
-	logger.Infof("Exec `kill -TERM %d` will graceful restart", PID)
+	logger.Infof("Exec `kill -INT %d` will graceful exit", os.Getpid())
+	logger.Infof("Exec `kill -TERM %d` will graceful restart", os.Getpid())
 
 	s := <-c
 	logger.Info("recv signal:", s)
@@ -77,7 +77,7 @@ func (ctx *SignalContext) listenSignal() {
 	}
 }
 
-func (ctx *SignalContext) doShutdownDone() {
+func (ctx *signalContext) doShutdownDone() {
 	ctx.mu.Lock()
 	defer ctx.mu.Unlock()
 	if ctx.doing {
@@ -100,7 +100,7 @@ func (ctx *SignalContext) doShutdownDone() {
 }
 
 //通知业务方，并等待业务方结束
-func (ctx *SignalContext) waitDone() {
+func (ctx *signalContext) waitDone() {
 	//context包来取消，以通知业务方
 	logger.Info("signal ctx cancel")
 	ctx.Cancel()
@@ -113,19 +113,19 @@ func (ctx *SignalContext) waitDone() {
 }
 
 //Shutdowned 获取是否已经全部结束，暂时只有run.go里用到
-func (ctx *SignalContext) Shutdowned() {
+func (ctx *signalContext) Shutdowned() {
 	go ctx.doShutdownDone()
 	<-ctx.done
 }
 
-func (ctx *SignalContext) WgAdd() {
+func (ctx *signalContext) WgAdd() {
 	ctx.Wg.Add(1)
 }
 
-func (ctx *SignalContext) WgDone() {
+func (ctx *signalContext) WgDone() {
 	ctx.Wg.Done()
 }
 
-func (ctx *SignalContext) WgWait() {
+func (ctx *signalContext) WgWait() {
 	ctx.Wg.Wait()
 }

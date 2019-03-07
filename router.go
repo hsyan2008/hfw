@@ -18,6 +18,7 @@ import (
 	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw2/common"
 	"github.com/hsyan2008/hfw2/grpc/server"
+	"github.com/hsyan2008/hfw2/signal"
 )
 
 var httpCtxPool = &sync.Pool{
@@ -29,8 +30,8 @@ var httpCtxPool = &sync.Pool{
 //Router 写测试用例会调用
 func Router(w http.ResponseWriter, r *http.Request) {
 
-	signalContext.WgAdd()
-	defer signalContext.WgDone()
+	signal.GetSignalContext().WgAdd()
+	defer signal.GetSignalContext().WgDone()
 
 	if logger.Level() == logger.DEBUG {
 		logger.Debugf("From: %s, Host: %s, Method: %s, Uri: %s %s", r.RemoteAddr, r.Host, r.Method, r.URL.String(), "start")
@@ -71,8 +72,7 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	//初始化httpCtx
 	httpCtx.init(w, r)
 	httpCtx.Controller, httpCtx.Action, _ = formatURL(httpCtx.Request.URL.Path)
-	httpCtx.SignalContext = signalContext
-	httpCtx.Ctx, httpCtx.Cancel = context.WithCancel(signalContext.Ctx)
+	httpCtx.Ctx, httpCtx.Cancel = context.WithCancel(signal.GetSignalContext().Ctx)
 	defer httpCtx.Cancel()
 	initValue := []reflect.Value{
 		reflect.ValueOf(httpCtx),

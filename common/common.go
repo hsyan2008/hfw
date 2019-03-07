@@ -4,91 +4,11 @@ import (
 	"crypto/md5"
 	"fmt"
 	"os"
-	"path/filepath"
 	"runtime"
-	"strings"
 
 	"github.com/axgle/mahonia"
 	"github.com/google/uuid"
 )
-
-var (
-	appPath string
-	appName string
-	//是否go run运行
-	isGoRun bool
-	//是否go test运行
-	isGoTest bool
-)
-
-func IsGoRun() bool {
-	return isGoRun
-}
-
-func IsGoTest() bool {
-	return isGoTest
-}
-
-func GetAppPath() string {
-	if appPath == "" {
-		var err error
-		pwd, _ := filepath.Abs(os.Args[0])
-		if strings.Contains(pwd, "go-build") {
-			pwd = stripSuffix(pwd)
-			if strings.HasSuffix(pwd, ".test") {
-				isGoTest = true
-			} else {
-				isGoRun = true
-			}
-			appPath, err = os.Getwd()
-			if err != nil {
-				panic(err)
-			}
-			minLen := 1
-			if runtime.GOOS == "windows" {
-				minLen = 3
-			}
-			for {
-				if IsExist(filepath.Join(appPath, "config")) ||
-					IsExist(filepath.Join(appPath, "main.go")) ||
-					IsExist(filepath.Join(appPath, "controllers")) {
-					return appPath
-				} else {
-					if len(appPath) <= minLen {
-						return appPath
-					}
-					appPath = filepath.Dir(appPath)
-				}
-			}
-		} else {
-			appPath = filepath.Dir(pwd)
-		}
-	}
-
-	return appPath
-}
-
-func GetAppName() string {
-	if appName == "" {
-		GetAppPath()
-		if IsGoRun() || IsGoTest() {
-			appName = filepath.Base(appPath)
-		} else {
-			pwd, _ := filepath.Abs(os.Args[0])
-			appName = strings.ToLower(filepath.Base(pwd))
-			appName = stripSuffix(appName)
-		}
-	}
-	return appName
-}
-
-func stripSuffix(path string) string {
-	if runtime.GOOS == "windows" {
-		path = strings.TrimSuffix(path, ".exe")
-	}
-
-	return path
-}
 
 //Response ..
 type Response struct {

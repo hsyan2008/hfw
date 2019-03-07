@@ -12,6 +12,7 @@ import (
 	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw2/common"
 	"github.com/hsyan2008/hfw2/configs"
+	"github.com/hsyan2008/hfw2/signal"
 	"github.com/shirou/gopsutil/process"
 )
 
@@ -20,6 +21,8 @@ func HotDeploy(hotDeployConfig configs.HotDeployConfig) {
 	if hotDeployConfig.Dep <= 0 || hotDeployConfig.Dep > 10 {
 		hotDeployConfig.Dep = 5
 	}
+
+	signalContext := signal.GetSignalContext()
 
 	signalContext.WgAdd()
 	defer signalContext.WgDone()

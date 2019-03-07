@@ -4,14 +4,15 @@ go 1.12
 
 require (
 	github.com/BurntSushi/toml v0.3.1
-	github.com/Nerdmaster/terminal v0.12.1 // indirect
+	github.com/Nerdmaster/terminal v0.12.1
 	github.com/axgle/mahonia v0.0.0-20180208002826-3358181d7394
 	github.com/bradfitz/gomemcache v0.0.0-20180710155616-bc664df96737 // indirect
-	github.com/denisenkom/go-mssqldb v0.0.0-20190204142019-df6d76eb9289 // indirect
+	github.com/denisenkom/go-mssqldb v0.0.0-20190204142019-df6d76eb9289
 	github.com/fsnotify/fsnotify v1.4.7
-	github.com/go-xorm/cachestore v0.0.0-20170409031804-adfa3466c8e4 // indirect
-	github.com/go-xorm/core v0.6.2 // indirect
-	github.com/go-xorm/xorm v0.7.1 // indirect
+	github.com/go-sql-driver/mysql v1.4.1
+	github.com/go-xorm/cachestore v0.0.0-20170409031804-adfa3466c8e4
+	github.com/go-xorm/core v0.6.2
+	github.com/go-xorm/xorm v0.7.1
 	github.com/google/gops v0.3.6
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/websocket v1.4.0
@@ -25,7 +26,7 @@ require (
 	github.com/robfig/cron v0.0.0-20180505203441-b41be1df6967
 	github.com/shirou/gopsutil v2.18.12+incompatible
 	github.com/syndtr/goleveldb v1.0.0 // indirect
-	github.com/zserge/webview v0.0.0-20190123072648-16c93bcaeaeb // indirect
+	github.com/zserge/webview v0.0.0-20190123072648-16c93bcaeaeb
 	golang.org/x/crypto v0.0.0-20190228050851-31a38585487a // indirect
 	google.golang.org/grpc v1.19.0
 )

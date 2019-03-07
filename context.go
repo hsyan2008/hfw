@@ -18,9 +18,8 @@ import (
 //Json里的数据放Response
 //Layout的功能未实现 TODO
 type HTTPContext struct {
-	*SignalContext `json:"-"`
-	Ctx            context.Context    `json:"-"`
-	Cancel         context.CancelFunc `json:"-"`
+	Ctx    context.Context    `json:"-"`
+	Cancel context.CancelFunc `json:"-"`
 
 	ResponseWriter http.ResponseWriter `json:"-"`
 	Request        *http.Request       `json:"-"`

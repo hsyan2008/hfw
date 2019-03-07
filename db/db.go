@@ -13,11 +13,11 @@ import (
 	"github.com/go-xorm/cachestore"
 	"github.com/go-xorm/xorm"
 	logger "github.com/hsyan2008/go-logger"
-	hfw "github.com/hsyan2008/hfw2"
 	"github.com/hsyan2008/hfw2/common"
 	"github.com/hsyan2008/hfw2/configs"
 	"github.com/hsyan2008/hfw2/db/cache"
 	"github.com/hsyan2008/hfw2/encoding"
+	"github.com/hsyan2008/hfw2/signal"
 )
 
 var engineMap = new(sync.Map)
@@ -181,7 +181,7 @@ func keepalive(engine xorm.EngineInterface, long time.Duration) {
 		return
 	}
 	t := time.Tick(long * time.Second)
-	ctx := hfw.GetSignalContext()
+	ctx := signal.GetSignalContext()
 FOR:
 	for {
 		select {
