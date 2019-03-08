@@ -6,7 +6,6 @@ var errorMap = map[int64]string{
 }
 
 func SetErrorMap(m map[int64]string) {
-	errorMap = m
 	for k, v := range m {
 		errorMap[k] = v
 	}
