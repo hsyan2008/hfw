@@ -31,6 +31,10 @@ func LoadDefault() (err error) {
 	return LoadFromPac()
 }
 
+func GetAll() map[string]bool {
+	return pac
+}
+
 func Add(key string, val bool) {
 	mt.Lock()
 	defer mt.Unlock()
