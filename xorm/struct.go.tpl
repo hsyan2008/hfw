@@ -39,12 +39,14 @@ type {{Mapper .Name}} struct {
 }
 
 {{range .ColumnsSeq}}{{$col := $table.GetColumn .}}
+{{if eq $col.Name "id" "is_deleted" "updated_at" "created_at"}}{{else}}
 func (m *{{Mapper $table.Name}}) Get{{Mapper $col.Name}}() (val {{Type $col}}) {
     if m == nil {
         return
     }
     return m.{{Mapper $col.Name}}
 }
+{{end}}
 {{end}}
 
 func (m *{{Mapper .Name}}) TableName() string {
