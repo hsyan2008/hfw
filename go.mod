@@ -20,6 +20,7 @@ require (
 	github.com/hsyan2008/go-logger v0.0.0-20190215134551-518d73f83fc8
 	github.com/hsyan2008/gracehttp v0.0.0-20181020095239-2f290fb99640
 	github.com/json-iterator/go v1.1.5
+	github.com/lib/pq v1.0.0
 	github.com/mediocregopher/radix.v2 v0.0.0-20181115013041-b67df6e626f9
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect

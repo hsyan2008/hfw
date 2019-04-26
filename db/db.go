@@ -7,9 +7,11 @@ import (
 	"sync"
 	"time"
 
-	//mysql
+	//mssql
 	_ "github.com/denisenkom/go-mssqldb"
+	//mysql
 	_ "github.com/go-sql-driver/mysql"
+	//postgresql
 	"github.com/go-xorm/cachestore"
 	"github.com/go-xorm/xorm"
 	logger "github.com/hsyan2008/go-logger"
@@ -18,6 +20,7 @@ import (
 	"github.com/hsyan2008/hfw2/db/cache"
 	"github.com/hsyan2008/hfw2/encoding"
 	"github.com/hsyan2008/hfw2/signal"
+	_ "github.com/lib/pq"
 )
 
 var engineMap = new(sync.Map)
@@ -113,6 +116,15 @@ func getDbDsn(dbConfig configs.DbStdConfig) string {
 	case "mssql", "sqlserver":
 		return fmt.Sprintf("odbc:user id=%s;password=%s;server=%s;port=%s;database=%s;%s",
 			dbConfig.Username, dbConfig.Password, dbConfig.Address, dbConfig.Port,
+			dbConfig.Dbname, dbConfig.Params)
+	case "postgres":
+		// if dbConfig.Port != "" {
+		// 	dbConfig.Address = fmt.Sprintf("%s:%s", dbConfig.Address, dbConfig.Port)
+		// }
+		// return fmt.Sprintf("postgres://%s:%s@%s/%s%s",
+		// 	dbConfig.Username, dbConfig.Password, dbConfig.Address, dbConfig.Dbname, dbConfig.Params)
+		return fmt.Sprintf("host=%s port=%s user=%s password='%s' dbname=%s %s",
+			dbConfig.Address, dbConfig.Port, dbConfig.Username, dbConfig.Password,
 			dbConfig.Dbname, dbConfig.Params)
 	default:
 		panic("error db driver")
