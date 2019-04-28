@@ -29,6 +29,8 @@ type RedisInterface interface {
 	HIncrBy(string, string, int64) (int64, error)
 	HDel(string, ...string) error
 
+	ZAdd(string, ...interface{}) (int, error)
+	ZRem(string, ...interface{}) (int, error)
 	ZIncrBy(string, string, float64) (string, error)
 	ZRange(string, int64, int64) (map[string]string, error)
 	ZRevRange(string, int64, int64) (map[string]string, error)

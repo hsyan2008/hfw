@@ -190,6 +190,25 @@ func HDel(key string, fields ...string) (err error) {
 	return DefaultRedisIns.HDel(key, fields...)
 }
 
+//不支持INCR，请用ZIncrBy代替
+func ZAdd(key string, args ...interface{}) (num int, err error) {
+	if DefaultRedisIns == nil {
+		err = errors.New("redis instance need init")
+		return
+	}
+
+	return DefaultRedisIns.ZAdd(key, args...)
+}
+
+func ZRem(key string, members ...interface{}) (num int, err error) {
+	if DefaultRedisIns == nil {
+		err = errors.New("redis instance need init")
+		return
+	}
+
+	return DefaultRedisIns.ZRem(key, members...)
+}
+
 func ZIncrBy(key, member string, increment float64) (value string, err error) {
 	if DefaultRedisIns == nil {
 		err = errors.New("redis instance need init")

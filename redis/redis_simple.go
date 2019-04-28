@@ -380,6 +380,29 @@ func (this *RedisSimple) HDel(key string, fields ...string) (err error) {
 	return
 }
 
+//不支持INCR，请用ZIncrBy代替
+func (this *RedisSimple) ZAdd(key string, args ...interface{}) (num int, err error) {
+	key = this.getKey(key)
+
+	resp := this.Cmd("ZADD", append([]interface{}{key}, args...)...)
+	if resp.Err != nil {
+		return 0, resp.Err
+	}
+
+	return resp.Int()
+}
+
+func (this *RedisSimple) ZRem(key string, members ...interface{}) (num int, err error) {
+	key = this.getKey(key)
+
+	resp := this.Cmd("ZREM", append([]interface{}{key}, members...)...)
+	if resp.Err != nil {
+		return 0, resp.Err
+	}
+
+	return resp.Int()
+}
+
 func (this *RedisSimple) ZIncrBy(key, member string, increment float64) (value string, err error) {
 	key = this.getKey(key)
 
@@ -388,9 +411,7 @@ func (this *RedisSimple) ZIncrBy(key, member string, increment float64) (value s
 		return "", resp.Err
 	}
 
-	_, err = resp.Str()
-
-	return
+	return resp.Str()
 }
 
 func (this *RedisSimple) ZRange(key string, start, stop int64) (values map[string]string, err error) {

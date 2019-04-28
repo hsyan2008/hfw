@@ -360,6 +360,29 @@ func (this *RedisCluster) HDel(key string, fields ...string) (err error) {
 	return
 }
 
+//不支持INCR，请用ZIncrBy代替
+func (this *RedisCluster) ZAdd(key string, args ...interface{}) (num int, err error) {
+	key = this.getKey(key)
+
+	resp := this.Cmd("ZADD", append([]interface{}{key}, args...)...)
+	if resp.Err != nil {
+		return 0, resp.Err
+	}
+
+	return resp.Int()
+}
+
+func (this *RedisCluster) ZRem(key string, members ...interface{}) (num int, err error) {
+	key = this.getKey(key)
+
+	resp := this.Cmd("ZREM", append([]interface{}{key}, members...)...)
+	if resp.Err != nil {
+		return 0, resp.Err
+	}
+
+	return resp.Int()
+}
+
 func (this *RedisCluster) ZIncrBy(key, member string, increment float64) (value string, err error) {
 	key = this.getKey(key)
 
@@ -367,9 +390,8 @@ func (this *RedisCluster) ZIncrBy(key, member string, increment float64) (value 
 	if resp.Err != nil {
 		return "", resp.Err
 	}
-	_, err = resp.Str()
 
-	return
+	return resp.Str()
 }
 
 func (this *RedisCluster) ZRange(key string, start, stop int64) (values map[string]string, err error) {
