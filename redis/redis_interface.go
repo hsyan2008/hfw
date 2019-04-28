@@ -17,7 +17,7 @@ type RedisInterface interface {
 	IncrBy(string, int64) (int64, error)
 	DecrBy(string, int64) (int64, error)
 
-	Del(...string) (bool, error)
+	Del(...string) (int, error)
 
 	SetNx(string, interface{}) (bool, error)
 	SetEx(string, interface{}, int) error
@@ -36,4 +36,11 @@ type RedisInterface interface {
 	Rename(string, string) error
 	RenameNx(string, string) (bool, error)
 	Expire(string, int32) (bool, error)
+
+	GeoAdd(string, ...interface{}) (int, error)
+	GeoDist(string, ...interface{}) (float64, error)
+	GeoHash(string, ...string) (map[string]string, error)
+	GeoPos(string, ...string) (map[string][2]float64, error)
+	GeoRadius(string, ...interface{}) (map[string]float64, error)
+	GeoRadiusByMember(string, ...interface{}) (map[string]float64, error)
 }

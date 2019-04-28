@@ -106,7 +106,7 @@ func DecrBy(key string, delta int64) (value int64, err error) {
 	return DefaultRedisIns.DecrBy(key, delta)
 }
 
-func Del(keys ...string) (isOk bool, err error) {
+func Del(keys ...string) (num int, err error) {
 	if DefaultRedisIns == nil {
 		err = errors.New("redis instance need init")
 		return
@@ -242,4 +242,67 @@ func Expire(key string, expiration int32) (isOk bool, err error) {
 	}
 
 	return DefaultRedisIns.Expire(key, expiration)
+}
+
+//geo
+//GEOADD key longitude latitude member [longitude latitude member ...]
+func GeoAdd(key string, members ...interface{}) (num int, err error) {
+	if DefaultRedisIns == nil {
+		err = errors.New("redis instance need init")
+		return
+	}
+
+	return DefaultRedisIns.GeoAdd(key, members...)
+}
+
+//GEODIST key member1 member2 [unit]]
+func GeoDist(key string, args ...interface{}) (distance float64, err error) {
+	if DefaultRedisIns == nil {
+		err = errors.New("redis instance need init")
+		return
+	}
+
+	return DefaultRedisIns.GeoDist(key, args...)
+}
+
+//GEOHASH key member [member ...]
+func GeoHash(key string, members ...string) (values map[string]string, err error) {
+	if DefaultRedisIns == nil {
+		err = errors.New("redis instance need init")
+		return
+	}
+
+	return DefaultRedisIns.GeoHash(key, members...)
+}
+
+//GEOPOS key member [member ...]
+func GeoPos(key string, members ...string) (values map[string][2]float64, err error) {
+	if DefaultRedisIns == nil {
+		err = errors.New("redis instance need init")
+		return
+	}
+
+	return DefaultRedisIns.GeoPos(key, members...)
+}
+
+//GEORADIUS key longitude latitude radius m|km|ft|mi [WITHCOORD] [WITHDIST] [WITHHASH] [COUNT count]
+//为简单起便，三个WITH只且必须支持WITHDIST，返回距离
+func GeoRadius(key string, args ...interface{}) (values map[string]float64, err error) {
+	if DefaultRedisIns == nil {
+		err = errors.New("redis instance need init")
+		return
+	}
+
+	return DefaultRedisIns.GeoRadius(key, args...)
+}
+
+//GEORADIUSBYMEMBER key member radius m|km|ft|mi [WITHCOORD] [WITHDIST] [WITHHASH] [COUNT count]
+//为简单起便，三个WITH只且必须支持WITHDIST，返回距离
+func GeoRadiusByMember(key string, args ...interface{}) (values map[string]float64, err error) {
+	if DefaultRedisIns == nil {
+		err = errors.New("redis instance need init")
+		return
+	}
+
+	return DefaultRedisIns.GeoRadiusByMember(key, args...)
 }

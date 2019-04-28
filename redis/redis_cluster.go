@@ -213,22 +213,17 @@ func (this *RedisCluster) DecrBy(key string, delta int64) (value int64, err erro
 }
 
 //cluster 不支持多key
-func (this *RedisCluster) Del(keys ...string) (isOk bool, err error) {
+func (this *RedisCluster) Del(keys ...string) (num int, err error) {
 	for k, v := range keys {
 		keys[k] = this.getKey(v)
 	}
 
 	resp := this.Cmd("DEL", keys)
 	if resp.Err != nil {
-		return isOk, resp.Err
+		return 0, resp.Err
 	}
 
-	i, err := resp.Int()
-	if err != nil {
-		return
-	}
-
-	return i > 0, err
+	return resp.Int()
 }
 
 func (this *RedisCluster) SetNx(key string, value interface{}) (isOk bool, err error) {
@@ -523,4 +518,217 @@ func (this *RedisCluster) Expire(key string, expiration int32) (isOk bool, err e
 	i, err := resp.Int()
 
 	return i == 1, err
+}
+
+//geo
+//GEOADD key longitude latitude member [longitude latitude member ...]
+func (this *RedisCluster) GeoAdd(key string, members ...interface{}) (num int, err error) {
+	if len(members)%3 != 0 {
+		return 0, errors.New("error params number")
+	}
+	key = this.getKey(key)
+
+	resp := this.Cmd("GEOADD", append([]interface{}{key}, members...)...)
+	if resp.Err != nil {
+		return 0, resp.Err
+	}
+
+	return resp.Int()
+}
+
+//GEODIST key member1 member2 [unit]]
+func (this *RedisCluster) GeoDist(key string, args ...interface{}) (distance float64, err error) {
+	if len(args) < 2 || len(args) > 3 {
+		return distance, errors.New("error params number")
+	}
+	key = this.getKey(key)
+
+	resp := this.Cmd("GEODIST", append([]interface{}{key}, args...)...)
+	if resp.Err != nil {
+		return distance, resp.Err
+	}
+
+	return resp.Float64()
+}
+
+//GEOHASH key member [member ...]
+func (this *RedisCluster) GeoHash(key string, members ...string) (values map[string]string, err error) {
+	if len(members) < 1 {
+		return nil, errors.New("error params number")
+	}
+	key = this.getKey(key)
+
+	args := make([]interface{}, len(members)+1)
+	args[0] = key
+	for k, v := range members {
+		args[k+1] = v
+	}
+	resp := this.Cmd("GEOHASH", args...)
+	if resp.Err != nil {
+		return nil, resp.Err
+	}
+	if resp.IsType(redis.Array) {
+		values = make(map[string]string)
+		resps, err := resp.Array()
+		if err != nil {
+			return values, err
+		}
+		for k, resp1 := range resps {
+			if resp1.IsType(redis.Nil) {
+				continue
+			}
+
+			v, err := resp1.Str()
+			if err != nil {
+				return values, err
+			}
+			values[members[k]] = v
+		}
+	}
+
+	return
+}
+
+//GEOPOS key member [member ...]
+func (this *RedisCluster) GeoPos(key string, members ...string) (values map[string][2]float64, err error) {
+	if len(members) < 1 {
+		return nil, errors.New("error params number")
+	}
+	key = this.getKey(key)
+
+	args := make([]interface{}, len(members)+1)
+	args[0] = key
+	for k, v := range members {
+		args[k+1] = v
+	}
+	resp := this.Cmd("GEOPOS", args...)
+	if resp.Err != nil {
+		return nil, resp.Err
+	}
+	if resp.IsType(redis.Array) {
+		values = make(map[string][2]float64)
+		resps, err := resp.Array()
+		if err != nil {
+			return values, err
+		}
+		for k, resp1 := range resps {
+			if resp1.IsType(redis.Nil) {
+				continue
+			}
+
+			v, err := resp1.Array()
+			if err != nil {
+				return values, err
+			}
+			if len(v) != 2 {
+				return values, errors.New("error number response")
+			}
+			longitude, err := v[0].Float64()
+			if err != nil {
+				return values, err
+			}
+			latitude, err := v[1].Float64()
+			if err != nil {
+				return values, err
+			}
+
+			values[members[k]] = [2]float64{
+				longitude, latitude,
+			}
+		}
+	}
+
+	return
+}
+
+//GEORADIUS key longitude latitude radius m|km|ft|mi [WITHCOORD] [WITHDIST] [WITHHASH] [COUNT count]
+//为简单起便，三个WITH只且必须支持WITHDIST，返回距离
+func (this *RedisCluster) GeoRadius(key string, args ...interface{}) (values map[string]float64, err error) {
+	if len(args) < 4 {
+		return nil, errors.New("error params number")
+	}
+	key = this.getKey(key)
+
+	resp := this.Cmd("GEORADIUS", append([]interface{}{key}, args...)...)
+	if resp.Err != nil {
+		return nil, resp.Err
+	}
+	if resp.IsType(redis.Array) {
+		values = make(map[string]float64)
+		resps, err := resp.Array()
+		if err != nil {
+			return values, err
+		}
+		for _, resp1 := range resps {
+			if resp1.IsType(redis.Nil) {
+				continue
+			}
+
+			v, err := resp1.Array()
+			if err != nil {
+				return values, err
+			}
+			if len(v) != 2 {
+				return values, errors.New("error number response")
+			}
+			member, err := v[0].Str()
+			if err != nil {
+				return values, err
+			}
+			radius, err := v[1].Float64()
+			if err != nil {
+				return values, err
+			}
+
+			values[member] = radius
+		}
+	}
+
+	return
+}
+
+//GEORADIUSBYMEMBER key member radius m|km|ft|mi [WITHCOORD] [WITHDIST] [WITHHASH] [COUNT count]
+//为简单起便，三个WITH只且必须支持WITHDIST，返回距离
+func (this *RedisCluster) GeoRadiusByMember(key string, args ...interface{}) (values map[string]float64, err error) {
+	if len(args) < 4 {
+		return nil, errors.New("error params number")
+	}
+	key = this.getKey(key)
+
+	resp := this.Cmd("GEORADIUSBYMEMBER", args...)
+	if resp.Err != nil {
+		return nil, resp.Err
+	}
+	if resp.IsType(redis.Array) {
+		values = make(map[string]float64)
+		resps, err := resp.Array()
+		if err != nil {
+			return values, err
+		}
+		for _, resp1 := range resps {
+			if resp1.IsType(redis.Nil) {
+				continue
+			}
+
+			v, err := resp1.Array()
+			if err != nil {
+				return values, err
+			}
+			if len(v) != 2 {
+				return values, errors.New("error number response")
+			}
+			member, err := v[0].Str()
+			if err != nil {
+				return values, err
+			}
+			radius, err := v[1].Float64()
+			if err != nil {
+				return values, err
+			}
+
+			values[member] = radius
+		}
+	}
+
+	return
 }
