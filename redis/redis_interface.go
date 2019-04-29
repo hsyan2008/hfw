@@ -4,6 +4,7 @@ import "github.com/mediocregopher/radix.v2/redis"
 
 type Geo struct {
 	Member    string
+	Hash      string
 	Dist      float64
 	Longitude float64
 	Latitude  float64
