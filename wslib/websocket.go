@@ -58,6 +58,10 @@ func NewWSWithUpgrader(httpCtx *hfw.HTTPContext, h http.Header, upgrader websock
 	return
 }
 
+func (wsIns *WsIns) Close() error {
+	return wsIns.ws.Close()
+}
+
 func (wsIns *WsIns) keep() {
 FOR:
 	for {
