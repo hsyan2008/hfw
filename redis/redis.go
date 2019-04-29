@@ -306,7 +306,7 @@ func GeoPos(key string, members ...string) (values map[string][2]float64, err er
 
 //GEORADIUS key longitude latitude radius m|km|ft|mi [WITHCOORD] [WITHDIST] [WITHHASH] [COUNT count]
 //为简单起便，三个WITH只且必须支持WITHDIST，返回距离
-func GeoRadius(key string, args ...interface{}) (values map[string]float64, err error) {
+func GeoRadius(key string, args ...interface{}) (values []*Geo, err error) {
 	if DefaultRedisIns == nil {
 		err = errors.New("redis instance need init")
 		return
@@ -317,7 +317,7 @@ func GeoRadius(key string, args ...interface{}) (values map[string]float64, err 
 
 //GEORADIUSBYMEMBER key member radius m|km|ft|mi [WITHCOORD] [WITHDIST] [WITHHASH] [COUNT count]
 //为简单起便，三个WITH只且必须支持WITHDIST，返回距离
-func GeoRadiusByMember(key string, args ...interface{}) (values map[string]float64, err error) {
+func GeoRadiusByMember(key string, args ...interface{}) (values []*Geo, err error) {
 	if DefaultRedisIns == nil {
 		err = errors.New("redis instance need init")
 		return
