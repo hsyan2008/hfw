@@ -2,6 +2,13 @@ package redis
 
 import "github.com/mediocregopher/radix.v2/redis"
 
+type Geo struct {
+	Member    string
+	Dist      float64
+	Longitude float64
+	Latitude  float64
+}
+
 type RedisInterface interface {
 	getKey(string) string
 	Cmd(string, ...interface{}) *redis.Resp
@@ -43,6 +50,6 @@ type RedisInterface interface {
 	GeoDist(string, ...interface{}) (float64, error)
 	GeoHash(string, ...string) (map[string]string, error)
 	GeoPos(string, ...string) (map[string][2]float64, error)
-	GeoRadius(string, ...interface{}) (map[string]float64, error)
-	GeoRadiusByMember(string, ...interface{}) (map[string]float64, error)
+	GeoRadius(string, ...interface{}) ([]*Geo, error)
+	GeoRadiusByMember(string, ...interface{}) ([]*Geo, error)
 }

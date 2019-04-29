@@ -665,7 +665,7 @@ func (this *RedisCluster) GeoPos(key string, members ...string) (values map[stri
 
 //GEORADIUS key longitude latitude radius m|km|ft|mi [WITHCOORD] [WITHDIST] [WITHHASH] [COUNT count]
 //为简单起便，三个WITH只且必须支持WITHDIST，返回距离
-func (this *RedisCluster) GeoRadius(key string, args ...interface{}) (values map[string]float64, err error) {
+func (this *RedisCluster) GeoRadius(key string, args ...interface{}) (values []*Geo, err error) {
 	if len(args) < 4 {
 		return nil, errors.New("error params number")
 	}
@@ -676,7 +676,6 @@ func (this *RedisCluster) GeoRadius(key string, args ...interface{}) (values map
 		return nil, resp.Err
 	}
 	if resp.IsType(redis.Array) {
-		values = make(map[string]float64)
 		resps, err := resp.Array()
 		if err != nil {
 			return values, err
@@ -702,7 +701,7 @@ func (this *RedisCluster) GeoRadius(key string, args ...interface{}) (values map
 				return values, err
 			}
 
-			values[member] = radius
+			values = append(values, &Geo{Member: member, Dist: radius})
 		}
 	}
 
@@ -711,7 +710,7 @@ func (this *RedisCluster) GeoRadius(key string, args ...interface{}) (values map
 
 //GEORADIUSBYMEMBER key member radius m|km|ft|mi [WITHCOORD] [WITHDIST] [WITHHASH] [COUNT count]
 //为简单起便，三个WITH只且必须支持WITHDIST，返回距离
-func (this *RedisCluster) GeoRadiusByMember(key string, args ...interface{}) (values map[string]float64, err error) {
+func (this *RedisCluster) GeoRadiusByMember(key string, args ...interface{}) (values []*Geo, err error) {
 	if len(args) < 4 {
 		return nil, errors.New("error params number")
 	}
@@ -722,7 +721,6 @@ func (this *RedisCluster) GeoRadiusByMember(key string, args ...interface{}) (va
 		return nil, resp.Err
 	}
 	if resp.IsType(redis.Array) {
-		values = make(map[string]float64)
 		resps, err := resp.Array()
 		if err != nil {
 			return values, err
@@ -748,7 +746,7 @@ func (this *RedisCluster) GeoRadiusByMember(key string, args ...interface{}) (va
 				return values, err
 			}
 
-			values[member] = radius
+			values = append(values, &Geo{Member: member, Dist: radius})
 		}
 	}
 
