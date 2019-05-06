@@ -140,6 +140,10 @@ func (m *{{Mapper .Name}}) GetMulti(ids ...interface{}) (t []*{{Mapper .Name}}, 
 	return
 }
 
+func (m *{{Mapper .Name}}) GetByIds(ids ...interface{}) (t []*{{Mapper .Name}}, err error) {
+	return m.GetMulti(ids...)
+}
+
 func (m *{{Mapper .Name}}) GetById(id interface{}) (t *{{Mapper .Name}}, err error) {
 	rs, err := m.GetMulti(id)
 	if err != nil {
