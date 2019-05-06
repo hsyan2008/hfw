@@ -7,7 +7,7 @@ import (
     "database/sql"
 {{$ilen := len .Imports}}
 {{if gt $ilen 0}}
-{{range .Imports}}"{{.}}"{{end}}
+{{range .Imports}}{{if ne . "time"}}"{{.}}"{{end}}{{end}}
 {{end}}
     "github.com/go-xorm/xorm"
     hfw "github.com/hsyan2008/hfw2"
@@ -34,7 +34,7 @@ type {{Mapper .Name}} struct {
     db.Models `xorm:"extends"`
 	Dao *db.XormDao `json:"-" xorm:"-"`
 {{$table := .}}
-{{range .ColumnsSeq}}{{$col := $table.GetColumn .}}	{{if eq $col.Name "id" "is_deleted" "updated_at" "created_at"}}{{else}}{{Mapper $col.Name}}	{{Type $col}} {{Tag $table $col}}{{end}}
+{{range .ColumnsSeq}}{{$col := $table.GetColumn .}}	{{if not (eq $col.Name "id" "is_deleted" "updated_at" "created_at")}}{{Mapper $col.Name}}	{{Type $col}} {{Tag $table $col}}{{end}}
 {{end}}
 }
 
