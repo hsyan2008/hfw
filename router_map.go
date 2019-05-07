@@ -54,22 +54,24 @@ func getRequestMethod(funcName string) (actions []string, method string, isMetho
 	if len(funcName) == 0 {
 		return
 	}
-	var action string
+	action := funcName
 	tmp := strings.Split(funcName, "For")
-	if len(tmp) == 1 {
-		action = tmp[0]
-	} else {
-		method = tmp[len(tmp)-1]
+	tmpLen := len(tmp)
+	if tmpLen > 1 {
+		method = tmp[tmpLen-1]
 		switch method {
 		case "OPTIONS", "GET", "HEAD", "POST", "PUT", "DELETE", "TRACE", "CONNECT":
 			isMethod = true
-			action = strings.Join(tmp[:len(tmp)-1], "")
+			action = strings.TrimSuffix(funcName, fmt.Sprintf("For%s", method))
+		default:
+			method = ""
 		}
 	}
 
 	actions = append(actions, strings.ToLower(action))
-	if actions[0] != encoding.Snake(action) {
-		actions = append(actions, encoding.Snake(action))
+	snakeAction := encoding.Snake(action)
+	if actions[0] != snakeAction {
+		actions = append(actions, snakeAction)
 	}
 
 	return
