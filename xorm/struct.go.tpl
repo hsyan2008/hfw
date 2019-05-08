@@ -13,6 +13,7 @@ import (
     hfw "github.com/hsyan2008/hfw2"
     "github.com/hsyan2008/hfw2/configs"
     "github.com/hsyan2008/hfw2/db"
+    logger "github.com/hsyan2008/go-logger"
 )
 
 {{range .Tables}}
@@ -22,6 +23,7 @@ func init() {
     var err error
     {{Mapper .Name}}Model.Dao, err = db.NewXormDao(hfw.Config, hfw.Config.Db)
     if err != nil {
+        logger.Fatal(err)
         panic(err)    
     }
     {{Mapper .Name}}Model.Dao.EnableCache({{Mapper .Name}}Model)
