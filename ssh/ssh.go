@@ -64,11 +64,11 @@ func NewSSH(sshConfig SSHConfig) (ins *SSH, err error) {
 	mt.Lock()
 	var ok bool
 	if ins, ok = sshIns[key]; ok {
+		mt.Unlock()
 		ins.mt.Lock()
 		defer ins.mt.Unlock()
 		if ins.ref > 0 {
 			ins.ref += 1
-			mt.Unlock()
 			return ins, err
 		}
 	} else {
@@ -82,12 +82,10 @@ func NewSSH(sshConfig SSHConfig) (ins *SSH, err error) {
 		ins.timer = time.NewTimer(ins.config.Timeout * time.Second)
 		sshIns[key] = ins
 
+		mt.Unlock()
 		ins.mt.Lock()
 		defer ins.mt.Unlock()
 	}
-
-	//不用defer，是防止Dial阻塞并发
-	mt.Unlock()
 
 	if ins.ref > 0 {
 		ins.ref += 1
