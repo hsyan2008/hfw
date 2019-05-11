@@ -67,8 +67,8 @@ func NewSSH(sshConfig SSHConfig) (ins *SSH, err error) {
 		ins.mt.Lock()
 		defer ins.mt.Unlock()
 		if ins.ref > 0 {
-			defer mt.Unlock()
 			ins.ref += 1
+			mt.Unlock()
 			return ins, err
 		}
 	} else {
