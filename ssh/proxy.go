@@ -56,6 +56,7 @@ func NewProxy(sshConfig SSHConfig, pi ProxyIni) (p *Proxy, err error) {
 	if err == nil {
 		err = p.Bind()
 		if err == nil {
+			logger.Infof("Bind %s for proxy success, start to accept", pi.Bind)
 			go p.Accept()
 		}
 	}

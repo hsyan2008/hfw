@@ -55,6 +55,7 @@ func (l *LocalForward) start(fi ForwardIni) (err error) {
 		l.fi = fi
 		err = l.Bind()
 		if err == nil {
+			logger.Infof("Bind %s forward to %s success, start to accept", fi.Bind, fi.Addr)
 			go l.Accept()
 		}
 	}
