@@ -1,6 +1,7 @@
 package ssh
 
 import (
+	"errors"
 	"io"
 	"net"
 	"strings"
@@ -21,50 +22,40 @@ type LocalForward struct {
 	lister net.Listener
 }
 
-func NewLocalForward(sshConfig SSHConfig, fi ForwardIni) (l *LocalForward, err error) {
+func NewLocalForward(sshConfig SSHConfig) (l *LocalForward, err error) {
 	l = &LocalForward{
 		step: 1,
 	}
 
 	l.c, err = NewSSH(sshConfig)
 
-	if err == nil {
-		return l, l.start(fi)
-	}
-
 	return
 }
 
-func (l *LocalForward) Dial(sshConfig SSHConfig, fi ForwardIni) (err error) {
+func (l *LocalForward) Dial(sshConfig SSHConfig) (err error) {
 	l.step++
 	if l.step == 2 {
 		l.c2, err = l.c.DialRemote(sshConfig)
 	}
-	if err == nil {
-		return l.start(fi)
-	}
 
 	return
 }
 
-func (l *LocalForward) start(fi ForwardIni) (err error) {
+func (l *LocalForward) Bind(fi ForwardIni) (err error) {
 	if len(fi.Addr) != 0 && len(fi.Bind) != 0 {
 		if !strings.Contains(fi.Bind, ":") {
 			fi.Bind = ":" + fi.Bind
 		}
 		l.fi = fi
-		err = l.Bind()
+		l.lister, err = net.Listen("tcp", l.fi.Bind)
 		if err == nil {
 			logger.Infof("Bind %s forward to %s success, start to accept", fi.Bind, fi.Addr)
 			go l.Accept()
 		}
+	} else {
+		return errors.New("Err ForwardIni")
 	}
 
-	return
-}
-
-func (l *LocalForward) Bind() (err error) {
-	l.lister, err = net.Listen("tcp", l.fi.Bind)
 	return
 }
 func (l *LocalForward) Accept() {
@@ -94,6 +85,9 @@ func (l *LocalForward) Hand(conn net.Conn) {
 
 func (l *LocalForward) Close() {
 	_ = l.lister.Close()
+	if l.c2 != nil {
+		l.c2.Close()
+	}
 	l.c.Close()
 }
 
