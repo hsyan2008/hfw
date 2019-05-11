@@ -15,34 +15,40 @@ type ForwardIni struct {
 }
 
 type LocalForward struct {
-	fi     ForwardIni
+	fi     *ForwardIni
 	c      *SSH
 	c2     *SSH
 	step   uint8
 	lister net.Listener
 }
 
-func NewLocalForward(sshConfig SSHConfig) (l *LocalForward, err error) {
+func NewLocalForward(sshConfig SSHConfig, fi *ForwardIni) (l *LocalForward, err error) {
 	l = &LocalForward{
 		step: 1,
 	}
 
 	l.c, err = NewSSH(sshConfig)
-
-	return
-}
-
-func (l *LocalForward) Dial(sshConfig SSHConfig) (err error) {
-	l.step++
-	if l.step == 2 {
-		l.c2, err = l.c.DialRemote(sshConfig)
+	if err == nil && fi != nil {
+		err = l.Bind(fi)
 	}
 
 	return
 }
 
-func (l *LocalForward) Bind(fi ForwardIni) (err error) {
-	if len(fi.Addr) != 0 && len(fi.Bind) != 0 {
+func (l *LocalForward) Dial(sshConfig SSHConfig, fi *ForwardIni) (err error) {
+	l.step++
+	if l.step == 2 {
+		l.c2, err = l.c.DialRemote(sshConfig)
+		if err == nil && fi != nil {
+			err = l.Bind(fi)
+		}
+	}
+
+	return
+}
+
+func (l *LocalForward) Bind(fi *ForwardIni) (err error) {
+	if fi != nil && len(fi.Addr) != 0 && len(fi.Bind) != 0 {
 		if !strings.Contains(fi.Bind, ":") {
 			fi.Bind = ":" + fi.Bind
 		}

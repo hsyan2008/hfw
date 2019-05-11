@@ -29,12 +29,12 @@ type ProxyIni struct {
 	IsBreak bool `toml:"is_break"`
 }
 type Proxy struct {
-	pi     ProxyIni
+	pi     *ProxyIni
 	c      *SSH
 	lister net.Listener
 }
 
-func NewProxy(sshConfig SSHConfig, pi ProxyIni) (p *Proxy, err error) {
+func NewProxy(sshConfig SSHConfig, pi *ProxyIni) (p *Proxy, err error) {
 	if pi.Bind == "" {
 		return nil, errors.New("err ini")
 	}
