@@ -35,7 +35,7 @@ type Proxy struct {
 }
 
 func NewProxy(sshConfig SSHConfig, pi *ProxyIni) (p *Proxy, err error) {
-	if pi.Bind == "" {
+	if pi == nil || pi.Bind == "" {
 		return nil, errors.New("err ini")
 	}
 	if !strings.Contains(pi.Bind, ":") {
