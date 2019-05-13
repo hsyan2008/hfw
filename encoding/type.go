@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 )
 
 //把数字也解析成字符串
@@ -54,4 +55,48 @@ func (a *Int) UnmarshalJSON(data []byte) (err error) {
 func (a *Int) MarshalJSON() (data []byte, err error) {
 
 	return []byte(fmt.Sprintf("%d", *a)), err
+}
+
+const dateTimeFormart = "2006-01-02 15:04:05"
+
+type DateTime time.Time
+
+func (t *DateTime) UnmarshalJSON(data []byte) (err error) {
+	now, err := time.ParseInLocation(`"`+dateTimeFormart+`"`, string(data), time.Local)
+	*t = DateTime(now)
+	return
+}
+
+func (t DateTime) MarshalJSON() ([]byte, error) {
+	b := make([]byte, 0, len(dateTimeFormart)+2)
+	b = append(b, '"')
+	b = time.Time(t).AppendFormat(b, dateTimeFormart)
+	b = append(b, '"')
+	return b, nil
+}
+
+func (t DateTime) String() string {
+	return time.Time(t).Format(dateTimeFormart)
+}
+
+const dateFormart = "2006-01-02"
+
+type Date time.Time
+
+func (t *Date) UnmarshalJSON(data []byte) (err error) {
+	now, err := time.ParseInLocation(`"`+dateFormart+`"`, string(data), time.Local)
+	*t = Date(now)
+	return
+}
+
+func (t Date) MarshalJSON() ([]byte, error) {
+	b := make([]byte, 0, len(dateFormart)+2)
+	b = append(b, '"')
+	b = time.Time(t).AppendFormat(b, dateFormart)
+	b = append(b, '"')
+	return b, nil
+}
+
+func (t Date) String() string {
+	return time.Time(t).Format(dateFormart)
 }
