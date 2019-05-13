@@ -74,6 +74,12 @@ func (t DateTime) MarshalJSON() ([]byte, error) {
 	b = append(b, '"')
 	return b, nil
 }
+func (t DateTime) Unix() int64 {
+	return time.Time(t).Unix()
+}
+func (t DateTime) UnixNano() int64 {
+	return time.Time(t).UnixNano()
+}
 
 func (t DateTime) String() string {
 	return time.Time(t).Format(dateTimeFormart)
@@ -95,6 +101,14 @@ func (t Date) MarshalJSON() ([]byte, error) {
 	b = time.Time(t).AppendFormat(b, dateFormart)
 	b = append(b, '"')
 	return b, nil
+}
+
+func (t Date) Unix() int64 {
+	return time.Time(t).Unix()
+}
+
+func (t Date) UnixNano() int64 {
+	return time.Time(t).UnixNano()
 }
 
 func (t Date) String() string {
