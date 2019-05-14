@@ -174,6 +174,12 @@ FOR:
 				orderby = v.(string)
 			}
 			continue FOR
+		case "groupby":
+			sess.GroupBy(v.(string))
+			continue FOR
+		case "having":
+			sess.Having(v.(string))
+			continue FOR
 		case "page":
 			if isPaging {
 				page = common.Max(v.(int), page)
