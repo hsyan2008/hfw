@@ -77,6 +77,7 @@ FOR:
 			err := wsIns.WritePingMessage()
 			if err != nil {
 				logger.Warnf("keep error: %v", err)
+				logger.Warn(wsIns.Close())
 				break FOR
 			}
 		}

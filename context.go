@@ -47,6 +47,8 @@ type HTTPContext struct {
 	HasHeader       bool `json:"-"`
 	common.Response `json:"response"`
 	Header          interface{} `json:"header"`
+
+	log *logger.Log `json:"-"`
 }
 
 func (httpCtx *HTTPContext) init(w http.ResponseWriter, r *http.Request) {
@@ -68,6 +70,16 @@ func (httpCtx *HTTPContext) init(w http.ResponseWriter, r *http.Request) {
 	httpCtx.ErrNo = 0
 	httpCtx.ErrMsg = ""
 	httpCtx.Results = nil
+
+	httpCtx.log = logger.NewLog()
+}
+
+func (httpCtx *HTTPContext) Log() *logger.Log {
+	if httpCtx.log == nil {
+		httpCtx.log = logger.NewLog()
+	}
+
+	return httpCtx.log
 }
 
 //GetForm 优先post和put,然后get
@@ -106,10 +118,10 @@ func (httpCtx *HTTPContext) ThrowCheck(errNo int64, i interface{}) {
 	case *common.RespErr:
 		errNo = e.ErrNo()
 		errMsg = e.ErrMsg()
-		logger.Output(3, "WARN", fmt.Sprintf("[ThrowCheck] %s", e.Error()))
+		httpCtx.Log().Output(3, fmt.Sprintf("[ThrowCheck] %s", e.Error()))
 	default:
 		errMsg = fmt.Sprintf("%v", e)
-		logger.Output(3, "WARN", fmt.Sprintf("[ThrowCheck] No:%d Msg:%v", errNo, errMsg))
+		httpCtx.Log().Output(3, fmt.Sprintf("[ThrowCheck] No:%d Msg:%v", errNo, errMsg))
 	}
 
 	httpCtx.ErrNo = errNo
