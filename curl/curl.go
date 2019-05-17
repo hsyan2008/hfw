@@ -53,7 +53,8 @@ func (resp *Response) Close() {
 	}
 }
 
-var stopRedirect = errors.New("no redirects allowed")
+var ErrStopRedirect = errors.New("no redirects allowed")
+var ErrRequestTimeout = errors.New("do request time out")
 
 type Curl struct {
 	Url, Method, Cookie, Referer string
@@ -99,7 +100,7 @@ var tr = &http.Transport{
 
 var httpClient = &http.Client{
 	// Transport:     tr,
-	CheckRedirect: func(_ *http.Request, via []*http.Request) error { return stopRedirect },
+	CheckRedirect: func(_ *http.Request, via []*http.Request) error { return ErrStopRedirect },
 	Jar:           nil,
 	Timeout:       0,
 }
@@ -207,7 +208,7 @@ func (curls *Curl) Request(ctxs ...context.Context) (rs *Response, err error) {
 	select {
 	case <-time.After(curls.timeout):
 		<-c
-		err = errors.New("do request time out")
+		err = ErrRequestTimeout
 	case <-curls.ctx.Done():
 		<-c
 		err = curls.ctx.Err()
@@ -219,7 +220,7 @@ func (curls *Curl) Request(ctxs ...context.Context) (rs *Response, err error) {
 	if nil != err {
 		//不是重定向里抛出的错误
 		urlError, ok := err.(*neturl.Error)
-		if !ok || urlError.Err != stopRedirect {
+		if !ok || urlError.Err != ErrStopRedirect {
 			curls.cancel()
 			return nil, err
 		}
