@@ -146,6 +146,7 @@ func (httpCtx *HTTPContext) GetCookie(key string) (s string) {
 
 	return
 }
+
 func (httpCtx *HTTPContext) SetCookie(key, value string) {
 	cookie := &http.Cookie{
 		Name:     key,

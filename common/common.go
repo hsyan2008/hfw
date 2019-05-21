@@ -3,8 +3,10 @@ package common
 import (
 	"crypto/md5"
 	"fmt"
+	"net/http"
 	"os"
 	"runtime"
+	"strings"
 
 	"github.com/axgle/mahonia"
 	"github.com/google/uuid"
@@ -78,4 +80,18 @@ func Uuid() string {
 	}
 
 	return ""
+}
+
+//获取客户端ip
+func GetClientIP(r *http.Request) string {
+	ip := r.Header.Get("X-Forwarded-For")
+	if strings.Contains(ip, "127.0.0.1") || ip == "" {
+		ip = r.Header.Get("X-Real-IP")
+	}
+
+	if ip == "" {
+		return r.RemoteAddr
+	}
+
+	return ip
 }

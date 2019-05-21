@@ -34,11 +34,12 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	defer signal.GetSignalContext().WgDone()
 
 	if logger.Level() == logger.DEBUG {
-		logger.Debugf("From: %s, Host: %s, Method: %s, Uri: %s %s", r.RemoteAddr, r.Host, r.Method, r.URL.String(), "start")
+		ip := common.GetClientIP(r)
+		logger.Debugf("From: %s, Host: %s, Method: %s, Uri: %s %s", ip, r.Host, r.Method, r.URL.String(), "start")
 		startTime := time.Now()
 		defer func() {
 			logger.Debugf("From: %s, Host: %s, Method: %s, Uri: %s %s CostTime: %s",
-				r.RemoteAddr, r.Host, r.Method, r.URL.String(), "end", time.Since(startTime))
+				ip, r.Host, r.Method, r.URL.String(), "end", time.Since(startTime))
 		}()
 	}
 
