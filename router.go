@@ -83,7 +83,7 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	go closeNotify(httpCtx)
 
 	instance, action := findInstance(httpCtx)
-	logger.Debugf("Query Path: %s -> Call: %s/%s", r.URL.String(), instance.controllerName, action)
+	logger.Debugf("Query Path: %s -> Call: %s/%s", httpCtx.Request.URL.String(), instance.controllerName, action)
 	reflectVal := instance.reflectVal
 
 	//注意方法必须是大写开头，否则无法调用
@@ -181,10 +181,13 @@ func Handler(pattern string, handler ControllerInterface) (err error) {
 		case "Init", "Before", "After", "Finish", "NotFound", "ServerError":
 		default:
 			actions, method, isMethod := getRequestMethod(m)
-			value := instance{
+			value := &instance{
 				reflectVal:     reflectVal,
 				controllerName: controllerName,
 				methodName:     rt.Method(i).Name,
+			}
+			if defaultInstance == nil {
+				defaultInstance = value
 			}
 			for _, action := range actions {
 				if isMethod {

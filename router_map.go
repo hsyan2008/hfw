@@ -16,15 +16,16 @@ type instance struct {
 }
 
 var (
-	routeMap         = make(map[string]instance)
-	routeMapMethod   = make(map[string]instance)
+	routeMap         = make(map[string]*instance)
+	routeMapMethod   = make(map[string]*instance)
 	routeMapRegister = make(map[string]string)
 	routeInit        bool
+	defaultInstance  *instance
 )
 
 //controller如果有下划线，可以直接在注册的时候指定
 //action的下划线，可以自动处理
-func findInstance(httpCtx *HTTPContext) (instance instance, action string) {
+func findInstance(httpCtx *HTTPContext) (instance *instance, action string) {
 	httpCtx.Path = fmt.Sprintf("%s/%s", httpCtx.Controller, httpCtx.Action)
 
 	var ok bool
@@ -36,16 +37,14 @@ func findInstance(httpCtx *HTTPContext) (instance instance, action string) {
 		return instance, instance.methodName
 	}
 
-	//取现有的第一个作为默认
-	for _, instance = range routeMap {
-		return instance, "NotFound"
+	if defaultInstance == nil {
+		panic("no default route find")
 	}
 
-	for _, instance = range routeMapMethod {
-		return instance, "NotFound"
-	}
+	httpCtx.Action = strings.ToLower("NotFound")
+	httpCtx.Path = fmt.Sprintf("%s/%s", httpCtx.Controller, httpCtx.Action)
 
-	panic("no route find")
+	return defaultInstance, "NotFound"
 }
 
 //必须For+全大写结尾
@@ -79,8 +78,10 @@ func getRequestMethod(funcName string) (actions []string, method string, isMetho
 
 //修改httpCtx.Path后重新寻找执行action
 func DispatchRoute(httpCtx *HTTPContext) {
+	//httpCtx.Action会变化，所以先保存
+	path := fmt.Sprintf("C:%s M:%s", httpCtx.Controller, httpCtx.Action)
 	instance, action := findInstance(httpCtx)
-	logger.Debugf("Dispatch C:%s M:%s -> Call: %s/%s", httpCtx.Controller, httpCtx.Action, instance.controllerName, action)
+	logger.Debugf("Dispatch %s -> Call: %s/%s", path, instance.controllerName, action)
 	reflectVal := instance.reflectVal
 	//初始化httpCtx
 	initValue := []reflect.Value{
