@@ -43,11 +43,13 @@ func initLog() {
 		}
 	} else {
 		logger.SetLevelStr("debug")
+		var path string
 		if common.IsExist("/opt/log") {
-			logger.SetRollingDaily(filepath.Join("/opt/log", GetAppName()+".log"))
+			path = filepath.Join("/opt/log", GetAppName()+".log")
 		} else {
-			logger.SetRollingDaily(filepath.Join(APPPATH, GetAppName()+".log"))
+			path = filepath.Join(APPPATH, GetAppName()+".log")
 		}
+		logger.SetRollingFile(path, 2, 1, "GB")
 	}
 
 	if common.IsGoTest() {
@@ -61,7 +63,7 @@ func initLog() {
 	}
 
 	// logger.SetPrefix(fmt.Sprintf("Pid:%d", GetPid()))
-	logger.SetPrefix(filepath.Join(GetEnv(), GetHostName(), GetVersion()))
+	logger.SetPrefix(filepath.Join(GetAppName(), GetEnv(), GetHostName(), GetVersion()))
 }
 
 func loadConfig() {
