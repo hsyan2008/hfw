@@ -169,6 +169,10 @@ FOR:
 	for k, v := range cond {
 		k = strings.ToLower(k)
 		switch k {
+		//select all
+		case "nolimit":
+			isPaging = false
+			continue FOR
 		case "orderby":
 			if isOrder {
 				orderby = v.(string)
