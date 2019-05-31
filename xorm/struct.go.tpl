@@ -46,6 +46,10 @@ func (m *{{Mapper $table.Name}}) Get{{Mapper $col.Name}}() (val {{Type $col}}) {
 }
 {{end}}
 
+func (m *{{Mapper .Name}}) String() string {
+    return fmt.Sprintf("%#v", m)
+}
+
 func (m *{{Mapper .Name}}) TableName() string {
 	return "{{.Name}}"
 }
