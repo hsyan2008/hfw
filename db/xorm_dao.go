@@ -220,6 +220,11 @@ FOR:
 			switch keys[1] {
 			case "in":
 				sess.In(keys[0], v)
+			case "like":
+				//key: name like
+				//val: %h%
+				str = append(str, fmt.Sprintf("`%s` like ?", keys[0]))
+				args = append(args, v)
 			default:
 				return nil, errors.New("error cond key")
 			}
