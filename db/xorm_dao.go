@@ -186,13 +186,14 @@ FOR:
 			continue FOR
 		case "page":
 			if isPaging {
-				page = common.Max(v.(int), page)
+				page = common.Max(common.ConvertToInt(v), page)
 			}
 			continue FOR
 		case "pagesize":
 			if isPaging {
-				if v.(int) > 0 {
-					pageSize = v.(int)
+				ps := common.ConvertToInt(v)
+				if ps > 0 {
+					pageSize = ps
 				}
 			}
 			continue FOR

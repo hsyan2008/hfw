@@ -95,3 +95,30 @@ func GetClientIP(r *http.Request) string {
 
 	return ip
 }
+
+func ConvertToInt(v interface{}) int {
+	switch tmp := v.(type) {
+	case uint8:
+		return int(tmp)
+	case uint16:
+		return int(tmp)
+	case uint32:
+		return int(tmp)
+	case uint64:
+		return int(tmp)
+	case uint:
+		return int(tmp)
+	case int8:
+		return int(tmp)
+	case int16:
+		return int(tmp)
+	case int32:
+		return int(tmp)
+	case int64:
+		return int(tmp)
+	case int:
+		return tmp
+	}
+
+	return 0
+}
