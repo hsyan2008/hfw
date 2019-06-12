@@ -175,14 +175,20 @@ FOR:
 			continue FOR
 		case "orderby":
 			if isOrder {
-				orderby = v.(string)
+				if s, ok := v.(string); ok && len(s) > 0 {
+					orderby = s
+				}
 			}
 			continue FOR
 		case "groupby":
-			sess.GroupBy(v.(string))
+			if s, ok := v.(string); ok && len(s) > 0 {
+				sess.GroupBy(s)
+			}
 			continue FOR
 		case "having":
-			sess.Having(v.(string))
+			if s, ok := v.(string); ok && len(s) > 0 {
+				sess.Having(s)
+			}
 			continue FOR
 		case "page":
 			if isPaging {
@@ -198,16 +204,22 @@ FOR:
 			}
 			continue FOR
 		case "where":
-			where = v.(string)
+			if s, ok := v.(string); ok && len(s) > 0 {
+				where = s
+			}
 			continue FOR
 		case "sql":
 			sess.SQL(v)
 			continue FOR
 		case "select":
-			sess.Select(v.(string))
+			if s, ok := v.(string); ok && len(s) > 0 {
+				sess.Select(s)
+			}
 			continue FOR
 		case "distinct":
-			sess.Distinct(v.(string))
+			if s, ok := v.(string); ok && len(s) > 0 {
+				sess.Distinct(s)
+			}
 			continue FOR
 		}
 
