@@ -196,7 +196,7 @@ func (this *SSH) Config() SSHConfig {
 
 func (this *SSH) SetConfig(sshConfig SSHConfig) {
 	if sshConfig.Timeout == 0 {
-		sshConfig.Timeout = 30
+		sshConfig.Timeout = 4 * 60
 	}
 
 	this.config = sshConfig
