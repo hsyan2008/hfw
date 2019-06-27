@@ -60,6 +60,7 @@ func (ctx *signalContext) Listen() {
 	go ctx.doShutdownDone()
 	if ctx.IsHTTP {
 		logger.Info("Stopping http server")
+		//已有第三方处理
 	} else {
 		logger.Info("Stopping console server")
 		switch s {
