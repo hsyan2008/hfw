@@ -68,6 +68,7 @@ func initLog() {
 
 func loadConfig() {
 	if len(ENVIRONMENT) == 0 {
+		//config目录存在的时候，就必须要指定环境变量来加载config.toml
 		if common.IsExist(filepath.Join(APPPATH, "config")) {
 			if common.IsGoRun() || common.IsGoTest() {
 				ENVIRONMENT = DEV
@@ -75,10 +76,12 @@ func loadConfig() {
 				panic("please specify env")
 			}
 		} else {
+			logger.Warn("config dir not exist")
 			return
 		}
 	}
 	configPath := filepath.Join(APPPATH, "config", ENVIRONMENT, "config.toml")
+	logger.Info("load config file: ", configPath)
 	if common.IsExist(configPath) {
 		_, err := toml.DecodeFile(configPath, &Config)
 		if err != nil {
