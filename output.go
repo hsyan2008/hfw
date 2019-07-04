@@ -188,7 +188,18 @@ func (httpCtx *HTTPContext) ReturnJSON() {
 	}
 
 	var err error
-	logger.Debugf("%#v", httpCtx.Response)
+	logger.Debugf("Response json: %s", func() string {
+		var b []byte
+		if httpCtx.HasHeader {
+			b, err = encoding.JSON.Marshal(httpCtx)
+		} else {
+			b, err = encoding.JSON.Marshal(httpCtx.Response)
+		}
+		if err != nil {
+			return err.Error()
+		}
+		return string(b)
+	}())
 	if httpCtx.HasHeader {
 		//header + response(err_no + err_msg)
 		err = encoding.JSONIO.Marshal(w, httpCtx)
