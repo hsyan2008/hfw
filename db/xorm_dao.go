@@ -289,6 +289,26 @@ func (d *XormDao) Search(t interface{}, cond Cond) (err error) {
 	return
 }
 
+func (d *XormDao) SearchAndCount(t interface{}, cond Cond) (total int64, err error) {
+	sess := d.sess
+	if sess == nil {
+		sess = d.engine.NewSession()
+		defer sess.Close()
+	}
+	sess, err = d.buildCond(sess, cond, true, true)
+	if err != nil {
+		return
+	}
+
+	total, err = sess.FindAndCount(t)
+	if err != nil {
+		lastSQL, lastSQLArgs := sess.LastSQL()
+		logger.Error(err, lastSQL, lastSQLArgs)
+	}
+
+	return
+}
+
 func (d *XormDao) Rows(t interface{}, cond Cond) (rows *xorm.Rows, err error) {
 	sess := d.sess
 	if sess == nil {
