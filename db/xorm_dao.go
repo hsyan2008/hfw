@@ -221,6 +221,9 @@ FOR:
 				sess.Distinct(s)
 			}
 			continue FOR
+		case "forupdate":
+			sess.ForUpdate()
+			continue FOR
 		}
 
 		keys := strings.Fields(k)
