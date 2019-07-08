@@ -124,6 +124,11 @@ func (m *{{Mapper .Name}}) Search(cond db.Cond) (t []*{{Mapper .Name}}, err erro
 	return
 }
 
+func (m *{{Mapper .Name}}) SearchAndCount(cond db.Cond) (t []*{{Mapper .Name}}, total int64, err error) {
+	total, err = m.Dao.SearchAndCount(&t, cond)
+	return
+}
+
 func (m *{{Mapper .Name}}) Rows(cond db.Cond) (rows *xorm.Rows, err error) {
 	return m.Dao.Rows(m, cond)
 }
