@@ -12,10 +12,12 @@ import (
 	"errors"
 	"io/ioutil"
 	"path/filepath"
+	"time"
 
 	"github.com/hsyan2008/hfw2/common"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/keepalive"
 )
 
 type ClientCreds struct {
@@ -25,12 +27,20 @@ type ClientCreds struct {
 	KeyFile    string
 }
 
+//https://github.com/grpc/grpc-go/blob/master/examples/features/keepalive/client/main.go
+var kacp = keepalive.ClientParameters{
+	Time:                10 * time.Second, // send pings every 10 seconds if there is no activity
+	Timeout:             time.Second,      // wait 1 second for ping ack before considering the connection dead
+	PermitWithoutStream: true,             // send pings even without active streams
+
+}
+
 func NewClientConn(ctx context.Context, address string, opt ...grpc.DialOption) (*grpc.ClientConn, error) {
 	if len(address) == 0 {
 		return nil, errors.New("nil address")
 	}
 
-	opt = append(opt, grpc.WithInsecure())
+	opt = append(opt, grpc.WithInsecure(), grpc.WithKeepaliveParams(kacp))
 
 	return grpc.DialContext(ctx, address, opt...)
 }
@@ -53,7 +63,7 @@ func NewSecurityClientConn(ctx context.Context, address, certFile, serverName st
 		return nil, err
 	}
 
-	opt = append(opt, grpc.WithTransportCredentials(creds))
+	opt = append(opt, grpc.WithTransportCredentials(creds), grpc.WithKeepaliveParams(kacp))
 
 	return grpc.DialContext(ctx, address, opt...)
 }
