@@ -36,15 +36,20 @@ type SessionConfig struct {
 //ServerConfig ..
 type ServerConfig struct {
 	Address string
-	//Port已废弃，用Address代替
-	Port string
 	//并发数量限制
-	Concurrence   uint
-	ReadTimeout   time.Duration
-	WriteTimeout  time.Duration
-	HTTPSCertFile string
-	HTTPSKeyFile  string
-	HTTPSPhrase   string
+	Concurrence uint
+
+	ReadTimeout  time.Duration
+	WriteTimeout time.Duration
+
+	//证书
+	CertFile string
+	KeyFile  string
+	Phrase   string
+
+	//grpc服务使用
+	MaxRecvMsgSize int
+	MaxSendMsgSize int
 }
 
 //LoggerConfig ..
@@ -118,4 +123,15 @@ type HotDeployConfig struct {
 	Exts []string
 	//指定监听的目录深度，默认最大10
 	Dep int
+}
+
+//grpc client配置
+type GrpcConfig struct {
+	//必填，必须保证唯一
+	ServerName string
+	Address    []string
+	//调用具有证书的grpc服务，必须要指定客户端证书
+	CertFile string
+	//是否需要Auth验证
+	IsAuth bool
 }

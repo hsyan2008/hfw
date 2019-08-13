@@ -165,16 +165,8 @@ func initConfig() {
 		}
 	}
 
-	if len(Config.Server.Port) > 0 && !strings.Contains(Config.Server.Port, ":") {
-		Config.Server.Port = ":" + Config.Server.Port
-	}
-	//兼容
-	if len(Config.Server.Address) == 0 && len(Config.Server.Port) > 0 {
-		Config.Server.Address = Config.Server.Port
-	}
-
-	certFile := Config.Server.HTTPSCertFile
-	keyFile := Config.Server.HTTPSKeyFile
+	certFile := Config.Server.CertFile
+	keyFile := Config.Server.KeyFile
 	if len(certFile) > 0 && len(keyFile) > 0 {
 		if !filepath.IsAbs(certFile) {
 			certFile = filepath.Join(APPPATH, certFile)

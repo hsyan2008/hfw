@@ -18,9 +18,9 @@ func Start(config configs.AllConfig) (err error) {
 	writeTimeout := config.Server.WriteTimeout * time.Second
 	s := gracehttp.NewServer(addr, nil, readTimeout, writeTimeout)
 
-	if common.IsExist(config.Server.HTTPSCertFile) && common.IsExist(config.Server.HTTPSKeyFile) {
+	if common.IsExist(config.Server.CertFile) && common.IsExist(config.Server.KeyFile) {
 		logger.Info("Listen on https", config.Server.Address)
-		err = s.ListenAndServeTLS(config.Server.HTTPSCertFile, config.Server.HTTPSKeyFile)
+		err = s.ListenAndServeTLS(config.Server.CertFile, config.Server.KeyFile)
 	} else {
 		logger.Info("Listen on http", config.Server.Address)
 		err = s.ListenAndServe()
