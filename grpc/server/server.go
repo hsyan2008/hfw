@@ -1,12 +1,13 @@
 //支持https+grpc的共享端口版，不需要ca证书
 //获取http+grpc,两个服务必须独立端口
 //Usage:
-//s, err := server.InitGrpcServer(hfw.Config.Server)
-//RegisterHelloServiceServer(s, &HelloServiceImpl{auth: &X{Value: "ab", Key:"x"}})
-//注意X的实现里，要求RequireTransportSecurity=true
-//如果是http，需要另外执行
-//go StartGrpcServer(s, ":1234")
-//注意X的实现里，要求RequireTransportSecurity=false
+//如果是grpc+https
+//s, err := server.NewServer(hfw.Config.Server, opt...)
+//RegisterHelloServiceServer(s, &HelloServiceImpl{auth: auth.NewAuthWithHTTPS("value")})
+//如果是http+grpc
+//s, err := server.NewServer(hfw.Config.Server, opt...)
+//RegisterHelloServiceServer(s, &HelloServiceImpl{auth: auth.NewAuth("value")})
+//go server.StartServer(s, ":1234")
 package server
 
 import (
@@ -36,11 +37,11 @@ func GetServer() *grpc.Server {
 }
 
 func NewServer(serverConfig configs.ServerConfig, opt ...grpc.ServerOption) (*grpc.Server, error) {
-	if common.IsExist(serverConfig.HTTPSCertFile) && common.IsExist(serverConfig.HTTPSKeyFile) {
+	if common.IsExist(serverConfig.CertFile) && common.IsExist(serverConfig.KeyFile) {
 		logger.Debug("init grpc server with certFile and keyFile")
 		t := &ServerCreds{
-			CertFile: serverConfig.HTTPSCertFile,
-			KeyFile:  serverConfig.HTTPSKeyFile,
+			CertFile: serverConfig.CertFile,
+			KeyFile:  serverConfig.KeyFile,
 		}
 
 		creds, err := t.GetCredentials()
@@ -49,6 +50,14 @@ func NewServer(serverConfig configs.ServerConfig, opt ...grpc.ServerOption) (*gr
 		}
 
 		opt = append(opt, grpc.Creds(creds))
+	}
+
+	if serverConfig.MaxRecvMsgSize > 0 {
+		opt = append(opt, grpc.MaxRecvMsgSize(serverConfig.MaxRecvMsgSize))
+	}
+
+	if serverConfig.MaxSendMsgSize > 0 {
+		opt = append(opt, grpc.MaxSendMsgSize(serverConfig.MaxSendMsgSize))
 	}
 
 	opt = append(opt, grpc.UnaryInterceptor(unaryFilter), grpc.StreamInterceptor(streamFilter))
