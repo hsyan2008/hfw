@@ -29,24 +29,28 @@ type HTTPContext struct {
 	Action         string              `json:"-"`
 	Path           string              `json:"-"`
 
+	IsZip bool `json:"-"`
+	//404和500页面被自动更改content-type，导致压缩后有问题，暂时不压缩
+	IsError bool `json:"-"`
+
 	//html文本
 	Template string `json:"-"`
 	//模板文件
 	TemplateFile string `json:"-"`
-	IsJSON       bool   `json:"-"`
-	IsZip        bool   `json:"-"`
-	//404和500页面被自动更改content-type，导致压缩后有问题，暂时不压缩
-	IsError bool                   `json:"-"`
+	//主要用于模板渲染
 	Data    map[string]interface{} `json:"-"`
 	FuncMap map[string]interface{} `json:"-"`
 
-	//如果是下载文件，不执行After和Finish
-	IsCloseRender bool `json:"-"`
-
+	IsJSON bool `json:"-"`
 	//返回的json是否包含Header
-	HasHeader       bool `json:"-"`
+	HasHeader bool `json:"-"`
+	//是否只返回Response.Results里的数据
+	IsOnlyResults   bool `json:"-"`
 	common.Response `json:"response"`
 	Header          interface{} `json:"header"`
+
+	//如果是下载文件，不执行After和Finish
+	IsCloseRender bool `json:"-"`
 
 	log *logger.Log `json:"-"`
 }

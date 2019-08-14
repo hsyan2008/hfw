@@ -190,7 +190,9 @@ func (httpCtx *HTTPContext) ReturnJSON() {
 	var err error
 	logger.Debugf("Response json: %s", func() string {
 		var b []byte
-		if httpCtx.HasHeader {
+		if httpCtx.IsOnlyResults {
+			b, err = encoding.JSON.Marshal(httpCtx.Results)
+		} else if httpCtx.HasHeader {
 			b, err = encoding.JSON.Marshal(httpCtx)
 		} else {
 			b, err = encoding.JSON.Marshal(httpCtx.Response)
@@ -200,11 +202,14 @@ func (httpCtx *HTTPContext) ReturnJSON() {
 		}
 		return string(b)
 	}())
-	if httpCtx.HasHeader {
-		//header + response(err_no + err_msg)
+	if httpCtx.IsOnlyResults {
+		//results
+		err = encoding.JSONIO.Marshal(w, httpCtx.Results)
+	} else if httpCtx.HasHeader {
+		//header + response(err_no + err_msg + results)
 		err = encoding.JSONIO.Marshal(w, httpCtx)
 	} else {
-		//err_no + err_msg
+		//response(err_no + err_msg + results)
 		err = encoding.JSONIO.Marshal(w, httpCtx.Response)
 	}
 	httpCtx.ThrowCheck(500, err)
