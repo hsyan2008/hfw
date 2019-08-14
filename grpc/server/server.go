@@ -22,6 +22,7 @@ import (
 	"github.com/hsyan2008/hfw2/configs"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/reflection"
 )
 
 type ServerCreds struct {
@@ -75,6 +76,8 @@ func StartServer(s *grpc.Server, addr string) error {
 		logger.Fatal("grpc StartServer:", err)
 		return err
 	}
+	// Register reflection service on gRPC server.
+	reflection.Register(s)
 	return s.Serve(lis)
 }
 
