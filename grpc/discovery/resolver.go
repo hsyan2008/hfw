@@ -9,10 +9,6 @@ import (
 
 func GetResolver(cc configs.GrpcConfig) (scheme string, err error) {
 
-	if cc.ResolverType == "" && len(cc.Addresses) > 0 {
-		cc.ResolverType = resolver.StaticResolver
-	}
-
 	switch cc.ResolverType {
 	case resolver.StaticResolver:
 		return resolver.GenerateAndRegisterStaticResolver(cc)
