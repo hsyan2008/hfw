@@ -127,11 +127,23 @@ type HotDeployConfig struct {
 
 //grpc client配置
 type GrpcConfig struct {
-	//必填，必须保证唯一
+	//必填，必须保证唯一，且符合证书域名规则(如果使用证书)
+	//如果采用服务发现，则用于服务名
 	ServerName string
-	Address    []string
+
+	//服务发现类型，目前可选static、consul，默认是static
+	ResolverType string
+	//服务发现的地址，如consul、etcd地址
+	ResolverAddresses []string
+	//负载均衡策略名称，默认是round_robin
+	BalancerName string
+
+	//服务地址，如果ResolverType是static，必填
+	Addresses []string
+
 	//调用具有证书的grpc服务，必须要指定客户端证书
 	CertFile string
+
 	//是否需要Auth验证
 	IsAuth bool
 }

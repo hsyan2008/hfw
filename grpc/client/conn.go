@@ -13,7 +13,6 @@ import (
 	"github.com/hsyan2008/hfw2/grpc/auth"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
-	"google.golang.org/grpc/resolver"
 )
 
 type connInstance struct {
@@ -35,8 +34,12 @@ func GetConnWithAuth(ctx context.Context, c configs.GrpcConfig, authValue string
 	}
 	var ok bool
 	var p *connInstance
-	scheme := strings.Split(c.ServerName, ".")[0]
-	address := fmt.Sprintf("%s:///%s", scheme, c.ServerName)
+	// 在main.go里自己手动init，放这里会出现map的panic
+	// scheme, err := discovery.GetResolver(c)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	address := fmt.Sprintf("%s:///%s", c.ResolverType, c.ServerName)
 	lock.Lock()
 	if p, ok = connInstanceMap[c.ServerName]; !ok {
 		p = &connInstance{
@@ -50,12 +53,6 @@ func GetConnWithAuth(ctx context.Context, c configs.GrpcConfig, authValue string
 			return p.c, nil
 		}
 	}
-
-	resolver.Register(NewResolverBuilder(
-		scheme,
-		c.ServerName,
-		c.Address,
-	))
 
 	p.l.Lock()
 	defer p.l.Unlock()
@@ -73,8 +70,12 @@ func GetConnWithAuth(ctx context.Context, c configs.GrpcConfig, authValue string
 func newClientConn(ctx context.Context, address string, c configs.GrpcConfig, authValue string, opt ...grpc.DialOption) (*grpc.ClientConn, error) {
 	logger.Warn(address, c)
 	if strings.Contains(address, ":///") {
-		// opt = append(opt, grpc.WithBalancerName("round_robin")) //默认是grpc.WithBalancerName("pick_first")
-		opt = append(opt, grpc.WithBalancerName(roundrobin.Name))
+		// opt = append(opt, grpc.WithBalancerName("round_robin")) //grpc里默认是grpc.WithBalancerName("pick_first")
+		if c.BalancerName == "" {
+			// 现在默认是round_robin
+			c.BalancerName = roundrobin.Name
+		}
+		opt = append(opt, grpc.WithBalancerName(c.BalancerName))
 	}
 	if len(c.ServerName) > 0 && common.IsExist(c.CertFile) {
 		if c.IsAuth {

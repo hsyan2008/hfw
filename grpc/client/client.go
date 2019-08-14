@@ -45,7 +45,8 @@ func NewClientConn(ctx context.Context, address string, opt ...grpc.DialOption) 
 	return grpc.DialContext(ctx, address, opt...)
 }
 
-func NewClientConnWithSecurity(ctx context.Context, address, certFile, serverName string, opt ...grpc.DialOption) (*grpc.ClientConn, error) {
+func NewClientConnWithSecurity(ctx context.Context, address, certFile, serverName string,
+	opt ...grpc.DialOption) (*grpc.ClientConn, error) {
 	if !common.IsExist(certFile) {
 		certFile = filepath.Join(common.GetAppPath(), certFile)
 	}
