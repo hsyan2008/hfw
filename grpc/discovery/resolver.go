@@ -12,6 +12,11 @@ const ConsulResolver = "consul"
 const EtcdResolver = "etcd"
 
 func GetResolver(cc configs.GrpcConfig) (scheme string, err error) {
+
+	if cc.ResolverType == "" && len(cc.Addresses) > 0 {
+		cc.ResolverType = StaticResolver
+	}
+
 	switch cc.ResolverType {
 	case StaticResolver:
 		return resolver.GenerateAndRegisterStaticResolver(cc)
