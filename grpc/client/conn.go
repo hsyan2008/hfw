@@ -25,7 +25,11 @@ type connInstance struct {
 var connInstanceMap = make(map[string]*connInstance)
 var lock = new(sync.Mutex)
 
-func GetConn(ctx context.Context, c configs.GrpcConfig, authValue string, opt ...grpc.DialOption) (conn *grpc.ClientConn, err error) {
+func GetConn(ctx context.Context, c configs.GrpcConfig, opt ...grpc.DialOption) (conn *grpc.ClientConn, err error) {
+	return GetConnWithAuth(ctx, c, "", opt...)
+}
+
+func GetConnWithAuth(ctx context.Context, c configs.GrpcConfig, authValue string, opt ...grpc.DialOption) (conn *grpc.ClientConn, err error) {
 	if len(c.ServerName) == 0 {
 		return nil, errors.New("please specify grpc ServerName")
 	}
@@ -76,7 +80,7 @@ func newClientConn(ctx context.Context, address string, c configs.GrpcConfig, au
 		if c.IsAuth {
 			opt = append(opt, grpc.WithPerRPCCredentials(auth.NewAuthWithHTTPS(authValue)))
 		}
-		return NewSecurityClientConn(
+		return NewClientConnWithSecurity(
 			ctx,
 			address,
 			c.CertFile,
