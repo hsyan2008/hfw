@@ -10,9 +10,10 @@ import (
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/hsyan2008/hfw2/configs"
 	"github.com/hsyan2008/hfw2/encoding"
-	"github.com/hsyan2008/hfw2/grpc/discovery"
 	"google.golang.org/grpc/resolver"
 )
+
+const ConsulResolver = "consul"
 
 type consulBuilder struct {
 	address     string
@@ -64,7 +65,7 @@ func (cb consulBuilder) resolve() ([]resolver.Address, string, error) {
 }
 
 func (cb *consulBuilder) Scheme() string {
-	return discovery.ConsulResolver
+	return ConsulResolver
 }
 
 type consulResolver struct {

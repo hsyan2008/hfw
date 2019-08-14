@@ -7,20 +7,16 @@ import (
 	"github.com/hsyan2008/hfw2/grpc/discovery/resolver"
 )
 
-const StaticResolver = "static"
-const ConsulResolver = "consul"
-const EtcdResolver = "etcd"
-
 func GetResolver(cc configs.GrpcConfig) (scheme string, err error) {
 
 	if cc.ResolverType == "" && len(cc.Addresses) > 0 {
-		cc.ResolverType = StaticResolver
+		cc.ResolverType = resolver.StaticResolver
 	}
 
 	switch cc.ResolverType {
-	case StaticResolver:
+	case resolver.StaticResolver:
 		return resolver.GenerateAndRegisterStaticResolver(cc)
-	case ConsulResolver:
+	case resolver.ConsulResolver:
 		return resolver.GenerateAndRegisterConsulResolver(cc)
 		// case EtcdResolver:
 	}

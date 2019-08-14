@@ -2,11 +2,10 @@ package resolver
 
 import (
 	"github.com/hsyan2008/hfw2/configs"
-	"github.com/hsyan2008/hfw2/grpc/discovery"
 	"google.golang.org/grpc/resolver"
 )
 
-// resolver.Register(&staticBuilder{})
+const StaticResolver = "static"
 
 type staticBuilder struct {
 	//服务名字，一般取域名
@@ -32,7 +31,7 @@ func (builder *staticBuilder) Build(target resolver.Target, cc resolver.ClientCo
 	return r, nil
 }
 func (builder *staticBuilder) Scheme() string {
-	return discovery.StaticResolver
+	return StaticResolver
 }
 
 type staticResolver struct {
