@@ -38,7 +38,7 @@ func Do(httpCtx *hfw.HTTPContext, c configs.GrpcConfig,
 	var conn *grpc.ClientConn
 
 FOR:
-	for i := 0; i < common.Min(retry, len(c.Address)+1); i++ {
+	for i := 0; i < common.Min(retry, len(c.Addresses)+1); i++ {
 		select {
 		case <-ctx.Done():
 			break FOR
