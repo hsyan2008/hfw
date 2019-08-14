@@ -128,7 +128,7 @@ func Run() (err error) {
 	//启动http
 	signalContext.IsHTTP = true
 
-	err = serve.Start(Config)
+	err = serve.Start(Config.Server)
 
 	//如果未启动服务，就触发退出
 	if err != nil && err != http.ErrServerClosed {

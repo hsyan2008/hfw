@@ -3,6 +3,8 @@
 package serve
 
 import (
+	"fmt"
+	"net"
 	"time"
 
 	logger "github.com/hsyan2008/go-logger"
@@ -11,18 +13,30 @@ import (
 	"github.com/hsyan2008/hfw2/configs"
 )
 
-func Start(config configs.AllConfig) (err error) {
+var listener net.Listener
 
-	addr := config.Server.Address
-	readTimeout := config.Server.ReadTimeout * time.Second
-	writeTimeout := config.Server.WriteTimeout * time.Second
+func GetAddr() (string, error) {
+	if listener == nil {
+		return "", fmt.Errorf("nil listener")
+	}
+
+	return listener.Addr().String(), nil
+}
+
+func Start(config configs.ServerConfig) (err error) {
+
+	addr := config.Address
+	readTimeout := config.ReadTimeout * time.Second
+	writeTimeout := config.WriteTimeout * time.Second
 	s := gracehttp.NewServer(addr, nil, readTimeout, writeTimeout)
 
-	if common.IsExist(config.Server.CertFile) && common.IsExist(config.Server.KeyFile) {
-		logger.Info("Listen on https", config.Server.Address)
-		err = s.ListenAndServeTLS(config.Server.CertFile, config.Server.KeyFile)
+	listener, err = s.InitListener()
+
+	if common.IsExist(config.CertFile) && common.IsExist(config.KeyFile) {
+		logger.Info("Listen on https", config.Address)
+		err = s.ListenAndServeTLS(config.CertFile, config.KeyFile)
 	} else {
-		logger.Info("Listen on http", config.Server.Address)
+		logger.Info("Listen on http", config.Address)
 		err = s.ListenAndServe()
 	}
 
