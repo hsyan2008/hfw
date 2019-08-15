@@ -4,6 +4,8 @@ import "time"
 
 //Config 项目配置
 type AllConfig struct {
+	AppID int64
+
 	Server    ServerConfig
 	Logger    LoggerConfig
 	Db        DbConfig
