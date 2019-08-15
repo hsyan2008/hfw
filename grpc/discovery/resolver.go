@@ -7,8 +7,7 @@ import (
 	"github.com/hsyan2008/hfw2/grpc/discovery/resolver"
 )
 
-func GetResolver(cc configs.GrpcConfig) (scheme string, err error) {
-
+func GetAndRegisterResolver(cc configs.GrpcConfig) (scheme string, err error) {
 	switch cc.ResolverType {
 	case resolver.StaticResolver:
 		return resolver.GenerateAndRegisterStaticResolver(cc)

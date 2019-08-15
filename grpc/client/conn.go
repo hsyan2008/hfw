@@ -11,14 +11,16 @@ import (
 	"github.com/hsyan2008/hfw2/common"
 	"github.com/hsyan2008/hfw2/configs"
 	"github.com/hsyan2008/hfw2/grpc/auth"
+	"github.com/hsyan2008/hfw2/grpc/discovery"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
 )
 
 type connInstance struct {
 	//每个地址的连接实例
-	c *grpc.ClientConn
-	l *sync.Mutex
+	c          *grpc.ClientConn
+	l          *sync.Mutex
+	isRegister bool
 }
 
 var connInstanceMap = make(map[string]*connInstance)
@@ -28,17 +30,13 @@ func GetConn(ctx context.Context, c configs.GrpcConfig, opt ...grpc.DialOption) 
 	return GetConnWithAuth(ctx, c, "", opt...)
 }
 
-func GetConnWithAuth(ctx context.Context, c configs.GrpcConfig, authValue string, opt ...grpc.DialOption) (conn *grpc.ClientConn, err error) {
+func GetConnWithAuth(ctx context.Context, c configs.GrpcConfig, authValue string,
+	opt ...grpc.DialOption) (conn *grpc.ClientConn, err error) {
 	if len(c.ServerName) == 0 {
 		return nil, errors.New("please specify grpc ServerName")
 	}
 	var ok bool
 	var p *connInstance
-	// 在main.go里自己手动init，放这里会出现map的panic
-	// scheme, err := discovery.GetResolver(c)
-	// if err != nil {
-	// 	return nil, err
-	// }
 	address := fmt.Sprintf("%s:///%s", c.ResolverType, c.ServerName)
 	lock.Lock()
 	if p, ok = connInstanceMap[c.ServerName]; !ok {
@@ -56,6 +54,18 @@ func GetConnWithAuth(ctx context.Context, c configs.GrpcConfig, authValue string
 
 	p.l.Lock()
 	defer p.l.Unlock()
+
+	if p.c != nil {
+		return p.c, nil
+	}
+
+	if !p.isRegister {
+		_, err := discovery.GetAndRegisterResolver(c)
+		if err != nil {
+			return nil, err
+		}
+		p.isRegister = true
+	}
 
 	conn, err = newClientConn(ctx, address, c, authValue, opt...)
 	if err != nil {
