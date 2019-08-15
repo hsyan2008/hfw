@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	logger "github.com/hsyan2008/go-logger"
-	"github.com/hsyan2008/hfw2/common"
-	"github.com/hsyan2008/hfw2/session"
+	"github.com/hsyan2008/hfw/common"
+	"github.com/hsyan2008/hfw/session"
 )
 
 //HTTPContext ..

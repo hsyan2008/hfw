@@ -5,8 +5,8 @@ import (
 
 	"github.com/Nerdmaster/terminal"
 	logger "github.com/hsyan2008/go-logger"
-	"github.com/hsyan2008/hfw2/common"
-	"github.com/hsyan2008/hfw2/serve"
+	"github.com/hsyan2008/hfw/common"
+	"github.com/hsyan2008/hfw/serve"
 	"github.com/zserge/webview"
 )
 

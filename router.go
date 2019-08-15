@@ -15,9 +15,9 @@ import (
 	"time"
 
 	logger "github.com/hsyan2008/go-logger"
-	"github.com/hsyan2008/hfw2/common"
-	"github.com/hsyan2008/hfw2/grpc/server"
-	"github.com/hsyan2008/hfw2/signal"
+	"github.com/hsyan2008/hfw/common"
+	"github.com/hsyan2008/hfw/grpc/server"
+	"github.com/hsyan2008/hfw/signal"
 )
 
 var httpCtxPool = &sync.Pool{

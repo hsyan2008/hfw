@@ -8,10 +8,10 @@ import (
 	"sync"
 
 	"github.com/hsyan2008/go-logger"
-	"github.com/hsyan2008/hfw2/common"
-	"github.com/hsyan2008/hfw2/configs"
-	"github.com/hsyan2008/hfw2/grpc/auth"
-	"github.com/hsyan2008/hfw2/grpc/discovery"
+	"github.com/hsyan2008/hfw/common"
+	"github.com/hsyan2008/hfw/configs"
+	"github.com/hsyan2008/hfw/grpc/auth"
+	"github.com/hsyan2008/hfw/grpc/discovery"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
 )

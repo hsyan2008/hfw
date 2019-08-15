@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/gorilla/websocket"
-	"github.com/hsyan2008/hfw2/redis"
-	"github.com/hsyan2008/hfw2/session"
+	"github.com/hsyan2008/hfw/redis"
+	"github.com/hsyan2008/hfw/session"
 )
 
 //ControllerInterface ..

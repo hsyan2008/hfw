@@ -3,8 +3,8 @@ package discovery
 import (
 	"fmt"
 
-	"github.com/hsyan2008/hfw2/configs"
-	"github.com/hsyan2008/hfw2/grpc/discovery/resolver"
+	"github.com/hsyan2008/hfw/configs"
+	"github.com/hsyan2008/hfw/grpc/discovery/resolver"
 )
 
 func GetAndRegisterResolver(cc configs.GrpcConfig) (scheme string, err error) {

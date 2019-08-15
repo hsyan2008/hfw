@@ -13,8 +13,8 @@ import (
 
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/hsyan2008/go-logger"
-	"github.com/hsyan2008/hfw2/grpc/discovery"
-	"github.com/hsyan2008/hfw2/signal"
+	"github.com/hsyan2008/hfw/grpc/discovery"
+	"github.com/hsyan2008/hfw/signal"
 )
 
 type ConsulRegister struct {

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	hfw "github.com/hsyan2008/hfw2"
-	"github.com/hsyan2008/hfw2/curl"
+	"github.com/hsyan2008/hfw"
+	"github.com/hsyan2008/hfw/curl"
 )
 
 var pacUrl = "https://pac.itzmx.com/abc.pac"

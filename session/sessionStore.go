@@ -3,8 +3,8 @@ package session
 import (
 	"errors"
 
-	"github.com/hsyan2008/hfw2/configs"
-	"github.com/hsyan2008/hfw2/redis"
+	"github.com/hsyan2008/hfw/configs"
+	"github.com/hsyan2008/hfw/redis"
 )
 
 type sessRedisStore struct {

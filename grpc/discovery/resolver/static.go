@@ -1,7 +1,7 @@
 package resolver
 
 import (
-	"github.com/hsyan2008/hfw2/configs"
+	"github.com/hsyan2008/hfw/configs"
 	"google.golang.org/grpc/resolver"
 )
 

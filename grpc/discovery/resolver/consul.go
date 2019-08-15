@@ -8,8 +8,8 @@ import (
 	"time"
 
 	consulapi "github.com/hashicorp/consul/api"
-	"github.com/hsyan2008/hfw2/configs"
-	"github.com/hsyan2008/hfw2/encoding"
+	"github.com/hsyan2008/hfw/configs"
+	"github.com/hsyan2008/hfw/encoding"
 	"google.golang.org/grpc/resolver"
 )
 

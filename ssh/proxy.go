@@ -14,7 +14,7 @@ import (
 	"time"
 
 	logger "github.com/hsyan2008/go-logger"
-	"github.com/hsyan2008/hfw2/pac"
+	"github.com/hsyan2008/hfw/pac"
 )
 
 type ProxyIni struct {

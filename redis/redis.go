@@ -3,7 +3,7 @@ package redis
 import (
 	"errors"
 
-	"github.com/hsyan2008/hfw2/configs"
+	"github.com/hsyan2008/hfw/configs"
 )
 
 func NewRedis(redisConfig configs.RedisConfig) (i RedisInterface, err error) {

@@ -10,9 +10,9 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	logger "github.com/hsyan2008/go-logger"
-	"github.com/hsyan2008/hfw2/common"
-	"github.com/hsyan2008/hfw2/configs"
-	"github.com/hsyan2008/hfw2/signal"
+	"github.com/hsyan2008/hfw/common"
+	"github.com/hsyan2008/hfw/configs"
+	"github.com/hsyan2008/hfw/signal"
 	"github.com/shirou/gopsutil/process"
 )
 

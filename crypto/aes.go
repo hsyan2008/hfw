@@ -5,7 +5,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 
-	"github.com/hsyan2008/hfw2/encoding"
+	"github.com/hsyan2008/hfw/encoding"
 )
 
 //AesCrypt aes加解密

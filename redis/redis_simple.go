@@ -4,8 +4,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/hsyan2008/hfw2/configs"
-	"github.com/hsyan2008/hfw2/encoding"
+	"github.com/hsyan2008/hfw/configs"
+	"github.com/hsyan2008/hfw/encoding"
 	"github.com/mediocregopher/radix.v2/pool"
 	"github.com/mediocregopher/radix.v2/redis"
 )

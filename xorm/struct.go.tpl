@@ -8,9 +8,9 @@ import (
 {{$ilen := len .Imports}}{{if gt $ilen 0}}{{range .Imports}}"{{.}}"{{end}}{{end}}
 
     "github.com/go-xorm/xorm"
-    hfw "github.com/hsyan2008/hfw2"
-    "github.com/hsyan2008/hfw2/configs"
-    "github.com/hsyan2008/hfw2/db"
+    "github.com/hsyan2008/hfw"
+    "github.com/hsyan2008/hfw/configs"
+    "github.com/hsyan2008/hfw/db"
     logger "github.com/hsyan2008/go-logger"
 )
 

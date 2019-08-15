@@ -7,7 +7,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	logger "github.com/hsyan2008/go-logger"
-	hfw "github.com/hsyan2008/hfw2"
+	"github.com/hsyan2008/hfw"
 )
 
 var upgrader = websocket.Upgrader{}

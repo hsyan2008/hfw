@@ -9,11 +9,11 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/google/gops/agent"
 	logger "github.com/hsyan2008/go-logger"
-	"github.com/hsyan2008/hfw2/common"
-	"github.com/hsyan2008/hfw2/configs"
-	"github.com/hsyan2008/hfw2/redis"
-	"github.com/hsyan2008/hfw2/serve"
-	"github.com/hsyan2008/hfw2/signal"
+	"github.com/hsyan2008/hfw/common"
+	"github.com/hsyan2008/hfw/configs"
+	"github.com/hsyan2008/hfw/redis"
+	"github.com/hsyan2008/hfw/serve"
+	"github.com/hsyan2008/hfw/signal"
 )
 
 var (

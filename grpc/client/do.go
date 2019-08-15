@@ -5,10 +5,10 @@ import (
 	"time"
 
 	"github.com/hsyan2008/go-logger"
-	hfw "github.com/hsyan2008/hfw2"
-	"github.com/hsyan2008/hfw2/common"
-	"github.com/hsyan2008/hfw2/configs"
-	"github.com/hsyan2008/hfw2/signal"
+	"github.com/hsyan2008/hfw"
+	"github.com/hsyan2008/hfw/common"
+	"github.com/hsyan2008/hfw/configs"
+	"github.com/hsyan2008/hfw/signal"
 	grpc "google.golang.org/grpc"
 )
 

@@ -9,8 +9,8 @@ import (
 
 	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/gracehttp"
-	"github.com/hsyan2008/hfw2/common"
-	"github.com/hsyan2008/hfw2/configs"
+	"github.com/hsyan2008/hfw/common"
+	"github.com/hsyan2008/hfw/configs"
 )
 
 var listener net.Listener

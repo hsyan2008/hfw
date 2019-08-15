@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	logger "github.com/hsyan2008/go-logger"
-	"github.com/hsyan2008/hfw2/encoding"
+	"github.com/hsyan2008/hfw/encoding"
 )
 
 type instance struct {

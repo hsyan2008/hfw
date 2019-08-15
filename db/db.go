@@ -15,11 +15,11 @@ import (
 	"github.com/go-xorm/cachestore"
 	"github.com/go-xorm/xorm"
 	logger "github.com/hsyan2008/go-logger"
-	"github.com/hsyan2008/hfw2/common"
-	"github.com/hsyan2008/hfw2/configs"
-	"github.com/hsyan2008/hfw2/db/cache"
-	"github.com/hsyan2008/hfw2/encoding"
-	"github.com/hsyan2008/hfw2/signal"
+	"github.com/hsyan2008/hfw/common"
+	"github.com/hsyan2008/hfw/configs"
+	"github.com/hsyan2008/hfw/db/cache"
+	"github.com/hsyan2008/hfw/encoding"
+	"github.com/hsyan2008/hfw/signal"
 	_ "github.com/lib/pq"
 )
 
