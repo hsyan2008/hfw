@@ -129,7 +129,7 @@ func (httpCtx *HTTPContext) ThrowCheck(errNo int64, i interface{}) {
 	}
 
 	httpCtx.ErrNo = errNo
-	httpCtx.ErrMsg = GetErrorMap(errNo)
+	httpCtx.ErrMsg = common.GetErrorMap(errNo)
 	if len(httpCtx.ErrMsg) == 0 {
 		httpCtx.ErrMsg = errMsg
 	}
