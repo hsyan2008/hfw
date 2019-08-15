@@ -89,17 +89,17 @@ type Curl struct {
 var tr = &http.Transport{
 	Proxy: http.ProxyFromEnvironment,
 	Dial: (&net.Dialer{
-		Timeout:   3 * time.Second,
+		Timeout:   10 * time.Second,
 		KeepAlive: 3600 * time.Second,
 	}).Dial,
 	TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	// DisableKeepAlives:     true,
-	TLSHandshakeTimeout:   3 * time.Second,
-	ResponseHeaderTimeout: 3 * time.Second,
+	TLSHandshakeTimeout:   10 * time.Second,
+	ResponseHeaderTimeout: 10 * time.Second,
 }
 
 var httpClient = &http.Client{
-	// Transport:     tr,
+	Transport:     tr,
 	CheckRedirect: func(_ *http.Request, via []*http.Request) error { return ErrStopRedirect },
 	Jar:           nil,
 	Timeout:       0,
