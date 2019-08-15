@@ -82,14 +82,14 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	go closeNotify(httpCtx)
 
 	instance, action := findInstance(httpCtx)
-	logger.Debugf("Query Path: %s -> Call: %s/%s", httpCtx.Request.URL.String(), instance.controllerName, action)
+	httpCtx.Log().Debugf("Query Path: %s -> Call: %s/%s", httpCtx.Request.URL.String(), instance.controllerName, action)
 	reflectVal := instance.reflectVal
 
 	//注意方法必须是大写开头，否则无法调用
 	reflectVal.MethodByName("Init").Call(initValue)
 	defer reflectVal.MethodByName("Finish").Call(initValue)
 
-	defer recoverPanic(reflectVal, initValue)
+	defer recoverPanic(httpCtx, reflectVal, initValue)
 
 	reflectVal.MethodByName("Before").Call(initValue)
 	defer reflectVal.MethodByName("After").Call(initValue)
@@ -98,14 +98,14 @@ func Router(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func recoverPanic(reflectVal reflect.Value, initValue []reflect.Value) {
+func recoverPanic(httpCtx *HTTPContext, reflectVal reflect.Value, initValue []reflect.Value) {
 	//注意recover只能执行一次
 	if err := recover(); err != nil {
 		//用户触发的
 		if err == ErrStopRun {
 			return
 		}
-		logger.Fatal(err, string(common.GetStack()))
+		httpCtx.Log().Fatal(err, string(common.GetStack()))
 
 		reflectVal.MethodByName("ServerError").Call(initValue)
 	}
@@ -118,7 +118,7 @@ func closeNotify(httpCtx *HTTPContext) {
 	//panic: net/http: CloseNotify called after ServeHTTP finished
 	defer func() {
 		if err := recover(); err != nil {
-			logger.Warn("closeNotify: ", err)
+			httpCtx.Log().Warn("closeNotify: ", err)
 		}
 	}()
 	select {
