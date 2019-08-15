@@ -122,3 +122,11 @@ func ConvertToInt(v interface{}) int {
 
 	return 0
 }
+
+//用于打印panic时的堆栈
+func GetStack() []byte {
+	buf := make([]byte, 1<<10) //4kb
+	num := runtime.Stack(buf, false)
+
+	return buf[:num]
+}

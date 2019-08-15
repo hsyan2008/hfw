@@ -9,7 +9,6 @@ import (
 	_ "net/http/pprof"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -106,9 +105,7 @@ func recoverPanic(reflectVal reflect.Value, initValue []reflect.Value) {
 		if err == ErrStopRun {
 			return
 		}
-		buf := make([]byte, 1<<20)
-		num := runtime.Stack(buf, false)
-		logger.Fatal(err, num, string(buf))
+		logger.Fatal(err, string(common.GetStack()))
 
 		reflectVal.MethodByName("ServerError").Call(initValue)
 	}
