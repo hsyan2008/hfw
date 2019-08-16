@@ -16,12 +16,13 @@ import (
 const ConsulResolver = "consul"
 
 type consulBuilder struct {
+	scheme      string
 	address     string
 	client      *consulapi.Client
 	serviceName string
 }
 
-func NewConsulBuilder(address string) resolver.Builder {
+func NewConsulBuilder(scheme, address string) resolver.Builder {
 	config := consulapi.DefaultConfig()
 	config.Address = address
 	client, err := consulapi.NewClient(config)
@@ -29,7 +30,7 @@ func NewConsulBuilder(address string) resolver.Builder {
 		log.Fatal("LearnGrpc: create consul client error", err.Error())
 		return nil
 	}
-	return &consulBuilder{address: address, client: client}
+	return &consulBuilder{scheme: scheme, address: address, client: client}
 }
 
 func (cb *consulBuilder) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOption) (resolver.Resolver, error) {
@@ -65,7 +66,7 @@ func (cb consulBuilder) resolve() ([]resolver.Address, string, error) {
 }
 
 func (cb *consulBuilder) Scheme() string {
-	return ConsulResolver
+	return cb.scheme
 }
 
 type consulResolver struct {
@@ -151,9 +152,26 @@ func (cc *consulClientConn) NewServiceConfig(serviceConfig string) {
 
 func GenerateAndRegisterConsulResolver(cc configs.GrpcConfig) (schema string, err error) {
 	if len(cc.ResolverAddresses) < 1 {
-		return "", fmt.Errorf("nil ResolverAddresses")
+		return "", fmt.Errorf("GrpcConfig has nil ResolverAddresses")
 	}
-	builder := NewConsulBuilder(cc.ResolverAddresses[0])
+	if cc.ResolverScheme == "" {
+		cc.ResolverScheme = ConsulResolver
+	}
+
+	lock.RLock()
+	if resolver.Get(cc.ResolverScheme) != nil {
+		lock.RUnlock()
+		return cc.ResolverScheme, nil
+	}
+	lock.RUnlock()
+
+	lock.Lock()
+	defer lock.Unlock()
+
+	if resolver.Get(cc.ResolverScheme) != nil {
+		return cc.ResolverScheme, nil
+	}
+	builder := NewConsulBuilder(cc.ResolverScheme, cc.ResolverAddresses[0])
 	target := resolver.Target{Scheme: builder.Scheme(), Endpoint: cc.ServerName}
 	_, err = builder.Build(target, NewConsulClientConn(), resolver.BuildOption{})
 	if err != nil {

@@ -7,7 +7,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/configs"
 	"github.com/hsyan2008/hfw/grpc/auth"
@@ -18,9 +17,8 @@ import (
 
 type connInstance struct {
 	//每个地址的连接实例
-	c          *grpc.ClientConn
-	l          *sync.Mutex
-	isRegister bool
+	c *grpc.ClientConn
+	l *sync.Mutex
 }
 
 var connInstanceMap = make(map[string]*connInstance)
@@ -37,7 +35,6 @@ func GetConnWithAuth(ctx context.Context, c configs.GrpcConfig, authValue string
 	}
 	var ok bool
 	var p *connInstance
-	address := fmt.Sprintf("%s:///%s", c.ResolverType, c.ServerName)
 	lock.Lock()
 	if p, ok = connInstanceMap[c.ServerName]; !ok {
 		p = &connInstance{
@@ -59,13 +56,11 @@ func GetConnWithAuth(ctx context.Context, c configs.GrpcConfig, authValue string
 		return p.c, nil
 	}
 
-	if !p.isRegister {
-		_, err := discovery.GetAndRegisterResolver(c)
-		if err != nil {
-			return nil, err
-		}
-		p.isRegister = true
+	scheme, err := discovery.GetAndRegisterResolver(c)
+	if err != nil {
+		return nil, err
 	}
+	address := fmt.Sprintf("%s:///%s", scheme, c.ServerName)
 
 	conn, err = newClientConn(ctx, address, c, authValue, opt...)
 	if err != nil {
@@ -78,7 +73,6 @@ func GetConnWithAuth(ctx context.Context, c configs.GrpcConfig, authValue string
 }
 
 func newClientConn(ctx context.Context, address string, c configs.GrpcConfig, authValue string, opt ...grpc.DialOption) (*grpc.ClientConn, error) {
-	logger.Warn(address, c)
 	if strings.Contains(address, ":///") {
 		// opt = append(opt, grpc.WithBalancerName("round_robin")) //grpc里默认是grpc.WithBalancerName("pick_first")
 		if c.BalancerName == "" {

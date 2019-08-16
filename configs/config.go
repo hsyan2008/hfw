@@ -131,10 +131,15 @@ type HotDeployConfig struct {
 type GrpcConfig struct {
 	//必填，必须保证唯一，且符合证书域名规则(如果使用证书)
 	//如果采用服务发现，则用于服务名
+	//如果ResolverType是static，则点号分隔的第一段用于scheme
 	ServerName string
 
 	//服务发现类型，目前可选static、consul，默认是static
 	ResolverType string
+	//如果是空
+	//static默认取Type+ServerName第一段
+	//consul默认取Type
+	ResolverScheme string
 	//服务发现的地址，如consul、etcd地址
 	ResolverAddresses []string
 	//负载均衡策略名称，默认是round_robin
