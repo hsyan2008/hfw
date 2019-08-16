@@ -34,7 +34,7 @@ func HotDeploy(hotDeployConfig configs.HotDeployConfig) {
 	}
 	defer watcher.Close()
 
-	err = addWatch(watcher, hotDeployConfig, APPPATH, 0)
+	err = addWatch(watcher, hotDeployConfig, common.GetAppPath(), 0)
 	if err != nil {
 		logger.Fatal(err)
 		return

@@ -2,8 +2,6 @@ package hfw
 
 import (
 	"errors"
-	"flag"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -20,7 +18,6 @@ var (
 )
 
 func Init() (err error) {
-	parseFlag()
 
 	err = loadConfig()
 	if err != nil {
@@ -33,20 +30,6 @@ func Init() (err error) {
 	}
 
 	return
-}
-
-func parseFlag() {
-	common.ENVIRONMENT = os.Getenv("ENVIRONMENT")
-	if len(common.ENVIRONMENT) == 0 {
-		flag.StringVar(&common.ENVIRONMENT, "e", "", "set env, e.g dev test prod")
-	}
-
-	common.VERSION = os.Getenv("VERSION")
-	if len(common.VERSION) == 0 {
-		flag.StringVar(&common.VERSION, "v", "v0.1", "set version")
-	}
-
-	flag.Parse()
 }
 
 //setLog 初始化log写入文件
@@ -94,13 +77,7 @@ func initLog() error {
 func loadConfig() error {
 	if len(common.GetEnv()) == 0 {
 		//config目录存在的时候，就必须要指定环境变量来加载config.toml
-		if common.IsExist(filepath.Join(common.GetAppPath(), "config")) {
-			if common.IsGoRun() || common.IsGoTest() {
-				common.ENVIRONMENT = common.DEV
-			} else {
-				return errors.New("please specify env")
-			}
-		} else {
+		if !common.IsExist(filepath.Join(common.GetAppPath(), "config")) {
 			logger.Warn("config dir not exist")
 			return nil
 		}

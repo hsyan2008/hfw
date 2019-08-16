@@ -1,11 +1,34 @@
 package common
 
 import (
+	"flag"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 )
+
+func init() {
+	parseFlag()
+}
+
+func parseFlag() {
+	ENVIRONMENT = os.Getenv("ENVIRONMENT")
+	if len(ENVIRONMENT) == 0 {
+		flag.StringVar(&ENVIRONMENT, "e", "", "set env, e.g dev test prod")
+	}
+
+	VERSION = os.Getenv("VERSION")
+	if len(VERSION) == 0 {
+		flag.StringVar(&VERSION, "v", "v0.1", "set version")
+	}
+
+	flag.Parse()
+
+	if len(ENVIRONMENT) == 0 && (IsGoRun() || IsGoTest()) {
+		ENVIRONMENT = DEV
+	}
+}
 
 var (
 	appPath = getAppPath()
