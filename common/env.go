@@ -10,19 +10,10 @@ import (
 var (
 	appPath = getAppPath()
 	appName = getAppName()
-	//是否go run运行
-	isGoRun bool
-	//是否go test运行
-	isGoTest bool
+
+	APPPATH = GetAppPath()
+	APPNAME = GetAppName()
 )
-
-func IsGoRun() bool {
-	return isGoRun
-}
-
-func IsGoTest() bool {
-	return isGoTest
-}
 
 func GetAppPath() string {
 	return appPath
@@ -87,4 +78,63 @@ func stripSuffix(path string) string {
 	}
 
 	return path
+}
+
+var (
+	//VERSION 版本
+	VERSION string
+	//ENVIRONMENT 环境
+	ENVIRONMENT string
+
+	PID         = os.Getpid()
+	HOSTNAME, _ = os.Hostname()
+)
+
+func GetVersion() string {
+	return VERSION
+}
+
+func GetEnv() string {
+	return ENVIRONMENT
+}
+
+func GetPid() int {
+	return PID
+}
+
+func GetHostName() string {
+	return HOSTNAME
+}
+
+const (
+	DEV  = "dev"
+	TEST = "test"
+	PROD = "prod"
+)
+
+func IsProdEnv() bool {
+	return ENVIRONMENT == PROD
+}
+
+func IsTestEnv() bool {
+	return ENVIRONMENT == TEST
+}
+
+func IsDevEnv() bool {
+	return ENVIRONMENT == DEV
+}
+
+var (
+	//是否go run运行
+	isGoRun bool
+	//是否go test运行
+	isGoTest bool
+)
+
+func IsGoRun() bool {
+	return isGoRun
+}
+
+func IsGoTest() bool {
+	return isGoTest
 }

@@ -109,7 +109,7 @@ func HotDeploy(hotDeployConfig configs.HotDeployConfig) {
 				}
 
 				execSpec := &os.ProcAttr{
-					Dir:   APPPATH,
+					Dir:   common.GetAppPath(),
 					Env:   os.Environ(),
 					Files: []*os.File{os.Stdin, os.Stdout, os.Stderr},
 				}

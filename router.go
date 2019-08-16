@@ -219,7 +219,7 @@ func HandlerFunc(pattern string, h http.HandlerFunc) {
 //如pattern=css,dir=./static，则css在./static下
 func StaticHandler(pattern string, dir string) {
 	if !filepath.IsAbs(dir) {
-		dir = filepath.Join(APPPATH, dir)
+		dir = filepath.Join(common.GetAppPath(), dir)
 	}
 	if pattern != "/" {
 		pattern = "/" + strings.Trim(pattern, "/") + "/"
@@ -232,7 +232,7 @@ func StaticHandler(pattern string, dir string) {
 //如pattern=css,dir=./static/css，则css就是./static/css
 func StaticStripHandler(pattern string, dir string) {
 	if !filepath.IsAbs(dir) {
-		dir = filepath.Join(APPPATH, dir)
+		dir = filepath.Join(common.GetAppPath(), dir)
 	}
 	if pattern != "/" {
 		pattern = "/" + strings.Trim(pattern, "/") + "/"
