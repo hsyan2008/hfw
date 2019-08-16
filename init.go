@@ -18,6 +18,7 @@ var (
 )
 
 func Init() (err error) {
+	common.ParseFlag()
 
 	err = loadConfig()
 	if err != nil {

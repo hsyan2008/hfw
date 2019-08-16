@@ -8,11 +8,7 @@ import (
 	"strings"
 )
 
-func init() {
-	parseFlag()
-}
-
-func parseFlag() {
+func ParseFlag() {
 	ENVIRONMENT = os.Getenv("ENVIRONMENT")
 	if len(ENVIRONMENT) == 0 {
 		flag.StringVar(&ENVIRONMENT, "e", "", "set env, e.g dev test prod")
