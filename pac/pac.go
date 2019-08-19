@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hsyan2008/hfw"
+	"github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/curl"
 )
 
 var pacUrl = "https://pac.itzmx.com/abc.pac"
-var pacFile = filepath.Join(hfw.APPPATH, "abc.pac")
+var pacFile = filepath.Join(common.GetAppPath(), "abc.pac")
 
 func LoadFromPac() (err error) {
 	fileInfo, err := os.Stat(pacFile)
