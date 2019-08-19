@@ -12,7 +12,8 @@ import (
 type instance struct {
 	reflectVal     reflect.Value
 	controllerName string
-	methodName     string
+	//方法名字
+	methodName string
 }
 
 var (
@@ -25,14 +26,42 @@ var (
 
 //controller如果有下划线，可以直接在注册的时候指定
 //action的下划线，可以自动处理
-func findInstance(httpCtx *HTTPContext) (instance *instance, action string) {
-	httpCtx.Path = fmt.Sprintf("%s/%s", httpCtx.Controller, httpCtx.Action)
-
+func findInstanceByPath(httpCtx *HTTPContext) (instance *instance, action string) {
 	var ok bool
+
+	defer func() {
+		httpCtx.Controller = instance.controllerName
+		httpCtx.Action = action
+	}()
+
+	var inputPath string
+	if httpCtx.Path == "" {
+		inputPath = httpCtx.Request.URL.Path
+	} else {
+		inputPath = httpCtx.Path
+	}
+
+	//假设url上没有action
+	controllerPath := completeURL(inputPath)
+	httpCtx.Action = Config.Route.DefaultAction
+	httpCtx.Path = fmt.Sprintf("%s/%s", controllerPath, httpCtx.Action)
+	httpCtx.Log().Warn(controllerPath, httpCtx.Action, httpCtx.Path)
 	if instance, ok = routeMapMethod[httpCtx.Path+"for"+httpCtx.Request.Method]; ok {
 		return instance, instance.methodName
 	}
+	if instance, ok = routeMap[httpCtx.Path]; ok {
+		return instance, instance.methodName
+	}
 
+	//假设url上最后一段是action
+	tmp := strings.Split(controllerPath, "/")
+	controllerPath = strings.Join(tmp[:len(tmp)-1], "/")
+	httpCtx.Action = tmp[len(tmp)-1]
+	httpCtx.Path = fmt.Sprintf("%s/%s", controllerPath, httpCtx.Action)
+	httpCtx.Log().Warn(controllerPath, httpCtx.Action, httpCtx.Path)
+	if instance, ok = routeMapMethod[httpCtx.Path+"for"+httpCtx.Request.Method]; ok {
+		return instance, instance.methodName
+	}
 	if instance, ok = routeMap[httpCtx.Path]; ok {
 		return instance, instance.methodName
 	}
@@ -42,14 +71,22 @@ func findInstance(httpCtx *HTTPContext) (instance *instance, action string) {
 	}
 
 	httpCtx.Action = strings.ToLower("NotFound")
-	httpCtx.Path = fmt.Sprintf("%s/%s", httpCtx.Controller, httpCtx.Action)
 
 	return defaultInstance, "NotFound"
 }
 
-//必须For+全大写结尾
+func completeURL(url string) string {
+	//去掉前缀并把url补全为2段
+	trimURL := strings.Trim(strings.ToLower(url), "/")
+	if trimURL == "" {
+		trimURL = Config.Route.DefaultController
+	}
+
+	return trimURL
+}
+
 //actions包含小写和下划线两种格式的方法名，已去重
-func getRequestMethod(funcName string) (actions []string, method string, isMethod bool) {
+func getActionsAndMethod(funcName string) (actions []string, method string, isMethod bool) {
 	if len(funcName) == 0 {
 		return
 	}
@@ -78,10 +115,10 @@ func getRequestMethod(funcName string) (actions []string, method string, isMetho
 
 //修改httpCtx.Path后重新寻找执行action
 func DispatchRoute(httpCtx *HTTPContext) {
-	//httpCtx.Action会变化，所以先保存
-	path := fmt.Sprintf("C:%s M:%s", httpCtx.Controller, httpCtx.Action)
-	instance, action := findInstance(httpCtx)
-	logger.Debugf("Dispatch %s -> Call: %s/%s", path, instance.controllerName, action)
+	//这里httpCtx的Controller和Action是传过来的c和m，在findInstanceByPath会修改成正确的
+	httpCtx.Path = fmt.Sprintf("C:%s M:%s", httpCtx.Controller, httpCtx.Action)
+	instance, action := findInstanceByPath(httpCtx)
+	logger.Debugf("Dispatch %s -> Call: %s/%s", httpCtx.Path, httpCtx.Controller, httpCtx.Action)
 	reflectVal := instance.reflectVal
 	//初始化httpCtx
 	initValue := []reflect.Value{

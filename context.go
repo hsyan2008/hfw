@@ -25,9 +25,11 @@ type HTTPContext struct {
 	Request        *http.Request       `json:"-"`
 	Session        *session.Session    `json:"-"`
 	Layout         string              `json:"-"`
-	Controller     string              `json:"-"`
-	Action         string              `json:"-"`
-	Path           string              `json:"-"`
+	//对应的struct名称，大小写一致
+	Controller string `json:"-"`
+	//对应的struct方法的名称，大小写一致
+	Action string `json:"-"`
+	Path   string `json:"-"`
 
 	IsZip bool `json:"-"`
 	//404和500页面被自动更改content-type，导致压缩后有问题，暂时不压缩
@@ -52,12 +54,18 @@ type HTTPContext struct {
 	//如果是下载文件，不执行After和Finish
 	IsCloseRender bool `json:"-"`
 
-	log *logger.Log `json:"-"`
+	log *logger.Log
 }
 
 func (httpCtx *HTTPContext) init(w http.ResponseWriter, r *http.Request) {
 	httpCtx.ResponseWriter = w
 	httpCtx.Request = r
+	httpCtx.Session = nil
+
+	httpCtx.Controller = ""
+	httpCtx.Action = ""
+	httpCtx.Path = ""
+
 	httpCtx.Layout = ""
 	httpCtx.Template = ""
 	httpCtx.TemplateFile = ""

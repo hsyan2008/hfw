@@ -71,7 +71,6 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	defer httpCtxPool.Put(httpCtx)
 	//初始化httpCtx
 	httpCtx.init(w, r)
-	httpCtx.Controller, httpCtx.Action, _ = formatURL(httpCtx.Request.URL.Path)
 	httpCtx.Ctx, httpCtx.Cancel = context.WithCancel(signal.GetSignalContext().Ctx)
 	defer httpCtx.Cancel()
 	initValue := []reflect.Value{
@@ -81,8 +80,8 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	//如果用户关闭连接
 	go closeNotify(httpCtx)
 
-	instance, action := findInstance(httpCtx)
-	httpCtx.Log().Debugf("Query Path: %s -> Call: %s/%s", httpCtx.Request.URL.String(), instance.controllerName, action)
+	instance, methodName := findInstanceByPath(httpCtx)
+	httpCtx.Log().Debugf("Query Path: %s -> Call: %s/%s", httpCtx.Request.URL.String(), httpCtx.Controller, httpCtx.Action)
 	reflectVal := instance.reflectVal
 
 	//注意方法必须是大写开头，否则无法调用
@@ -94,8 +93,7 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	reflectVal.MethodByName("Before").Call(initValue)
 	defer reflectVal.MethodByName("After").Call(initValue)
 
-	reflectVal.MethodByName(action).Call(initValue)
-
+	reflectVal.MethodByName(methodName).Call(initValue)
 }
 
 func recoverPanic(httpCtx *HTTPContext, reflectVal reflect.Value, initValue []reflect.Value) {
@@ -152,23 +150,20 @@ func Handler(pattern string, handler ControllerInterface) (err error) {
 		http.HandleFunc("/logger/adjust", loggerAdjust)
 	}
 
-	controller, _, leave := formatURL(pattern)
-	if leave != "" {
-		return fmt.Errorf("pattern must only 1 or 2 segment, got %s", pattern)
-	}
+	controllerPath := completeURL(pattern)
 
 	reflectVal := reflect.ValueOf(handler)
 	rt := reflectVal.Type()
 	//controllerName和controller不一定相等
 	controllerName := reflect.Indirect(reflectVal).Type().Name()
 
-	if c, ok := routeMapRegister[pattern]; ok {
+	if c, ok := routeMapRegister[controllerPath]; ok {
 		if c != controllerName {
 			panic(fmt.Sprintf("%s has register controller:%s", pattern, c))
 		}
 		return
 	}
-	routeMapRegister[pattern] = controllerName
+	routeMapRegister[controllerPath] = controllerName
 
 	numMethod := rt.NumMethod()
 	//注意方法必须是大写开头，否则无法调用
@@ -177,7 +172,7 @@ func Handler(pattern string, handler ControllerInterface) (err error) {
 		switch m {
 		case "Init", "Before", "After", "Finish", "NotFound", "ServerError":
 		default:
-			actions, method, isMethod := getRequestMethod(m)
+			actions, method, isMethod := getActionsAndMethod(m)
 			value := &instance{
 				reflectVal:     reflectVal,
 				controllerName: controllerName,
@@ -188,19 +183,19 @@ func Handler(pattern string, handler ControllerInterface) (err error) {
 			}
 			for _, action := range actions {
 				if isMethod {
-					path := fmt.Sprintf("%s/%sfor%s", controller, action, method)
+					path := fmt.Sprintf("%s/%sfor%s", controllerPath, action, method)
 					if _, ok := routeMapMethod[path]; ok {
-						panic(path + " exist")
+						panic(path + "has exist")
 					}
 					routeMapMethod[path] = value
-					logger.Infof("pattern: %s register routeMapMethod: %s", pattern, path)
+					logger.Infof("pattern: %s register in routeMapMethod: %s", pattern, path)
 				} else {
-					path := fmt.Sprintf("%s/%s", controller, action)
+					path := fmt.Sprintf("%s/%s", controllerPath, action)
 					if _, ok := routeMap[path]; ok {
-						panic(path + " exist")
+						panic(path + "has exist")
 					}
 					routeMap[path] = value
-					logger.Infof("pattern: %s register routeMap: %s", pattern, path)
+					logger.Infof("pattern: %s register in routeMap: %s", pattern, path)
 				}
 			}
 		}
@@ -239,26 +234,6 @@ func StaticStripHandler(pattern string, dir string) {
 	}
 	logger.Info("StaticStripHandler", pattern, dir)
 	http.Handle(pattern, http.StripPrefix(pattern, http.FileServer(http.Dir(dir))))
-}
-
-func formatURL(url string) (controller string, action string, leave string) {
-	//去掉前缀并把url补全为2段
-	trimURL := strings.Trim(strings.ToLower(url), "/")
-	urls := strings.SplitN(trimURL, "/", 3)
-	if len(urls) == 1 {
-		urls = append(urls, Config.Route.DefaultAction)
-	}
-	if urls[0] == "" {
-		urls[0] = Config.Route.DefaultController
-	}
-	if urls[1] == "" {
-		urls[1] = Config.Route.DefaultAction
-	}
-	if len(urls) == 3 {
-		leave = urls[2]
-	}
-
-	return urls[0], urls[1], leave
 }
 
 //调整logger的设置
