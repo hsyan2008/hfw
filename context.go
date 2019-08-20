@@ -149,6 +149,34 @@ func (httpCtx *HTTPContext) ThrowCheck(errNo int64, i interface{}) {
 	httpCtx.StopRun()
 }
 
+//CheckErr
+func (httpCtx *HTTPContext) CheckErr(errNo int64, i interface{}) (int64, string) {
+	var errMsg string
+	if i == nil || errNo == 0 {
+		return 0, errMsg
+	}
+	switch e := i.(type) {
+	case *common.RespErr:
+		errNo = e.ErrNo()
+		errMsg = e.ErrMsg()
+		httpCtx.Log().Output(3, fmt.Sprintf("[ThrowCheckForGrpc] %s", e.Error()))
+	default:
+		errMsg = fmt.Sprintf("%v", e)
+		httpCtx.Log().Output(3, fmt.Sprintf("[ThrowCheckForGrpc] No:%d Msg:%v", errNo, errMsg))
+	}
+
+	httpCtx.ErrMsg = common.GetErrorMap(errNo)
+	if httpCtx.ErrMsg == "" {
+		errMsg = httpCtx.ErrMsg
+	}
+
+	if errNo < 100000 && Config.AppID > 0 {
+		errNo = Config.AppID*100000 + errNo
+	}
+
+	return errNo, errMsg
+}
+
 //SetDownloadMode ..
 func (httpCtx *HTTPContext) SetDownloadMode(filename string) {
 	httpCtx.ResponseWriter.Header().Set("Content-Disposition", fmt.Sprintf(`attachment;filename="%s"`, filename))
