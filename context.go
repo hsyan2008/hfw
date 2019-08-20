@@ -159,10 +159,10 @@ func (httpCtx *HTTPContext) CheckErr(errNo int64, i interface{}) (int64, string)
 	case *common.RespErr:
 		errNo = e.ErrNo()
 		errMsg = e.ErrMsg()
-		httpCtx.Log().Output(3, fmt.Sprintf("[ThrowCheckForGrpc] %s", e.Error()))
+		httpCtx.Log().Output(3, fmt.Sprintf("[CheckErr] %s", e.Error()))
 	default:
 		errMsg = fmt.Sprintf("%v", e)
-		httpCtx.Log().Output(3, fmt.Sprintf("[ThrowCheckForGrpc] No:%d Msg:%v", errNo, errMsg))
+		httpCtx.Log().Output(3, fmt.Sprintf("[CheckErr] No:%d Msg:%v", errNo, errMsg))
 	}
 
 	httpCtx.ErrMsg = common.GetErrorMap(errNo)
