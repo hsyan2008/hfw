@@ -125,7 +125,7 @@ func ConvertToInt(v interface{}) int {
 
 //用于打印panic时的堆栈
 func GetStack() []byte {
-	buf := make([]byte, 1<<10) //4kb
+	buf := make([]byte, 1<<12) //16kb
 	num := runtime.Stack(buf, false)
 
 	return buf[:num]
