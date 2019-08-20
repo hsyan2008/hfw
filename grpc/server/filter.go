@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"time"
 
 	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/common"
@@ -13,7 +14,6 @@ func unaryFilter(
 	ctx context.Context, req interface{},
 	info *grpc.UnaryServerInfo, handler grpc.UnaryHandler,
 ) (resp interface{}, err error) {
-	logger.Debug("filter: ", info)
 
 	defer func() {
 		if e := recover(); e != nil {
@@ -21,6 +21,13 @@ func unaryFilter(
 			logger.Fatal(err, string(common.GetStack()))
 		}
 	}()
+
+	if logger.Level() == logger.DEBUG {
+		startTime := time.Now()
+		resp, err = handler(ctx, req)
+		logger.Debugf("Grpc server: %s CostTime: %s", info.FullMethod, time.Since(startTime))
+		return resp, err
+	}
 
 	return handler(ctx, req)
 }
@@ -37,6 +44,13 @@ func streamFilter(
 			logger.Fatal(err, string(common.GetStack()))
 		}
 	}()
+
+	if logger.Level() == logger.DEBUG {
+		startTime := time.Now()
+		err = handler(srv, ss)
+		logger.Debugf("Grpc server: %s CostTime: %s", info.FullMethod, time.Since(startTime))
+		return err
+	}
 
 	return handler(srv, ss)
 }

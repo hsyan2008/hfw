@@ -45,7 +45,6 @@ func findInstanceByPath(httpCtx *HTTPContext) (instance *instance, action string
 	controllerPath := completeURL(inputPath)
 	httpCtx.Action = Config.Route.DefaultAction
 	httpCtx.Path = fmt.Sprintf("%s/%s", controllerPath, httpCtx.Action)
-	httpCtx.Log().Warn(controllerPath, httpCtx.Action, httpCtx.Path)
 	if instance, ok = routeMapMethod[httpCtx.Path+"for"+httpCtx.Request.Method]; ok {
 		return instance, instance.methodName
 	}
@@ -58,7 +57,6 @@ func findInstanceByPath(httpCtx *HTTPContext) (instance *instance, action string
 	controllerPath = strings.Join(tmp[:len(tmp)-1], "/")
 	httpCtx.Action = tmp[len(tmp)-1]
 	httpCtx.Path = fmt.Sprintf("%s/%s", controllerPath, httpCtx.Action)
-	httpCtx.Log().Warn(controllerPath, httpCtx.Action, httpCtx.Path)
 	if instance, ok = routeMapMethod[httpCtx.Path+"for"+httpCtx.Request.Method]; ok {
 		return instance, instance.methodName
 	}

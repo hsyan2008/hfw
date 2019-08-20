@@ -73,6 +73,7 @@ func GetConnWithAuth(ctx context.Context, c configs.GrpcConfig, authValue string
 }
 
 func newClientConn(ctx context.Context, address string, c configs.GrpcConfig, authValue string, opt ...grpc.DialOption) (*grpc.ClientConn, error) {
+	opt = append(opt, grpc.WithUnaryInterceptor(unaryFilter), grpc.WithStreamInterceptor(streamFilter))
 	if strings.Contains(address, ":///") {
 		// opt = append(opt, grpc.WithBalancerName("round_robin")) //grpc里默认是grpc.WithBalancerName("pick_first")
 		if c.BalancerName == "" {

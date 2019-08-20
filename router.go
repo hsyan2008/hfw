@@ -32,25 +32,32 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	signal.GetSignalContext().WgAdd()
 	defer signal.GetSignalContext().WgDone()
 
+	httpCtx := httpCtxPool.Get().(*HTTPContext)
+	defer httpCtxPool.Put(httpCtx)
+	//初始化httpCtx
+	httpCtx.init(w, r)
+	httpCtx.Ctx, httpCtx.Cancel = context.WithCancel(signal.GetSignalContext().Ctx)
+	defer httpCtx.Cancel()
+
 	if logger.Level() == logger.DEBUG {
 		ip := common.GetClientIP(r)
-		logger.Debugf("From: %s, Host: %s, Method: %s, Uri: %s %s", ip, r.Host, r.Method, r.URL.String(), "start")
+		httpCtx.Log().Debugf("From: %s, Host: %s, Method: %s, Uri: %s %s", ip, r.Host, r.Method, r.URL.String(), "start")
 		startTime := time.Now()
 		defer func() {
-			logger.Debugf("From: %s, Host: %s, Method: %s, Uri: %s %s CostTime: %s",
+			httpCtx.Log().Debugf("From: %s, Host: %s, Method: %s, Uri: %s %s CostTime: %s",
 				ip, r.Host, r.Method, r.URL.String(), "end", time.Since(startTime))
 		}()
 	}
 
 	onlineNum := atomic.AddUint32(&online, 1)
-	logger.Info("online", onlineNum)
+	httpCtx.Log().Info("online", onlineNum)
 	defer func() {
-		logger.Info("offline", atomic.AddUint32(&online, ^uint32(0)))
+		httpCtx.Log().Info("offline", atomic.AddUint32(&online, ^uint32(0)))
 	}()
 	err := checkConcurrence(onlineNum)
 	if err != nil {
 		w.WriteHeader(http.StatusServiceUnavailable)
-		logger.Warn(err)
+		httpCtx.Log().Warn(err)
 		return
 	}
 
@@ -67,12 +74,6 @@ func Router(w http.ResponseWriter, r *http.Request) {
 		panic("nil router map")
 	}
 
-	httpCtx := httpCtxPool.Get().(*HTTPContext)
-	defer httpCtxPool.Put(httpCtx)
-	//初始化httpCtx
-	httpCtx.init(w, r)
-	httpCtx.Ctx, httpCtx.Cancel = context.WithCancel(signal.GetSignalContext().Ctx)
-	defer httpCtx.Cancel()
 	initValue := []reflect.Value{
 		reflect.ValueOf(httpCtx),
 	}
