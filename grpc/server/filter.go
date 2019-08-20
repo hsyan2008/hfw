@@ -2,9 +2,10 @@ package server
 
 import (
 	"context"
-	"runtime"
+	"fmt"
 
 	logger "github.com/hsyan2008/go-logger"
+	"github.com/hsyan2008/hfw/common"
 	"google.golang.org/grpc"
 )
 
@@ -15,10 +16,9 @@ func unaryFilter(
 	logger.Debug("filter: ", info)
 
 	defer func() {
-		if err := recover(); err != nil {
-			buf := make([]byte, 1<<20)
-			num := runtime.Stack(buf, false)
-			logger.Fatal(err, num, string(buf))
+		if e := recover(); e != nil {
+			err = fmt.Errorf("Grpc server panic: %#v", e)
+			logger.Fatal(err, string(common.GetStack()))
 		}
 	}()
 
@@ -32,10 +32,9 @@ func streamFilter(
 	logger.Debug("filter: ", info)
 
 	defer func() {
-		if err := recover(); err != nil {
-			buf := make([]byte, 1<<20)
-			num := runtime.Stack(buf, false)
-			logger.Fatal(err, num, string(buf))
+		if e := recover(); e != nil {
+			err = fmt.Errorf("Grpc server panic: %#v", e)
+			logger.Fatal(err, string(common.GetStack()))
 		}
 	}()
 
