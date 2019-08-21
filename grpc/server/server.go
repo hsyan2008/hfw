@@ -16,12 +16,14 @@ import (
 	"errors"
 	"io/ioutil"
 	"net"
+	"time"
 
 	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/configs"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/reflection"
 )
 
@@ -35,6 +37,19 @@ var grpcServer *grpc.Server
 
 func GetServer() *grpc.Server {
 	return grpcServer
+}
+
+var kaep = keepalive.EnforcementPolicy{
+	MinTime:             5 * time.Second, // If a client pings more than once every 5 seconds, terminate the connection
+	PermitWithoutStream: true,            // Allow pings even when there are no active streams
+}
+
+var kasp = keepalive.ServerParameters{
+	MaxConnectionIdle:     15 * time.Second, // If a client is idle for 15 seconds, send a GOAWAY
+	MaxConnectionAge:      30 * time.Second, // If any connection is alive for more than 30 seconds, send a GOAWAY
+	MaxConnectionAgeGrace: 5 * time.Second,  // Allow 5 seconds for pending RPCs to complete before forcibly closing connections
+	Time:                  5 * time.Second,  // Ping the client if it is idle for 5 seconds to ensure the connection is still active
+	Timeout:               1 * time.Second,  // Wait 1 second for the ping ack before assuming the connection is dead
 }
 
 func NewServer(serverConfig configs.ServerConfig, opt ...grpc.ServerOption) (*grpc.Server, error) {
@@ -61,7 +76,10 @@ func NewServer(serverConfig configs.ServerConfig, opt ...grpc.ServerOption) (*gr
 		opt = append(opt, grpc.MaxSendMsgSize(serverConfig.MaxSendMsgSize))
 	}
 
-	opt = append(opt, grpc.UnaryInterceptor(unaryFilter), grpc.StreamInterceptor(streamFilter))
+	//自行处理，可以在拦截器里实现验证逻辑等
+	// opt = append(opt, grpc.KeepaliveEnforcementPolicy(kaep), grpc.KeepaliveParams(kasp),
+	// 	grpc.UnaryInterceptor(interceptor.UnaryServerInterceptor), grpc.StreamInterceptor(interceptor.StreamServerInterceptor))
+	opt = append(opt, grpc.KeepaliveEnforcementPolicy(kaep), grpc.KeepaliveParams(kasp))
 
 	grpcServer = grpc.NewServer(
 		opt...,
