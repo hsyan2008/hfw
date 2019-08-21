@@ -11,6 +11,7 @@ import (
 	"github.com/hsyan2008/hfw/configs"
 	"github.com/hsyan2008/hfw/grpc/auth"
 	"github.com/hsyan2008/hfw/grpc/discovery"
+	"github.com/hsyan2008/hfw/grpc/interceptor"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
 )
@@ -25,6 +26,11 @@ var connInstanceMap = make(map[string]*connInstance)
 var lock = new(sync.Mutex)
 
 func GetConn(ctx context.Context, c configs.GrpcConfig, opt ...grpc.DialOption) (conn *grpc.ClientConn, err error) {
+	return GetConnWithAuth(ctx, c, "", opt...)
+}
+
+func GetConnWithDefaultInterceptor(ctx context.Context, c configs.GrpcConfig, opt ...grpc.DialOption) (conn *grpc.ClientConn, err error) {
+	opt = append(opt, grpc.WithUnaryInterceptor(interceptor.UnaryClientInterceptor), grpc.WithStreamInterceptor(interceptor.StreamClientInterceptor))
 	return GetConnWithAuth(ctx, c, "", opt...)
 }
 
@@ -73,9 +79,6 @@ func GetConnWithAuth(ctx context.Context, c configs.GrpcConfig, authValue string
 }
 
 func newClientConn(ctx context.Context, address string, c configs.GrpcConfig, authValue string, opt ...grpc.DialOption) (*grpc.ClientConn, error) {
-
-	// opt = append(opt, grpc.WithUnaryInterceptor(interceptor.UnaryClientInterceptor), grpc.WithStreamInterceptor(interceptor.StreamClientInterceptor))
-
 	if strings.Contains(address, ":///") {
 		// opt = append(opt, grpc.WithBalancerName("round_robin")) //grpc里默认是grpc.WithBalancerName("pick_first")
 		if c.BalancerName == "" {

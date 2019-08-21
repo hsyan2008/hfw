@@ -21,6 +21,7 @@ import (
 	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/configs"
+	"github.com/hsyan2008/hfw/grpc/interceptor"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
@@ -52,6 +53,13 @@ var kasp = keepalive.ServerParameters{
 	Timeout:               1 * time.Second,  // Wait 1 second for the ping ack before assuming the connection is dead
 }
 
+func NewServerWithDefaultInterceptor(serverConfig configs.ServerConfig, opt ...grpc.ServerOption) (*grpc.Server, error) {
+	//可以在拦截器里实现验证逻辑等
+	opt = append(opt, grpc.KeepaliveEnforcementPolicy(kaep), grpc.KeepaliveParams(kasp),
+		grpc.UnaryInterceptor(interceptor.UnaryServerInterceptor), grpc.StreamInterceptor(interceptor.StreamServerInterceptor))
+	return NewServer(serverConfig, opt...)
+}
+
 func NewServer(serverConfig configs.ServerConfig, opt ...grpc.ServerOption) (*grpc.Server, error) {
 	if common.IsExist(serverConfig.CertFile) && common.IsExist(serverConfig.KeyFile) {
 		logger.Debug("init grpc server with certFile and keyFile")
@@ -76,9 +84,6 @@ func NewServer(serverConfig configs.ServerConfig, opt ...grpc.ServerOption) (*gr
 		opt = append(opt, grpc.MaxSendMsgSize(serverConfig.MaxSendMsgSize))
 	}
 
-	//自行处理，可以在拦截器里实现验证逻辑等
-	// opt = append(opt, grpc.KeepaliveEnforcementPolicy(kaep), grpc.KeepaliveParams(kasp),
-	// 	grpc.UnaryInterceptor(interceptor.UnaryServerInterceptor), grpc.StreamInterceptor(interceptor.StreamServerInterceptor))
 	opt = append(opt, grpc.KeepaliveEnforcementPolicy(kaep), grpc.KeepaliveParams(kasp))
 
 	grpcServer = grpc.NewServer(
