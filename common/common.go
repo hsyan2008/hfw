@@ -1,12 +1,14 @@
 package common
 
 import (
+	"bytes"
 	"crypto/md5"
 	"fmt"
 	"net/http"
 	"os"
 	"runtime"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/axgle/mahonia"
 	"github.com/google/uuid"
@@ -121,6 +123,31 @@ func ConvertToInt(v interface{}) int {
 	}
 
 	return 0
+}
+
+//把中文转成\u8981之类的unicode编码
+//参考http://blog.cyeam.com/json/2014/08/04/go_json
+//utf8包
+func UtfToUnicode(d []byte) (reader *bytes.Buffer, err error) {
+	reader = new(bytes.Buffer)
+	for len(d) > 0 {
+		r, size := utf8.DecodeRune(d)
+		rint := int(r)
+		if rint < 128 {
+			_, err = reader.WriteRune(r)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			_, err = reader.WriteString(fmt.Sprintf("%s%04x", `\u`, r))
+			if err != nil {
+				return nil, err
+			}
+		}
+		d = d[size:]
+	}
+
+	return
 }
 
 //用于打印panic时的堆栈
