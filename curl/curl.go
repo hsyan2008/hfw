@@ -148,7 +148,7 @@ func (curls *Curl) SetHeaders(headers map[string]string) {
 }
 
 func (curls *Curl) SetContext(ctx context.Context) {
-	if curls.ctx == nil {
+	if curls.ctx == nil || curls.ctx.Err() != nil {
 		curls.ctx, curls.cancel = context.WithCancel(ctx)
 	}
 }
