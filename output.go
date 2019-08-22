@@ -8,14 +8,13 @@ import (
 	"path/filepath"
 	"sync"
 
-	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/encoding"
 )
 
 //Output ..
 func (httpCtx *HTTPContext) Output() {
-	// logger.Debug("Output")
+	// httpCtx.Log().Debug("Output")
 	if httpCtx.ResponseWriter.Header().Get("Location") != "" {
 		return
 	}
@@ -188,7 +187,7 @@ func (httpCtx *HTTPContext) ReturnJSON() {
 	}
 
 	var err error
-	logger.Debugf("Response json: %s", func() string {
+	httpCtx.Log().Debugf("Response json: %s", func() string {
 		var b []byte
 		if httpCtx.IsOnlyResults {
 			b, err = encoding.JSON.Marshal(httpCtx.Results)
