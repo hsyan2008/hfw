@@ -31,6 +31,8 @@ type Response struct {
 	Body       []byte            `json:"body"`
 	BodyReader io.ReadCloser     `json:"-"`
 
+	IsStream bool `json:"-"`
+
 	ctx    context.Context
 	cancel context.CancelFunc
 }
@@ -357,6 +359,7 @@ func (curls *Curl) curlResponse(resp *http.Response) (response *Response, err er
 	response.ctx = curls.ctx
 	response.cancel = curls.cancel
 	response.Headers = curls.rcHeader(resp.Header)
+	response.IsStream = curls.isStream
 	location, _ := resp.Location()
 	if nil != location {
 		locationUrl := location.String()

@@ -6,6 +6,7 @@ require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/axgle/mahonia v0.0.0-20180208002826-3358181d7394
 	github.com/fsnotify/fsnotify v1.4.7
+	github.com/go-xorm/xorm v0.7.6 // indirect
 	github.com/google/gops v0.3.6
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/websocket v1.4.0
