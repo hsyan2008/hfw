@@ -3,8 +3,8 @@ package db
 import (
 	"fmt"
 
-	"github.com/go-xorm/core"
 	logger "github.com/hsyan2008/go-logger"
+	"xorm.io/core"
 )
 
 type xormLog struct {
