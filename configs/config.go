@@ -9,6 +9,7 @@ type AllConfig struct {
 	Server    ServerConfig
 	Logger    LoggerConfig
 	Db        DbConfig
+	Mongo     MongoConfig
 	Cache     CacheConfig
 	Template  TemplateConfig
 	Route     RouteConfig
@@ -90,6 +91,11 @@ type DbStdConfig struct {
 	Port     string
 	Dbname   string
 	Params   string
+}
+
+type MongoConfig struct {
+	Address  string
+	Database string
 }
 
 //CacheConfig ..
