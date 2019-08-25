@@ -94,8 +94,8 @@ type DbStdConfig struct {
 }
 
 type MongoConfig struct {
-	Address  string
-	Database string
+	Address string
+	Dbname  string
 }
 
 //CacheConfig ..
