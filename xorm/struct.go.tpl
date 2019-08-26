@@ -11,23 +11,14 @@ import (
     "github.com/hsyan2008/hfw"
     "github.com/hsyan2008/hfw/configs"
     "github.com/hsyan2008/hfw/db"
-    logger "github.com/hsyan2008/go-logger"
 )
 
 {{range .Tables}}
-var {{Mapper .Name}}Model = &{{Mapper .Name}}{}
-
 func init() {
-    var err error
-    {{Mapper .Name}}Model.Dao, err = db.NewXormDao(hfw.Config, hfw.Config.Db)
-    if err != nil {
-        logger.Fatal(err)
-        panic(err)    
-    }
-    {{Mapper .Name}}Model.Dao.EnableCache({{Mapper .Name}}Model)
+    //{{Mapper .Name}}Model.Dao.EnableCache({{Mapper .Name}}Model)
     //{{Mapper .Name}}Model.Dao.DisableCache({{Mapper .Name}}Model)
 	//gob: type not registered for interface
-    gob.Register({{Mapper .Name}}Model)
+    gob.Register(&{{Mapper .Name}}{})
 }
 
 type {{Mapper .Name}} struct {
@@ -132,12 +123,12 @@ func (m *{{Mapper .Name}}) SearchOne(cond db.Cond) (t *{{Mapper .Name}}, err err
 }
 
 func (m *{{Mapper .Name}}) Search(cond db.Cond) (t []*{{Mapper .Name}}, err error) {
-	err = m.Dao.Search(m, t, cond)
+	err = m.Dao.Search(m, &t, cond)
 	return
 }
 
 func (m *{{Mapper .Name}}) SearchAndCount(cond db.Cond) (t []*{{Mapper .Name}}, total int64, err error) {
-	total, err = m.Dao.SearchAndCount(m, t, cond)
+	total, err = m.Dao.SearchAndCount(m, &t, cond)
 	return
 }
 
@@ -154,7 +145,7 @@ func (m *{{Mapper .Name}}) Count(cond db.Cond) (total int64, err error) {
 }
 
 func (m *{{Mapper .Name}}) GetMulti(ids ...interface{}) (t []*{{Mapper .Name}}, err error) {
-	err = m.Dao.GetMulti(m, t, ids...)
+	err = m.Dao.GetMulti(m, &t, ids...)
 	return
 }
 
@@ -201,6 +192,11 @@ func (m *{{Mapper .Name}}) QueryInterface(args ...interface{}) ([]map[string]int
 //  configs.DbConfig    新生成dao
 //  *db.XormDao         使用现有的dao
 //  空                  使用默认的数据库配置
+func New{{Mapper .Name}}IgnoreErr(c ...interface{}) (m *{{Mapper .Name}}) {
+    m, _ = New{{Mapper .Name}}(c...)
+    return
+}
+
 func New{{Mapper .Name}}(c ...interface{}) (m *{{Mapper .Name}}, err error) {
 	m = &{{Mapper .Name}}{}
 	var dbConfig configs.DbConfig
