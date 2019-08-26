@@ -120,7 +120,7 @@ func (d *XormDao) Insert(t Model) (affected int64, err error) {
 	return
 }
 
-func (d *XormDao) InsertMulti(t []Model) (affected int64, err error) {
+func (d *XormDao) InsertMulti(t ...Model) (affected int64, err error) {
 	sess := d.sess
 	if sess == nil {
 		sess = d.engine.NewSession()

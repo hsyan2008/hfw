@@ -132,12 +132,12 @@ func (m *{{Mapper .Name}}) SearchOne(cond db.Cond) (t *{{Mapper .Name}}, err err
 }
 
 func (m *{{Mapper .Name}}) Search(cond db.Cond) (t []*{{Mapper .Name}}, err error) {
-	err = m.Dao.Search(m, &t, cond)
+	err = m.Dao.Search(m, t, cond)
 	return
 }
 
 func (m *{{Mapper .Name}}) SearchAndCount(cond db.Cond) (t []*{{Mapper .Name}}, total int64, err error) {
-	total, err = m.Dao.SearchAndCount(m, &t, cond)
+	total, err = m.Dao.SearchAndCount(m, t, cond)
 	return
 }
 
@@ -154,7 +154,7 @@ func (m *{{Mapper .Name}}) Count(cond db.Cond) (total int64, err error) {
 }
 
 func (m *{{Mapper .Name}}) GetMulti(ids ...interface{}) (t []*{{Mapper .Name}}, err error) {
-	err = m.Dao.GetMulti(m, &t, ids...)
+	err = m.Dao.GetMulti(m, t, ids...)
 	return
 }
 
