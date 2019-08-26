@@ -120,7 +120,7 @@ func (d *XormDao) Insert(t Model) (affected int64, err error) {
 	return
 }
 
-func (d *XormDao) InsertMulti(t ...Model) (affected int64, err error) {
+func (d *XormDao) InsertMulti(t interface{}) (affected int64, err error) {
 	sess := d.sess
 	if sess == nil {
 		sess = d.engine.NewSession()
@@ -270,7 +270,7 @@ FOR:
 	return sess, nil
 }
 
-func (d *XormDao) Search(t Model, ts []Model, cond Cond) (err error) {
+func (d *XormDao) Search(t Model, ts interface{}, cond Cond) (err error) {
 	sess := d.sess
 	if sess == nil {
 		sess = d.engine.NewSession()
@@ -290,7 +290,7 @@ func (d *XormDao) Search(t Model, ts []Model, cond Cond) (err error) {
 	return
 }
 
-func (d *XormDao) SearchAndCount(t Model, ts []Model, cond Cond) (total int64, err error) {
+func (d *XormDao) SearchAndCount(t Model, ts interface{}, cond Cond) (total int64, err error) {
 	sess := d.sess
 	if sess == nil {
 		sess = d.engine.NewSession()
@@ -350,14 +350,14 @@ func (d *XormDao) Iterate(t Model, cond Cond, f xorm.IterFunc) (err error) {
 	return
 }
 
-func (d *XormDao) GetMulti(m Model, t []Model, ids ...interface{}) (err error) {
+func (d *XormDao) GetMulti(t Model, ts interface{}, ids ...interface{}) (err error) {
 	sess := d.sess
 	if sess == nil {
 		sess = d.engine.NewSession()
 		defer sess.Close()
 	}
 
-	err = sess.In(m.AutoIncrColName(), ids...).Find(t)
+	err = sess.In(t.AutoIncrColName(), ids...).Find(ts)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
 		logger.Error(err, lastSQL, lastSQLArgs)
