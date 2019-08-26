@@ -3,15 +3,18 @@ package db
 const DefaultPageSize = 1000
 
 type Dao interface {
-	UpdateById(interface{}) (int64, error)
-	UpdateByIds(interface{}, Cond, []interface{}) (int64, error)
-	UpdateByWhere(interface{}, Cond, Cond) (int64, error)
-	Insert(interface{}) (int64, error)
-	SearchOne(interface{}, Cond) (bool, error)
-	Search(interface{}, Cond) error
-	GetMulti(interface{}, ...interface{}) error
-	Count(interface{}, Cond) (int64, error)
+	UpdateById(Model) (int64, error)
+	UpdateByIds(Model, Cond, []interface{}) (int64, error)
+	UpdateByWhere(Model, Cond, Cond) (int64, error)
+	Insert(Model) (int64, error)
+	InsertMulti([]Model) (int64, error)
+	SearchOne(Model, Cond) (bool, error)
+	Search(Model, []Model, Cond) error
+	SearchAndCount(Model, []Model, Cond) (int64, error)
+	GetMulti(Model, []Model, ...interface{}) error
+	Count(Model, Cond) (int64, error)
 
-	EnableCache(interface{})
-	DisableCache(interface{})
+	EnableCache(Model)
+	DisableCache(Model)
+	ClearCache(Model)
 }

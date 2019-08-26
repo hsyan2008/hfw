@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/go-xorm/xorm"
@@ -44,15 +43,14 @@ type XormDao struct {
 	sess    *xorm.Session
 }
 
-func (d *XormDao) UpdateById(t interface{}) (affected int64, err error) {
+func (d *XormDao) UpdateById(t Model) (affected int64, err error) {
 	sess := d.sess
 	if sess == nil {
 		sess = d.engine.NewSession()
 		defer sess.Close()
 	}
 
-	id := reflect.ValueOf(t).Elem().FieldByName("Id").Int()
-	affected, err = sess.Id(id).AllCols().Update(t)
+	affected, err = sess.Id(t.AutoIncrColValue()).AllCols().Update(t)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
 		logger.Error(err, lastSQL, lastSQLArgs)
@@ -61,7 +59,7 @@ func (d *XormDao) UpdateById(t interface{}) (affected int64, err error) {
 	return
 }
 
-func (d *XormDao) UpdateByIds(t interface{}, params Cond,
+func (d *XormDao) UpdateByIds(t Model, params Cond,
 	ids []interface{}) (affected int64, err error) {
 
 	if len(ids) == 0 {
@@ -74,7 +72,7 @@ func (d *XormDao) UpdateByIds(t interface{}, params Cond,
 		defer sess.Close()
 	}
 
-	affected, err = sess.Table(t).In("id", ids).Update(params)
+	affected, err = sess.Table(t).In(t.AutoIncrColName(), ids).Update(params)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
 		logger.Error(err, lastSQL, lastSQLArgs)
@@ -83,7 +81,7 @@ func (d *XormDao) UpdateByIds(t interface{}, params Cond,
 	return
 }
 
-func (d *XormDao) UpdateByWhere(t interface{}, params Cond,
+func (d *XormDao) UpdateByWhere(t Model, params Cond,
 	where Cond) (affected int64, err error) {
 	if len(where) == 0 {
 		return 0, errors.New("where paramters error")
@@ -94,7 +92,7 @@ func (d *XormDao) UpdateByWhere(t interface{}, params Cond,
 		sess = d.engine.NewSession()
 		defer sess.Close()
 	}
-	sess, err = d.buildCond(sess, where, false, false)
+	sess, err = d.buildCond(t, sess, where, false, false)
 	if err != nil {
 		return
 	}
@@ -107,7 +105,7 @@ func (d *XormDao) UpdateByWhere(t interface{}, params Cond,
 	return
 }
 
-func (d *XormDao) Insert(t interface{}) (affected int64, err error) {
+func (d *XormDao) Insert(t Model) (affected int64, err error) {
 	sess := d.sess
 	if sess == nil {
 		sess = d.engine.NewSession()
@@ -122,7 +120,7 @@ func (d *XormDao) Insert(t interface{}) (affected int64, err error) {
 	return
 }
 
-func (d *XormDao) InsertMulti(t interface{}) (affected int64, err error) {
+func (d *XormDao) InsertMulti(t []Model) (affected int64, err error) {
 	sess := d.sess
 	if sess == nil {
 		sess = d.engine.NewSession()
@@ -137,13 +135,13 @@ func (d *XormDao) InsertMulti(t interface{}) (affected int64, err error) {
 	return
 }
 
-func (d *XormDao) SearchOne(t interface{}, cond Cond) (has bool, err error) {
+func (d *XormDao) SearchOne(t Model, cond Cond) (has bool, err error) {
 	sess := d.sess
 	if sess == nil {
 		sess = d.engine.NewSession()
 		defer sess.Close()
 	}
-	sess, err = d.buildCond(sess, cond, true, false)
+	sess, err = d.buildCond(t, sess, cond, true, false)
 	if err != nil {
 		return
 	}
@@ -156,10 +154,10 @@ func (d *XormDao) SearchOne(t interface{}, cond Cond) (has bool, err error) {
 	return
 }
 
-func (d *XormDao) buildCond(sess *xorm.Session, cond Cond, isOrder, isPaging bool) (session *xorm.Session, err error) {
+func (d *XormDao) buildCond(t Model, sess *xorm.Session, cond Cond, isOrder, isPaging bool) (session *xorm.Session, err error) {
 	var (
 		str      []string
-		orderby  = "id desc"
+		orderby  = fmt.Sprintf("%s desc", t.AutoIncrColName())
 		page     = 1
 		pageSize = DefaultPageSize
 		where    string
@@ -272,13 +270,13 @@ FOR:
 	return sess, nil
 }
 
-func (d *XormDao) Search(t interface{}, cond Cond) (err error) {
+func (d *XormDao) Search(t Model, ts []Model, cond Cond) (err error) {
 	sess := d.sess
 	if sess == nil {
 		sess = d.engine.NewSession()
 		defer sess.Close()
 	}
-	sess, err = d.buildCond(sess, cond, true, true)
+	sess, err = d.buildCond(t, sess, cond, true, true)
 	if err != nil {
 		return
 	}
@@ -292,13 +290,13 @@ func (d *XormDao) Search(t interface{}, cond Cond) (err error) {
 	return
 }
 
-func (d *XormDao) SearchAndCount(t interface{}, cond Cond) (total int64, err error) {
+func (d *XormDao) SearchAndCount(t Model, ts []Model, cond Cond) (total int64, err error) {
 	sess := d.sess
 	if sess == nil {
 		sess = d.engine.NewSession()
 		defer sess.Close()
 	}
-	sess, err = d.buildCond(sess, cond, true, true)
+	sess, err = d.buildCond(t, sess, cond, true, true)
 	if err != nil {
 		return
 	}
@@ -312,13 +310,13 @@ func (d *XormDao) SearchAndCount(t interface{}, cond Cond) (total int64, err err
 	return
 }
 
-func (d *XormDao) Rows(t interface{}, cond Cond) (rows *xorm.Rows, err error) {
+func (d *XormDao) Rows(t Model, cond Cond) (rows *xorm.Rows, err error) {
 	sess := d.sess
 	if sess == nil {
 		sess = d.engine.NewSession()
 		defer sess.Close()
 	}
-	sess, err = d.buildCond(sess, cond, true, true)
+	sess, err = d.buildCond(t, sess, cond, true, true)
 	if err != nil {
 		return
 	}
@@ -332,13 +330,13 @@ func (d *XormDao) Rows(t interface{}, cond Cond) (rows *xorm.Rows, err error) {
 	return
 }
 
-func (d *XormDao) Iterate(t interface{}, cond Cond, f xorm.IterFunc) (err error) {
+func (d *XormDao) Iterate(t Model, cond Cond, f xorm.IterFunc) (err error) {
 	sess := d.sess
 	if sess == nil {
 		sess = d.engine.NewSession()
 		defer sess.Close()
 	}
-	sess, err = d.buildCond(sess, cond, true, true)
+	sess, err = d.buildCond(t, sess, cond, true, true)
 	if err != nil {
 		return
 	}
@@ -352,14 +350,14 @@ func (d *XormDao) Iterate(t interface{}, cond Cond, f xorm.IterFunc) (err error)
 	return
 }
 
-func (d *XormDao) GetMulti(t interface{}, ids ...interface{}) (err error) {
+func (d *XormDao) GetMulti(m Model, t []Model, ids ...interface{}) (err error) {
 	sess := d.sess
 	if sess == nil {
 		sess = d.engine.NewSession()
 		defer sess.Close()
 	}
 
-	err = sess.In("id", ids...).Find(t)
+	err = sess.In(m.AutoIncrColName(), ids...).Find(t)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
 		logger.Error(err, lastSQL, lastSQLArgs)
@@ -368,13 +366,13 @@ func (d *XormDao) GetMulti(t interface{}, ids ...interface{}) (err error) {
 	return
 }
 
-func (d *XormDao) Count(t interface{}, cond Cond) (total int64, err error) {
+func (d *XormDao) Count(t Model, cond Cond) (total int64, err error) {
 	sess := d.sess
 	if sess == nil {
 		sess = d.engine.NewSession()
 		defer sess.Close()
 	}
-	sess, err = d.buildCond(sess, cond, false, false)
+	sess, err = d.buildCond(t, sess, cond, false, false)
 	if err != nil {
 		return
 	}
@@ -473,20 +471,20 @@ func (d *XormDao) QueryInterface(args ...interface{}) (rs []map[string]interface
 	return
 }
 
-func (d *XormDao) EnableCache(t interface{}) {
+func (d *XormDao) EnableCache(t Model) {
 	if d.cacher != nil {
 		d.isCache = true
 		_ = d.engine.MapCacher(t, d.cacher)
 	}
 }
 
-func (d *XormDao) DisableCache(t interface{}) {
+func (d *XormDao) DisableCache(t Model) {
 	d.isCache = false
 	_ = d.engine.MapCacher(t, nil)
 }
 
 //用于清理缓存
-func (d *XormDao) ClearCache(t interface{}) {
+func (d *XormDao) ClearCache(t Model) {
 	if d.isCache {
 		_ = d.engine.ClearCache(t)
 	}

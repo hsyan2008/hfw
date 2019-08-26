@@ -44,6 +44,18 @@ func (m *{{Mapper $table.Name}}) Get{{Mapper $col.Name}}() (val {{Type $col}}) {
     }
     return m.{{Mapper $col.Name}}
 }
+{{if $col.IsAutoIncrement}}
+func (m *{{Mapper $table.Name}}) AutoIncrColName() string {
+    return "{{$col.Name}}"
+}
+
+func (m *{{Mapper $table.Name}}) AutoIncrColValue() (val {{Type $col}}) {
+    if m == nil {
+        return
+    }
+    return m.{{Mapper $col.Name}}
+}
+{{end}}
 {{end}}
 
 func (m *{{Mapper .Name}}) String() string {
@@ -56,7 +68,7 @@ func (m *{{Mapper .Name}}) TableName() string {
 
 func (m *{{Mapper .Name}}) Save(t ...*{{Mapper .Name}}) (affected int64, err error) {
     if len(t) > 1 {
-        return m.Dao.Insert(t)
+        return m.Dao.InsertMulti(t)
     } else {
         var i *{{Mapper .Name}}
         if len(t) == 0 {
@@ -67,7 +79,7 @@ func (m *{{Mapper .Name}}) Save(t ...*{{Mapper .Name}}) (affected int64, err err
         } else if len(t) == 1 {
             i = t[0]
         }
-	    if i.Id > 0 {
+	    if i.AutoIncrColValue() > 0 {
 		    return m.Dao.UpdateById(i)
     	} else {
             return m.Dao.Insert(i)
@@ -76,12 +88,12 @@ func (m *{{Mapper .Name}}) Save(t ...*{{Mapper .Name}}) (affected int64, err err
 }
 
 func (m *{{Mapper .Name}}) Saves(t []*{{Mapper .Name}}) (affected int64, err error) {
-    return m.Dao.Insert(t)
+    return m.Dao.InsertMulti(t)
 }
 
 func (m *{{Mapper .Name}}) Insert(t ...*{{Mapper .Name}}) (affected int64, err error) {
     if len(t) > 1 {
-        return m.Dao.Insert(t)
+        return m.Dao.InsertMulti(t)
     } else {
         var i *{{Mapper .Name}}
         if len(t) == 0 {
@@ -120,12 +132,12 @@ func (m *{{Mapper .Name}}) SearchOne(cond db.Cond) (t *{{Mapper .Name}}, err err
 }
 
 func (m *{{Mapper .Name}}) Search(cond db.Cond) (t []*{{Mapper .Name}}, err error) {
-	err = m.Dao.Search(&t, cond)
+	err = m.Dao.Search(m, &t, cond)
 	return
 }
 
 func (m *{{Mapper .Name}}) SearchAndCount(cond db.Cond) (t []*{{Mapper .Name}}, total int64, err error) {
-	total, err = m.Dao.SearchAndCount(&t, cond)
+	total, err = m.Dao.SearchAndCount(m, &t, cond)
 	return
 }
 
@@ -142,7 +154,7 @@ func (m *{{Mapper .Name}}) Count(cond db.Cond) (total int64, err error) {
 }
 
 func (m *{{Mapper .Name}}) GetMulti(ids ...interface{}) (t []*{{Mapper .Name}}, err error) {
-	err = m.Dao.GetMulti(&t, ids...)
+	err = m.Dao.GetMulti(m, &t, ids...)
 	return
 }
 

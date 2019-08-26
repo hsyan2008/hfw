@@ -4,6 +4,12 @@ import "time"
 
 type Cond map[string]interface{}
 
+type Model interface {
+	AutoIncrColName() string
+	AutoIncrColValue() int64
+	TableName() string
+}
+
 type Models struct {
 	Id        int       `json:"id" xorm:"not null pk autoincr INT(10)"`
 	IsDeleted int       `json:"is_deleted" xorm:"not null default 0 TINYINT(1)"`
