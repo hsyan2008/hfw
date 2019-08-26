@@ -281,7 +281,7 @@ func (d *XormDao) Search(t Model, ts interface{}, cond Cond) (err error) {
 		return
 	}
 
-	err = sess.Find(t)
+	err = sess.Find(ts)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
 		logger.Error(err, lastSQL, lastSQLArgs)
@@ -301,7 +301,7 @@ func (d *XormDao) SearchAndCount(t Model, ts interface{}, cond Cond) (total int6
 		return
 	}
 
-	total, err = sess.FindAndCount(t)
+	total, err = sess.FindAndCount(ts)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
 		logger.Error(err, lastSQL, lastSQLArgs)
