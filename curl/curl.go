@@ -48,6 +48,7 @@ func (resp *Response) ReadBody() (body []byte, err error) {
 
 func (resp *Response) Close() {
 	if resp.BodyReader != nil {
+		io.Copy(ioutil.Discard, resp.BodyReader)
 		resp.BodyReader.Close()
 	}
 	if resp.cancel != nil {
@@ -352,6 +353,7 @@ func (curls *Curl) createPostRequest() (httpRequest *http.Request, err error) {
 func (curls *Curl) curlResponse(resp *http.Response) (response *Response, err error) {
 	defer func() {
 		if err != nil {
+			io.Copy(ioutil.Discard, resp.Body)
 			resp.Body.Close()
 		}
 	}()
@@ -380,6 +382,7 @@ func (curls *Curl) curlResponse(resp *http.Response) (response *Response, err er
 				curls.PostFiles = nil
 				curls.PostReader = nil
 				curls.Cookie = curls.afterCookie(resp)
+				io.Copy(ioutil.Discard, resp.Body)
 				resp.Body.Close()
 
 				response, err = curls.Request()
@@ -409,6 +412,7 @@ func (curls *Curl) curlResponse(resp *http.Response) (response *Response, err er
 			if err != nil {
 				return response, err
 			}
+			io.Copy(ioutil.Discard, resp.Body)
 			resp.Body.Close()
 		}
 	}
