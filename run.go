@@ -13,10 +13,10 @@ import (
 //Run start
 func Run() (err error) {
 
-	logger.Info("Starting ...")
-	defer logger.Info("Shutdowned!")
+	logger.Mix("Starting ...")
+	defer logger.Mix("Shutdowned!")
 
-	logger.Infof("Running, VERSION=%s, ENVIRONMENT=%s, APPNAME=%s, APPPATH=%s",
+	logger.Mixf("Running, VERSION=%s, ENVIRONMENT=%s, APPNAME=%s, APPPATH=%s",
 		common.GetVersion(), common.GetEnv(), common.GetAppName(), common.GetAppPath())
 
 	if err = agent.Listen(agent.Options{}); err != nil {

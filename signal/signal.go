@@ -52,17 +52,17 @@ func (ctx *signalContext) Listen() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT)
 
-	logger.Infof("Exec `kill -INT %d` will graceful exit", os.Getpid())
-	logger.Infof("Exec `kill -TERM %d` will graceful restart", os.Getpid())
+	logger.Mixf("Exec `kill -INT %d` will graceful exit", os.Getpid())
+	logger.Mixf("Exec `kill -TERM %d` will graceful restart", os.Getpid())
 
 	s := <-c
-	logger.Info("recv signal:", s)
+	logger.Mix("recv signal:", s)
 	go ctx.doShutdownDone()
 	if ctx.IsHTTP {
-		logger.Info("Stopping http server")
+		logger.Mix("Stopping http server")
 		//已有第三方处理
 	} else {
-		logger.Info("Stopping console server")
+		logger.Mix("Stopping console server")
 		switch s {
 		case syscall.SIGHUP, syscall.SIGTERM:
 			execSpec := &syscall.ProcAttr{
@@ -86,8 +86,8 @@ func (ctx *signalContext) doShutdownDone() {
 	}
 	ctx.doing = true
 
-	logger.Info("doShutdownDone start.")
-	defer logger.Info("doShutdownDone done.")
+	logger.Mix("doShutdownDone start.")
+	defer logger.Mix("doShutdownDone done.")
 
 	go ctx.waitDone()
 
@@ -103,13 +103,13 @@ func (ctx *signalContext) doShutdownDone() {
 //通知业务方，并等待业务方结束
 func (ctx *signalContext) waitDone() {
 	//context包来取消，以通知业务方
-	logger.Info("signal ctx cancel")
+	logger.Mix("signal ctx cancel")
 	ctx.Cancel()
 	//等待业务方完成退出
-	logger.Info("signal ctx waitgroup wait done start")
+	logger.Mix("signal ctx waitgroup wait done start")
 	ctx.WgWait()
 	//表示全部完成
-	logger.Info("signal ctx waitgroup wait done end")
+	logger.Mix("signal ctx waitgroup wait done end")
 	close(ctx.done)
 }
 
