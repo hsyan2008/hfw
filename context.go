@@ -84,10 +84,12 @@ func (httpCtx *HTTPContext) init(w http.ResponseWriter, r *http.Request) {
 	httpCtx.ErrMsg = ""
 	httpCtx.Results = nil
 
-	httpCtx.log = httpCtx.Log()
+	httpCtx.log = logger.NewLog()
+	httpCtx.log.SetTraceID(uuid.New().String())
 }
 
 func (httpCtx *HTTPContext) Log() *logger.Log {
+	//并发不安全
 	if httpCtx.log == nil {
 		httpCtx.log = logger.NewLog()
 		httpCtx.log.SetTraceID(uuid.New().String())
