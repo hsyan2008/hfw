@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/uuid"
 	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/session"
@@ -83,12 +84,13 @@ func (httpCtx *HTTPContext) init(w http.ResponseWriter, r *http.Request) {
 	httpCtx.ErrMsg = ""
 	httpCtx.Results = nil
 
-	httpCtx.log = logger.NewLog()
+	httpCtx.log = httpCtx.Log()
 }
 
 func (httpCtx *HTTPContext) Log() *logger.Log {
 	if httpCtx.log == nil {
 		httpCtx.log = logger.NewLog()
+		httpCtx.log.SetTraceID(uuid.New().String())
 	}
 
 	return httpCtx.log

@@ -14,7 +14,7 @@ require (
 	github.com/google/gops v0.3.6
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/websocket v1.4.1
-	github.com/hsyan2008/go-logger v0.0.0-20190815025800-1eebb403069e
+	github.com/hsyan2008/go-logger v0.0.0-20190827040000-c892b9eb7e6f
 	github.com/hsyan2008/gracehttp v0.0.0-20190816091623-a31824dbccd6
 	github.com/json-iterator/go v1.1.7
 	github.com/lib/pq v1.2.0
