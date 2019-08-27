@@ -52,7 +52,7 @@ func InitDb(config configs.AllConfig, dbConfig configs.DbConfig) (engine xorm.En
 		}
 	}
 
-	engine.SetLogger(&xormLog{})
+	engine.SetLogger(newXormLog())
 	engine.ShowSQL(true)
 	engine.ShowExecTime(true)
 
