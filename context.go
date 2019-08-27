@@ -132,10 +132,10 @@ func (httpCtx *HTTPContext) ThrowCheck(errNo int64, i interface{}) {
 	case *common.RespErr:
 		errNo = e.ErrNo()
 		errMsg = e.ErrMsg()
-		httpCtx.Log().Output(3, fmt.Sprintf("[ThrowCheck] %s", e.Error()))
+		httpCtx.Log().Output(2, fmt.Sprintf("[ThrowCheck] %s", e.Error()))
 	default:
 		errMsg = fmt.Sprintf("%v", e)
-		httpCtx.Log().Output(3, fmt.Sprintf("[ThrowCheck] No:%d Msg:%v", errNo, errMsg))
+		httpCtx.Log().Output(2, fmt.Sprintf("[ThrowCheck] No:%d Msg:%v", errNo, errMsg))
 	}
 
 	httpCtx.ErrNo = errNo
@@ -161,10 +161,10 @@ func (httpCtx *HTTPContext) CheckErr(errNo int64, i interface{}) (int64, string)
 	case *common.RespErr:
 		errNo = e.ErrNo()
 		errMsg = e.ErrMsg()
-		httpCtx.Log().Output(3, fmt.Sprintf("[CheckErr] %s", e.Error()))
+		httpCtx.Log().Output(2, fmt.Sprintf("[CheckErr] %s", e.Error()))
 	default:
 		errMsg = fmt.Sprintf("%v", e)
-		httpCtx.Log().Output(3, fmt.Sprintf("[CheckErr] No:%d Msg:%v", errNo, errMsg))
+		httpCtx.Log().Output(2, fmt.Sprintf("[CheckErr] No:%d Msg:%v", errNo, errMsg))
 	}
 
 	httpCtx.ErrMsg = common.GetErrorMap(errNo)
