@@ -41,23 +41,23 @@ func Router(w http.ResponseWriter, r *http.Request) {
 
 	if logger.Level() == logger.DEBUG {
 		ip := common.GetClientIP(r)
-		httpCtx.Log().Debugf("From: %s, Host: %s, Method: %s, Uri: %s %s", ip, r.Host, r.Method, r.URL.String(), "start")
+		httpCtx.Debugf("From: %s, Host: %s, Method: %s, Uri: %s %s", ip, r.Host, r.Method, r.URL.String(), "start")
 		startTime := time.Now()
 		defer func() {
-			httpCtx.Log().Debugf("From: %s, Host: %s, Method: %s, Uri: %s %s CostTime: %s",
+			httpCtx.Debugf("From: %s, Host: %s, Method: %s, Uri: %s %s CostTime: %s",
 				ip, r.Host, r.Method, r.URL.String(), "end", time.Since(startTime))
 		}()
 	}
 
 	onlineNum := atomic.AddUint32(&online, 1)
-	httpCtx.Log().Info("online", onlineNum)
+	httpCtx.Info("online", onlineNum)
 	defer func() {
-		httpCtx.Log().Info("offline", atomic.AddUint32(&online, ^uint32(0)))
+		httpCtx.Info("offline", atomic.AddUint32(&online, ^uint32(0)))
 	}()
 	err := checkConcurrence(onlineNum)
 	if err != nil {
 		w.WriteHeader(http.StatusServiceUnavailable)
-		httpCtx.Log().Warn(err)
+		httpCtx.Warn(err)
 		return
 	}
 
@@ -82,7 +82,7 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	go closeNotify(httpCtx)
 
 	instance, methodName := findInstanceByPath(httpCtx)
-	httpCtx.Log().Debugf("Query Path: %s -> Call: %s/%s", httpCtx.Request.URL.String(), httpCtx.Controller, httpCtx.Action)
+	httpCtx.Debugf("Query Path: %s -> Call: %s/%s", httpCtx.Request.URL.String(), httpCtx.Controller, httpCtx.Action)
 	reflectVal := instance.reflectVal
 
 	//注意方法必须是大写开头，否则无法调用
@@ -104,7 +104,7 @@ func recoverPanic(httpCtx *HTTPContext, reflectVal reflect.Value, initValue []re
 		if err == ErrStopRun {
 			return
 		}
-		httpCtx.Log().Fatal(err, string(common.GetStack()))
+		httpCtx.Fatal(err, string(common.GetStack()))
 
 		reflectVal.MethodByName("ServerError").Call(initValue)
 	}
@@ -117,7 +117,7 @@ func closeNotify(httpCtx *HTTPContext) {
 	//panic: net/http: CloseNotify called after ServeHTTP finished
 	defer func() {
 		if err := recover(); err != nil {
-			httpCtx.Log().Warn("closeNotify: ", err)
+			httpCtx.Warn("closeNotify: ", err)
 		}
 	}()
 	select {

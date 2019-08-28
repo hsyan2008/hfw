@@ -12,9 +12,9 @@ import (
 	"github.com/hsyan2008/hfw/encoding"
 )
 
-//Output ..
-func (httpCtx *HTTPContext) Output() {
-	// httpCtx.Log().Debug("Output")
+//RenderResponse ..
+func (httpCtx *HTTPContext) RenderResponse() {
+	// httpCtx.Debug("RenderResponse")
 	if httpCtx.ResponseWriter.Header().Get("Location") != "" {
 		return
 	}
@@ -187,7 +187,7 @@ func (httpCtx *HTTPContext) ReturnJSON() {
 	}
 
 	var err error
-	httpCtx.Log().Debugf("Response json: %s", func() string {
+	httpCtx.Debugf("Response json: %s", func() string {
 		var b []byte
 		if httpCtx.IsOnlyResults {
 			b, err = encoding.JSON.Marshal(httpCtx.Results)

@@ -53,10 +53,10 @@ FOR:
 			}
 			func() {
 				if logger.Level() == logger.DEBUG {
-					httpCtx.Log().Debugf("Call Grpc ServerName: %s start", c.ServerName)
+					httpCtx.Debugf("Call Grpc ServerName: %s start", c.ServerName)
 					startTime := time.Now()
 					defer func() {
-						httpCtx.Log().Debugf("Call Grpc ServerName: %s end CostTime: %s",
+						httpCtx.Debugf("Call Grpc ServerName: %s end CostTime: %s",
 							c.ServerName, time.Since(startTime))
 					}()
 				}
@@ -65,7 +65,7 @@ FOR:
 			if err == nil {
 				return
 			}
-			httpCtx.Log().Warnf("Call Grpc ServerName: %s %v", c.ServerName, err)
+			httpCtx.Warnf("Call Grpc ServerName: %s %v", c.ServerName, err)
 			if err == context.Canceled || err == context.DeadlineExceeded {
 				return
 			}

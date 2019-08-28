@@ -6,13 +6,13 @@ import (
 )
 
 type xormLog struct {
-	*logger.Log
+	*logger.Logger
 	isShowSQL bool
 }
 
 func newXormLog() *xormLog {
 	return &xormLog{
-		Log: logger.NewLog(),
+		Logger: logger.NewLogger(),
 	}
 }
 

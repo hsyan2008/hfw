@@ -76,7 +76,7 @@ func (ctl *Controller) Finish(httpCtx *HTTPContext) {
 		httpCtx.Session.Close(httpCtx.Request, httpCtx.ResponseWriter)
 	}
 
-	httpCtx.Output()
+	httpCtx.RenderResponse()
 }
 
 //NotFound ..

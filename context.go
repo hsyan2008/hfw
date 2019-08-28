@@ -55,7 +55,7 @@ type HTTPContext struct {
 	//如果是下载文件，不执行After和Finish
 	IsCloseRender bool `json:"-"`
 
-	log *logger.Log
+	*logger.Logger
 }
 
 func (httpCtx *HTTPContext) init(w http.ResponseWriter, r *http.Request) {
@@ -84,18 +84,18 @@ func (httpCtx *HTTPContext) init(w http.ResponseWriter, r *http.Request) {
 	httpCtx.ErrMsg = ""
 	httpCtx.Results = nil
 
-	httpCtx.log = logger.NewLog()
-	httpCtx.log.SetTraceID(uuid.New().String())
+	httpCtx.Logger = logger.NewLogger()
+	httpCtx.Logger.SetTraceID(uuid.New().String())
 }
 
-func (httpCtx *HTTPContext) Log() *logger.Log {
+func (httpCtx *HTTPContext) Log() *logger.Logger {
 	//并发不安全
-	if httpCtx.log == nil {
-		httpCtx.log = logger.NewLog()
-		httpCtx.log.SetTraceID(uuid.New().String())
+	if httpCtx.Logger == nil {
+		httpCtx.Logger = logger.NewLogger()
+		httpCtx.Logger.SetTraceID(uuid.New().String())
 	}
 
-	return httpCtx.log
+	return httpCtx.Logger
 }
 
 //GetForm 优先post和put,然后get
@@ -134,10 +134,10 @@ func (httpCtx *HTTPContext) ThrowCheck(errNo int64, i interface{}) {
 	case *common.RespErr:
 		errNo = e.ErrNo()
 		errMsg = e.ErrMsg()
-		httpCtx.Log().Output(2, fmt.Sprintf("[ThrowCheck] %s", e.Error()))
+		httpCtx.Output(2, fmt.Sprintf("[ThrowCheck] %s", e.Error()))
 	default:
 		errMsg = fmt.Sprintf("%v", e)
-		httpCtx.Log().Output(2, fmt.Sprintf("[ThrowCheck] No:%d Msg:%v", errNo, errMsg))
+		httpCtx.Output(2, fmt.Sprintf("[ThrowCheck] No:%d Msg:%v", errNo, errMsg))
 	}
 
 	httpCtx.ErrNo = errNo
@@ -163,10 +163,10 @@ func (httpCtx *HTTPContext) CheckErr(errNo int64, i interface{}) (int64, string)
 	case *common.RespErr:
 		errNo = e.ErrNo()
 		errMsg = e.ErrMsg()
-		httpCtx.Log().Output(2, fmt.Sprintf("[CheckErr] %s", e.Error()))
+		httpCtx.Output(2, fmt.Sprintf("[CheckErr] %s", e.Error()))
 	default:
 		errMsg = fmt.Sprintf("%v", e)
-		httpCtx.Log().Output(2, fmt.Sprintf("[CheckErr] No:%d Msg:%v", errNo, errMsg))
+		httpCtx.Output(2, fmt.Sprintf("[CheckErr] No:%d Msg:%v", errNo, errMsg))
 	}
 
 	httpCtx.ErrMsg = common.GetErrorMap(errNo)
