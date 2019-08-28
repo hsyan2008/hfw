@@ -98,6 +98,7 @@ func (httpCtx *HTTPContext) init(w http.ResponseWriter, r *http.Request) {
 	httpCtx.Logger.SetTraceID(uuid.New().String())
 }
 
+//废弃
 func (httpCtx *HTTPContext) Log() *logger.Logger {
 	//并发不安全
 	if httpCtx.Logger == nil {
