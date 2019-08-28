@@ -98,17 +98,6 @@ func (httpCtx *HTTPContext) init(w http.ResponseWriter, r *http.Request) {
 	httpCtx.Logger.SetTraceID(uuid.New().String())
 }
 
-//废弃
-func (httpCtx *HTTPContext) Log() *logger.Logger {
-	//并发不安全
-	if httpCtx.Logger == nil {
-		httpCtx.Logger = logger.NewLogger()
-		httpCtx.Logger.SetTraceID(uuid.New().String())
-	}
-
-	return httpCtx.Logger
-}
-
 //GetForm 优先post和put,然后get
 func (httpCtx *HTTPContext) GetForm(key string) string {
 	return strings.TrimSpace(httpCtx.Request.FormValue(key))
