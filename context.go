@@ -12,6 +12,7 @@ import (
 	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/session"
+	"github.com/hsyan2008/hfw/signal"
 )
 
 //HTTPContext ..
@@ -56,6 +57,15 @@ type HTTPContext struct {
 	IsCloseRender bool `json:"-"`
 
 	*logger.Logger
+}
+
+func NewHTTPContext() *HTTPContext {
+	httpCtx := &HTTPContext{}
+	httpCtx.Ctx, httpCtx.Cancel = context.WithCancel(signal.GetSignalContext().Ctx)
+	httpCtx.Logger = logger.NewLogger()
+	httpCtx.Logger.SetTraceID(uuid.New().String())
+
+	return httpCtx
 }
 
 func (httpCtx *HTTPContext) init(w http.ResponseWriter, r *http.Request) {
