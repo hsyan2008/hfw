@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/hsyan2008/go-logger"
@@ -27,7 +26,7 @@ func Do(httpCtx *hfw.HTTPContext, c configs.GrpcConfig,
 ) (resp interface{}, err error) {
 
 	if httpCtx == nil {
-		return nil, errors.New("nil httpCtx")
+		return nil, common.NewRespErr(500, "nil httpCtx")
 	}
 
 	ctx, cancel := context.WithTimeout(httpCtx.Ctx, timeout)
