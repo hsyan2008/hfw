@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/hsyan2008/go-logger"
@@ -26,10 +27,7 @@ func Do(httpCtx *hfw.HTTPContext, c configs.GrpcConfig,
 ) (resp interface{}, err error) {
 
 	if httpCtx == nil {
-		httpCtx = &hfw.HTTPContext{Ctx: signal.GetSignalContext().Ctx}
-	}
-	if httpCtx.Ctx == nil {
-		httpCtx.Ctx = signal.GetSignalContext().Ctx
+		return nil, errors.New("nil httpCtx")
 	}
 
 	ctx, cancel := context.WithTimeout(httpCtx.Ctx, timeout)

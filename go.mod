@@ -9,6 +9,7 @@ require (
 	github.com/google/gops v0.3.6
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/websocket v1.4.1
+	github.com/hashicorp/consul/api v1.2.0
 	github.com/hsyan2008/go-logger v0.0.0-20190829032021-b18bc4bd4422
 	github.com/hsyan2008/gracehttp v0.0.0-20190816091623-a31824dbccd6
 	github.com/json-iterator/go v1.1.7
