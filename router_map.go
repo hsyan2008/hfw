@@ -16,11 +16,14 @@ type instance struct {
 	methodName string
 }
 
+const (
+	NotFound = "NotFound"
+)
+
 var (
 	routeMap         = make(map[string]*instance)
 	routeMapMethod   = make(map[string]*instance)
 	routeMapRegister = make(map[string]string)
-	routeInit        bool
 	defaultInstance  *instance
 )
 
@@ -64,13 +67,10 @@ func findInstanceByPath(httpCtx *HTTPContext) (instance *instance, action string
 		return instance, instance.methodName
 	}
 
-	if defaultInstance == nil {
-		panic("no default route find")
-	}
+	httpCtx.Action = strings.ToLower(NotFound)
 
-	httpCtx.Action = strings.ToLower("NotFound")
-
-	return defaultInstance, "NotFound"
+	//defaultInstance可能是nil，但Router已有判断
+	return defaultInstance, NotFound
 }
 
 func completeURL(url string) string {

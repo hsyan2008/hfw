@@ -71,7 +71,9 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(routeMap) == 0 && len(routeMapMethod) == 0 {
-		panic("nil router map")
+		httpCtx.Warn(httpCtx.Request.URL.Path, "nil routeMap or routeMapMethod")
+		(&Controller{}).NotFound(httpCtx)
+		return
 	}
 
 	initValue := []reflect.Value{
@@ -142,14 +144,13 @@ func checkConcurrence(onlineNum uint32) (err error) {
 	return nil
 }
 
+func init() {
+	http.HandleFunc("/", Router)
+	http.HandleFunc("/logger/adjust", loggerAdjust)
+}
+
 //Handler 暂时只支持2段
 func Handler(pattern string, handler ControllerInterface) (err error) {
-
-	if !routeInit {
-		routeInit = true
-		http.HandleFunc("/", Router)
-		http.HandleFunc("/logger/adjust", loggerAdjust)
-	}
 
 	controllerPath := completeURL(pattern)
 
@@ -208,6 +209,9 @@ func Handler(pattern string, handler ControllerInterface) (err error) {
 //HandlerFunc register HandleFunc
 func HandlerFunc(pattern string, h http.HandlerFunc) {
 	logger.Infof("HandlerFunc: %s", pattern)
+	if pattern == "/" || pattern == "/logger/adjust" {
+		panic("http: multiple registrations for " + pattern)
+	}
 	http.HandleFunc(pattern, h)
 }
 
