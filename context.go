@@ -95,7 +95,13 @@ func (httpCtx *HTTPContext) init(w http.ResponseWriter, r *http.Request) {
 	httpCtx.Results = nil
 
 	httpCtx.Logger = logger.NewLogger()
-	httpCtx.Logger.SetTraceID(uuid.New().String())
+	httpCtx.Logger.SetTraceID(httpCtx.Request.Header.Get("Trace-Id"))
+	if httpCtx.Logger.GetTraceID() == "" {
+		httpCtx.Logger.SetTraceID(httpCtx.GetForm("trace_id"))
+	}
+	if httpCtx.Logger.GetTraceID() == "" {
+		httpCtx.Logger.SetTraceID(uuid.New().String())
+	}
 }
 
 //GetForm 优先post和put,然后get

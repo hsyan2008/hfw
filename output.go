@@ -15,6 +15,9 @@ import (
 //RenderResponse ..
 func (httpCtx *HTTPContext) RenderResponse() {
 	// httpCtx.Debug("RenderResponse")
+	if httpCtx.Logger.GetTraceID() != "" {
+		httpCtx.ResponseWriter.Header().Set("Trace-Id", httpCtx.Logger.GetTraceID())
+	}
 	if httpCtx.ResponseWriter.Header().Get("Location") != "" {
 		return
 	}
