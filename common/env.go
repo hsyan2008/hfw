@@ -14,12 +14,11 @@ func ParseFlag() {
 		flag.StringVar(&ENVIRONMENT, "e", "", "set env, e.g dev test prod")
 	}
 
-	VERSION = os.Getenv("VERSION")
-	if len(VERSION) == 0 {
-		flag.StringVar(&VERSION, "v", "v0.1", "set version")
-	}
-
 	flag.Parse()
+
+	if os.Getenv("VERSION") != "" {
+		VERSION = os.Getenv("VERSION")
+	}
 
 	if len(ENVIRONMENT) == 0 && (IsGoRun() || IsGoTest()) {
 		ENVIRONMENT = DEV
@@ -101,7 +100,9 @@ func stripSuffix(path string) string {
 
 var (
 	//VERSION 版本
-	VERSION string
+	//通过go build -ldflags "-X github.com/hsyan2008/hfw/common.VERSION=v0.2"赋值
+	//也可以通过环境变量赋值，此方式优先
+	VERSION string = "v0.1"
 	//ENVIRONMENT 环境
 	ENVIRONMENT string
 
