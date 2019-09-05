@@ -9,7 +9,7 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/websocket v1.4.1 // indirect
 	github.com/hsyan2008/go-logger v0.0.0-20190829072121-8c09c5aa4331
-	github.com/hsyan2008/gracehttp v0.0.0-20190902080240-973293ed41a0
+	github.com/hsyan2008/gracehttp v0.0.0-20190905124242-f4539a0822c4
 	github.com/json-iterator/go v1.1.7
 	github.com/mediocregopher/radix.v2 v0.0.0-20181115013041-b67df6e626f9
 	github.com/robfig/cron v1.2.0 // indirect
