@@ -43,7 +43,7 @@ FOR:
 			if c.IsAuth {
 				conn, err = GetConnWithAuth(signal.GetSignalContext().Ctx, c, "")
 			} else {
-				conn, err = GetConn(signal.GetSignalContext().Ctx, c)
+				conn, err = GetConnWithDefaultInterceptor(signal.GetSignalContext().Ctx, c)
 			}
 			if err != nil {
 				continue FOR
