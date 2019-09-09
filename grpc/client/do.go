@@ -38,7 +38,7 @@ FOR:
 	for i := 0; i < common.Min(retry, len(c.Addresses)+1); i++ {
 		select {
 		case <-ctx.Done():
-			return nil, ctx.Err()
+			return nil, common.NewRespErr(500, ctx.Err())
 		default:
 			if c.IsAuth {
 				conn, err = GetConnWithAuth(signal.GetSignalContext().Ctx, c, "")
