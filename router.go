@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -20,20 +19,13 @@ import (
 	"github.com/hsyan2008/hfw/signal"
 )
 
-var httpCtxPool = &sync.Pool{
-	New: func() interface{} {
-		return new(HTTPContext)
-	},
-}
-
 //Router 写测试用例会调用
 func Router(w http.ResponseWriter, r *http.Request) {
 
 	signal.GetSignalContext().WgAdd()
 	defer signal.GetSignalContext().WgDone()
 
-	httpCtx := httpCtxPool.Get().(*HTTPContext)
-	defer httpCtxPool.Put(httpCtx)
+	httpCtx := new(HTTPContext)
 	//初始化httpCtx
 	httpCtx.init(w, r)
 	httpCtx.Ctx, httpCtx.Cancel = context.WithCancel(signal.GetSignalContext().Ctx)
