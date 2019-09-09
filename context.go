@@ -71,28 +71,9 @@ func NewHTTPContext() *HTTPContext {
 func (httpCtx *HTTPContext) init(w http.ResponseWriter, r *http.Request) {
 	httpCtx.ResponseWriter = w
 	httpCtx.Request = r
-	httpCtx.Session = nil
 
-	httpCtx.Controller = ""
-	httpCtx.Action = ""
-	httpCtx.Path = ""
-
-	httpCtx.Layout = ""
-	httpCtx.Template = ""
-	httpCtx.TemplateFile = ""
-	httpCtx.IsJSON = false
-	httpCtx.IsZip = false
-	httpCtx.IsError = false
 	httpCtx.Data = make(map[string]interface{})
 	httpCtx.FuncMap = make(map[string]interface{})
-
-	httpCtx.IsCloseRender = false
-
-	httpCtx.HasHeader = false
-	httpCtx.Header = nil
-	httpCtx.ErrNo = 0
-	httpCtx.ErrMsg = ""
-	httpCtx.Results = nil
 
 	httpCtx.Logger = logger.NewLogger()
 	httpCtx.Logger.SetTraceID(httpCtx.Request.Header.Get("Trace-Id"))
