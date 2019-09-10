@@ -31,6 +31,9 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	httpCtx.Ctx, httpCtx.Cancel = context.WithCancel(signal.GetSignalContext().Ctx)
 	defer httpCtx.Cancel()
 
+	//如果用户关闭连接
+	go closeNotify(httpCtx)
+
 	if logger.Level() == logger.DEBUG {
 		ip := common.GetClientIP(r)
 		httpCtx.Debugf("From: %s, Host: %s, Method: %s, Uri: %s %s", ip, r.Host, r.Method, r.URL.String(), "start")
@@ -71,9 +74,6 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	initValue := []reflect.Value{
 		reflect.ValueOf(httpCtx),
 	}
-
-	//如果用户关闭连接
-	go closeNotify(httpCtx)
 
 	instance, methodName := findInstanceByPath(httpCtx)
 	httpCtx.Debugf("Query Path: %s -> Call: %s/%s", httpCtx.Request.URL.String(), httpCtx.Controller, httpCtx.Action)
