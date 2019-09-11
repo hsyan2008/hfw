@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -87,7 +88,10 @@ func newClientConn(ctx context.Context, address string, c configs.GrpcConfig, au
 		}
 		opt = append(opt, grpc.WithBalancerName(c.BalancerName))
 	}
-	if len(c.ServerName) > 0 && common.IsExist(c.CertFile) {
+	if len(c.CertFile) > 0 && !filepath.IsAbs(c.CertFile) {
+		c.CertFile = filepath.Join(common.GetAppPath(), c.CertFile)
+	}
+	if len(c.ServerName) > 0 && len(c.CertFile) > 0 && common.IsExist(c.CertFile) {
 		if c.IsAuth {
 			opt = append(opt, grpc.WithPerRPCCredentials(auth.NewAuthWithHTTPS(authValue)))
 		}
