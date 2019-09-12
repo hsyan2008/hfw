@@ -34,20 +34,18 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	//如果用户关闭连接
 	go closeNotify(httpCtx)
 
-	if logger.Level() == logger.DEBUG {
-		ip := common.GetClientIP(r)
-		httpCtx.Debugf("From: %s, Host: %s, Method: %s, Uri: %s %s", ip, r.Host, r.Method, r.URL.String(), "start")
-		startTime := time.Now()
-		defer func() {
-			httpCtx.Debugf("From: %s, Host: %s, Method: %s, Uri: %s %s CostTime: %s",
-				ip, r.Host, r.Method, r.URL.String(), "end", time.Since(startTime))
-		}()
-	}
+	ip := common.GetClientIP(r)
+	httpCtx.Mixf("From: %s, Host: %s, Method: %s, Uri: %s %s", ip, r.Host, r.Method, r.URL.String(), "start")
+	startTime := time.Now()
+	defer func() {
+		httpCtx.Mixf("From: %s, Host: %s, Method: %s, Uri: %s %s CostTime: %s",
+			ip, r.Host, r.Method, r.URL.String(), "end", time.Since(startTime))
+	}()
 
 	onlineNum := atomic.AddUint32(&online, 1)
-	httpCtx.Info("online", onlineNum)
+	httpCtx.Mix("online", onlineNum)
 	defer func() {
-		httpCtx.Info("offline", atomic.AddUint32(&online, ^uint32(0)))
+		httpCtx.Mix("offline", atomic.AddUint32(&online, ^uint32(0)))
 	}()
 	err := checkConcurrence(onlineNum)
 	if err != nil {
