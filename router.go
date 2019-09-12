@@ -56,6 +56,8 @@ func Router(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "grpc server has not init", http.StatusInternalServerError)
 			return
 		}
+		//防止出现并没有Trace_id的情况
+		r.Header.Set("Trace_id", httpCtx.GetTraceID())
 		server.GetServer().ServeHTTP(w, r) // gRPC Server
 		return
 	}
