@@ -3,11 +3,11 @@ package interceptor
 import (
 	"context"
 	"fmt"
-	"time"
 
 	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/common"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 func UnaryServerInterceptor(
@@ -17,17 +17,11 @@ func UnaryServerInterceptor(
 
 	defer func() {
 		if e := recover(); e != nil {
-			err = fmt.Errorf("Grpc server panic: %#v", e)
+			err = fmt.Errorf("trace_id:%s Grpc server: %s panic: %#v",
+				GetTraceIDFromIncomingContext(ctx), info.FullMethod, e)
 			logger.Fatal(err, string(common.GetStack()))
 		}
 	}()
-
-	if logger.Level() == logger.DEBUG {
-		startTime := time.Now()
-		resp, err = handler(ctx, req)
-		logger.Debugf("Grpc server: %s CostTime: %s", info.FullMethod, time.Since(startTime))
-		return resp, err
-	}
 
 	return handler(ctx, req)
 }
@@ -36,23 +30,24 @@ func StreamServerInterceptor(
 	srv interface{}, ss grpc.ServerStream,
 	info *grpc.StreamServerInfo, handler grpc.StreamHandler,
 ) (err error) {
-	logger.Debug("filter: ", info)
 
 	defer func() {
 		if e := recover(); e != nil {
-			err = fmt.Errorf("Grpc server panic: %#v", e)
+			err = fmt.Errorf("trace_id:%s Grpc server: %s panic: %#v",
+				GetTraceIDFromIncomingContext(ss.Context()), info.FullMethod, e)
 			logger.Fatal(err, string(common.GetStack()))
 		}
 	}()
 
-	if logger.Level() == logger.DEBUG {
-		startTime := time.Now()
-		err = handler(srv, ss)
-		logger.Debugf("Grpc server: %s CostTime: %s", info.FullMethod, time.Since(startTime))
-		return err
-	}
-
 	return handler(srv, ss)
+}
+func GetTraceIDFromIncomingContext(ctx context.Context) string {
+	md, _ := metadata.FromIncomingContext(ctx)
+	traceIDs := md.Get("trace_id")
+	if len(traceIDs) > 0 {
+		return traceIDs[0]
+	}
+	return ""
 }
 
 func UnaryClientInterceptor(ctx context.Context, method string, req, reply interface{},
@@ -60,17 +55,11 @@ func UnaryClientInterceptor(ctx context.Context, method string, req, reply inter
 
 	defer func() {
 		if e := recover(); e != nil {
-			err = fmt.Errorf("Grpc client panic: %#v", e)
+			err = fmt.Errorf("trace_id:%s Grpc client: %s panic: %#v",
+				GetTraceIDFromOutgoingContext(ctx), method, e)
 			logger.Fatal(err, string(common.GetStack()))
 		}
 	}()
-
-	if logger.Level() == logger.DEBUG {
-		startTime := time.Now()
-		err = invoker(ctx, method, req, reply, cc, opts...)
-		logger.Debugf("Grpc client: %s CostTime: %s", method, time.Since(startTime))
-		return err
-	}
 
 	return invoker(ctx, method, req, reply, cc, opts...)
 }
@@ -80,10 +69,20 @@ func StreamClientInterceptor(ctx context.Context, desc *grpc.StreamDesc, cc *grp
 
 	defer func() {
 		if e := recover(); e != nil {
-			err = fmt.Errorf("Grpc client panic: %#v", e)
+			err = fmt.Errorf("trace_id:%s Grpc client: %s panic: %#v",
+				GetTraceIDFromOutgoingContext(ctx), method, e)
 			logger.Fatal(err, string(common.GetStack()))
 		}
 	}()
 
 	return streamer(ctx, desc, cc, method, opts...)
+}
+
+func GetTraceIDFromOutgoingContext(ctx context.Context) string {
+	md, _ := metadata.FromOutgoingContext(ctx)
+	traceIDs := md.Get("trace_id")
+	if len(traceIDs) > 0 {
+		return traceIDs[0]
+	}
+	return ""
 }

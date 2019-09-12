@@ -34,12 +34,9 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	//如果用户关闭连接
 	go closeNotify(httpCtx)
 
-	ip := common.GetClientIP(r)
-	httpCtx.Mixf("From: %s, Host: %s, Method: %s, Uri: %s %s", ip, r.Host, r.Method, r.URL.String(), "start")
 	startTime := time.Now()
 	defer func() {
-		httpCtx.Mixf("From: %s, Host: %s, Method: %s, Uri: %s %s CostTime: %s",
-			ip, r.Host, r.Method, r.URL.String(), "end", time.Since(startTime))
+		httpCtx.Mixf("Path: %s Method: %s CostTime: %s", r.URL.String(), r.Method, time.Since(startTime))
 	}()
 
 	onlineNum := atomic.AddUint32(&online, 1)

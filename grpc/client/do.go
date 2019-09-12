@@ -4,12 +4,12 @@ import (
 	"context"
 	"time"
 
-	"github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw"
 	"github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/configs"
 	"github.com/hsyan2008/hfw/signal"
 	grpc "google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 var (
@@ -32,6 +32,10 @@ func Do(httpCtx *hfw.HTTPContext, c configs.GrpcConfig,
 	ctx, cancel := context.WithTimeout(httpCtx.Ctx, timeout)
 	defer cancel()
 
+	ctx = metadata.NewOutgoingContext(ctx, metadata.MD{
+		"trace_id": []string{httpCtx.GetTraceID()},
+	})
+
 	var conn *grpc.ClientConn
 
 FOR:
@@ -49,14 +53,11 @@ FOR:
 				continue FOR
 			}
 			func() {
-				if logger.Level() == logger.DEBUG {
-					httpCtx.Debugf("Call Grpc ServerName: %s start", c.ServerName)
-					startTime := time.Now()
-					defer func() {
-						httpCtx.Debugf("Call Grpc ServerName: %s end CostTime: %s",
-							c.ServerName, time.Since(startTime))
-					}()
-				}
+				startTime := time.Now()
+				defer func() {
+					httpCtx.Debugf("Call Grpc ServerName: %s CostTime: %s",
+						c.ServerName, time.Since(startTime))
+				}()
 				resp, err = call(ctx, conn)
 			}()
 			if err == nil {

@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/common"
+	"github.com/hsyan2008/hfw/grpc/interceptor"
 	"github.com/hsyan2008/hfw/session"
 	"github.com/hsyan2008/hfw/signal"
 )
@@ -68,6 +69,15 @@ func NewHTTPContext() *HTTPContext {
 	return httpCtx
 }
 
+func NewHTTPContextWithGrpcCtx(ctx context.Context) *HTTPContext {
+	httpCtx := &HTTPContext{}
+	httpCtx.Ctx, httpCtx.Cancel = context.WithCancel(signal.GetSignalContext().Ctx)
+	httpCtx.Logger = logger.NewLogger()
+	httpCtx.Logger.SetTraceID(interceptor.GetTraceIDFromIncomingContext(ctx))
+
+	return httpCtx
+}
+
 func (httpCtx *HTTPContext) init(w http.ResponseWriter, r *http.Request) {
 	httpCtx.ResponseWriter = w
 	httpCtx.Request = r
@@ -76,7 +86,13 @@ func (httpCtx *HTTPContext) init(w http.ResponseWriter, r *http.Request) {
 	httpCtx.FuncMap = make(map[string]interface{})
 
 	httpCtx.Logger = logger.NewLogger()
-	httpCtx.Logger.SetTraceID(httpCtx.Request.Header.Get("Trace-Id"))
+	//grpc
+	httpCtx.SetTraceID(r.Header.Get("Trace_id"))
+	//header
+	if httpCtx.Logger.GetTraceID() == "" {
+		httpCtx.Logger.SetTraceID(r.Header.Get("Trace-Id"))
+	}
+	//path
 	if httpCtx.Logger.GetTraceID() == "" {
 		httpCtx.Logger.SetTraceID(r.URL.Query().Get("trace_id"))
 	}
