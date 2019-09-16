@@ -11,6 +11,7 @@ import (
 	"github.com/hsyan2008/gracehttp"
 	"github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/configs"
+	"github.com/hsyan2008/hfw/grpc/discovery"
 )
 
 var listener net.Listener
@@ -31,9 +32,21 @@ func Start(config configs.ServerConfig) (err error) {
 	s := gracehttp.NewServer(addr, nil, readTimeout, writeTimeout)
 
 	listener, err = s.InitListener()
+	if err != nil {
+		return
+	}
 
 	if common.IsExist(config.CertFile) && common.IsExist(config.KeyFile) {
 		logger.Info("Listen on https", config.Address)
+		//注册服务
+		r, err := discovery.RegisterServer(config, listener.Addr().String())
+		if err != nil {
+			return err
+		}
+		if r != nil {
+			defer r.UnRegister()
+		}
+
 		err = s.ListenAndServeTLS(config.CertFile, config.KeyFile)
 	} else {
 		logger.Info("Listen on http", config.Address)

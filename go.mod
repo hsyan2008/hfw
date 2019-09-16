@@ -8,6 +8,7 @@ require (
 	github.com/google/gops v0.3.6 // indirect
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/websocket v1.4.1 // indirect
+	github.com/hashicorp/consul/api v1.2.0
 	github.com/hsyan2008/go-logger v0.0.0-20190829072121-8c09c5aa4331
 	github.com/hsyan2008/gracehttp v0.0.0-20190905124242-f4539a0822c4
 	github.com/json-iterator/go v1.1.7

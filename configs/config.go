@@ -53,6 +53,18 @@ type ServerConfig struct {
 	//grpc服务使用
 	MaxRecvMsgSize int
 	MaxSendMsgSize int
+
+	//服务注册配置
+	//服务注册类型，目前可选static、consul，默认是static
+	ResolverType string
+	//服务注册的地址，如consul、etcd地址
+	ResolverAddresses []string
+	//服务名，必须符合证书的域名规则
+	ServerName string
+	//隔多久检查一次
+	UpdateInterval time.Duration
+	//指定注册的网卡地址，或者在上方的Address里指定ip
+	Interface string
 }
 
 //LoggerConfig ..

@@ -1,6 +1,6 @@
 // // register service
 // cr := register.NewConsulRegister(fmt.Sprintf("%s:%d", host, consul_port), 15)
-// cr.Register(discovery.RegisterInfo{
+// cr.Register(RegisterInfo{
 // 	Host:           host,
 // 	Port:           port,
 // 	ServiceName:    "HelloService",
@@ -13,7 +13,6 @@ import (
 
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/hsyan2008/go-logger"
-	"github.com/hsyan2008/hfw/grpc/discovery"
 	"github.com/hsyan2008/hfw/signal"
 )
 
@@ -21,14 +20,14 @@ type ConsulRegister struct {
 	Target string
 	Ttl    int
 
-	registerInfo discovery.RegisterInfo
+	registerInfo RegisterInfo
 }
 
 func NewConsulRegister(target string, ttl int) *ConsulRegister {
 	return &ConsulRegister{Target: target, Ttl: ttl}
 }
 
-func (cr *ConsulRegister) Register(info discovery.RegisterInfo) error {
+func (cr *ConsulRegister) Register(info RegisterInfo) error {
 	cr.registerInfo = info
 	// initial consul client config
 	config := consulapi.DefaultConfig()
