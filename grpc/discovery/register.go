@@ -20,24 +20,25 @@ func RegisterServer(cc configs.ServerConfig, address string) (r register.Registe
 	if cc.UpdateInterval == 0 {
 		cc.UpdateInterval = 10
 	}
+	host, port, err := getHostPort(cc, address)
+	if err != nil {
+		return nil, err
+	}
 	switch cc.ResolverType {
 	case resolver.ConsulResolver:
-		host, port, err := getHostPort(cc, address)
-		if err != nil {
-			return nil, err
-		}
-		r = register.NewConsulRegister(cc.ResolverAddresses[0], int(cc.UpdateInterval))
-		err = r.Register(register.RegisterInfo{
-			Host:           host,
-			Port:           port,
-			ServiceName:    cc.ServerName,
-			UpdateInterval: cc.UpdateInterval * time.Second,
-		})
-		return r, err
-		// case EtcdResolver:
+		r = register.NewConsulRegister(cc.ResolverAddresses[0], int(cc.UpdateInterval)*2)
+	case resolver.EtcdResolver:
+		r = register.NewEtcdRegister(cc.ResolverAddresses, int(cc.UpdateInterval)*2)
 	default:
 		return nil, errors.New("unsupport ResolverType")
 	}
+	err = r.Register(register.RegisterInfo{
+		Host:           host,
+		Port:           port,
+		ServiceName:    cc.ServerName,
+		UpdateInterval: cc.UpdateInterval * time.Second,
+	})
+	return r, err
 }
 
 func getHostPort(cc configs.ServerConfig, address string) (host string, port int, err error) {

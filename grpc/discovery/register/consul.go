@@ -17,21 +17,21 @@ import (
 )
 
 type ConsulRegister struct {
-	Target string
-	Ttl    int
+	target string
+	ttl    int
 
 	registerInfo RegisterInfo
 }
 
 func NewConsulRegister(target string, ttl int) *ConsulRegister {
-	return &ConsulRegister{Target: target, Ttl: ttl}
+	return &ConsulRegister{target: target, ttl: ttl}
 }
 
 func (cr *ConsulRegister) Register(info RegisterInfo) error {
 	cr.registerInfo = info
 	// initial consul client config
 	config := consulapi.DefaultConfig()
-	config.Address = cr.Target
+	config.Address = cr.target
 	client, err := consulapi.NewClient(config)
 	if err != nil {
 		return fmt.Errorf("create consul client error: %s", err.Error())
@@ -52,7 +52,7 @@ func (cr *ConsulRegister) Register(info RegisterInfo) error {
 	}
 
 	// initial register service check
-	check := consulapi.AgentServiceCheck{TTL: fmt.Sprintf("%ds", cr.Ttl), Status: consulapi.HealthPassing}
+	check := consulapi.AgentServiceCheck{TTL: fmt.Sprintf("%ds", cr.ttl), Status: consulapi.HealthPassing}
 	err = client.Agent().CheckRegister(
 		&consulapi.AgentCheckRegistration{
 			ID:                serviceId,
@@ -69,6 +69,7 @@ func (cr *ConsulRegister) Register(info RegisterInfo) error {
 			select {
 			case <-signal.GetSignalContext().Ctx.Done():
 				cr.UnRegister()
+				return
 			case <-ticker.C:
 				err = client.Agent().UpdateTTL(serviceId, "", check.Status)
 				if err != nil {
@@ -78,15 +79,18 @@ func (cr *ConsulRegister) Register(info RegisterInfo) error {
 		}
 	}()
 
+	signal.GetSignalContext().WgAdd()
+
 	return nil
 }
 
 func (cr *ConsulRegister) UnRegister() error {
+	defer signal.GetSignalContext().WgDone()
 
 	serviceId := generateServiceId(cr.registerInfo.ServiceName, cr.registerInfo.Host, cr.registerInfo.Port)
 
 	config := consulapi.DefaultConfig()
-	config.Address = cr.Target
+	config.Address = cr.target
 	client, err := consulapi.NewClient(config)
 	if err != nil {
 		return fmt.Errorf("create consul client error: %s", err.Error())
@@ -95,9 +99,8 @@ func (cr *ConsulRegister) UnRegister() error {
 	err = client.Agent().ServiceDeregister(serviceId)
 	if err != nil {
 		return fmt.Errorf("deregister service error: %s", err.Error())
-	} else {
-		logger.Info("deregistered service from consul server.")
 	}
+	logger.Info("deregistered service from consul server.")
 
 	err = client.Agent().CheckDeregister(serviceId)
 	if err != nil {
