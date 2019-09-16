@@ -11,5 +11,5 @@ type RegisterInfo struct {
 
 type Register interface {
 	Register(info RegisterInfo) error
-	DeRegister(info RegisterInfo) error
+	UnRegister() error
 }

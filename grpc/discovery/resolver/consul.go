@@ -3,11 +3,11 @@ package resolver
 import (
 	"context"
 	"fmt"
-	"log"
 	"sync"
 	"time"
 
 	consulapi "github.com/hashicorp/consul/api"
+	"github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/configs"
 	"github.com/hsyan2008/hfw/encoding"
 	"google.golang.org/grpc/resolver"
@@ -27,7 +27,7 @@ func NewConsulBuilder(scheme, address string) resolver.Builder {
 	config.Address = address
 	client, err := consulapi.NewClient(config)
 	if err != nil {
-		log.Fatal("LearnGrpc: create consul client error", err.Error())
+		logger.Fatal("create consul client error", err.Error())
 		return nil
 	}
 	return &consulBuilder{scheme: scheme, address: address, client: client}
@@ -102,7 +102,7 @@ func (cr *consulResolver) watcher() {
 		}
 		adds, serviceConfig, err := cr.consulBuilder.resolve()
 		if err != nil {
-			log.Fatal("query service entries error:", err.Error())
+			logger.Fatal("query service entries error:", err.Error())
 		}
 		(*cr.clientConn).NewAddress(adds)
 		(*cr.clientConn).NewServiceConfig(serviceConfig)

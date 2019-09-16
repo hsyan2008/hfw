@@ -20,6 +20,8 @@ import (
 type ConsulRegister struct {
 	Target string
 	Ttl    int
+
+	registerInfo discovery.RegisterInfo
 }
 
 func NewConsulRegister(target string, ttl int) *ConsulRegister {
@@ -27,6 +29,7 @@ func NewConsulRegister(target string, ttl int) *ConsulRegister {
 }
 
 func (cr *ConsulRegister) Register(info discovery.RegisterInfo) error {
+	cr.registerInfo = info
 	// initial consul client config
 	config := consulapi.DefaultConfig()
 	config.Address = cr.Target
@@ -66,7 +69,7 @@ func (cr *ConsulRegister) Register(info discovery.RegisterInfo) error {
 		for {
 			select {
 			case <-signal.GetSignalContext().Ctx.Done():
-				cr.DeRegister(info)
+				cr.UnRegister()
 			case <-ticker.C:
 				err = client.Agent().UpdateTTL(serviceId, "", check.Status)
 				if err != nil {
@@ -79,9 +82,9 @@ func (cr *ConsulRegister) Register(info discovery.RegisterInfo) error {
 	return nil
 }
 
-func (cr *ConsulRegister) DeRegister(info discovery.RegisterInfo) error {
+func (cr *ConsulRegister) UnRegister() error {
 
-	serviceId := generateServiceId(info.ServiceName, info.Host, info.Port)
+	serviceId := generateServiceId(cr.registerInfo.ServiceName, cr.registerInfo.Host, cr.registerInfo.Port)
 
 	config := consulapi.DefaultConfig()
 	config.Address = cr.Target
