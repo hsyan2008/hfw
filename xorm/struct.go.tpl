@@ -40,7 +40,7 @@ func (m *{{Mapper $table.Name}}) AutoIncrColName() string {
     return "{{$col.Name}}"
 }
 
-func (m *{{Mapper $table.Name}}) AutoIncrColValue() (val {{Type $col}}) {
+func (m *{{Mapper $table.Name}}) AutoIncrColValue() (val int64) {
     if m == nil {
         return
     }
