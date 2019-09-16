@@ -44,7 +44,7 @@ func (m *{{Mapper $table.Name}}) AutoIncrColValue() (val {{Type $col}}) {
     if m == nil {
         return
     }
-    return m.{{Mapper $col.Name}}
+    return int64(m.{{Mapper $col.Name}})
 }
 {{end}}
 {{end}}
