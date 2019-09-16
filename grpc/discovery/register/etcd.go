@@ -1,6 +1,7 @@
 package register
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -81,7 +82,7 @@ func (er *EtcdRegister) UnRegister() error {
 	defer signal.GetSignalContext().WgDone()
 
 	var err error
-	if _, err := er.client.Delete(signal.GetSignalContext().Ctx, er.serviceKey); err != nil {
+	if _, err := er.client.Delete(context.Background(), er.serviceKey); err != nil {
 		logger.Warnf("grpclb: deregister '%s' failed: %s", er.serviceKey, err.Error())
 	} else {
 		logger.Warnf("grpclb: deregister '%s' ok.", er.serviceKey)
