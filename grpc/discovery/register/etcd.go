@@ -27,14 +27,11 @@ func NewEtcdRegister(target []string, ttl int) *EtcdRegister {
 }
 
 // Register
-func (er *EtcdRegister) Register(info RegisterInfo) error {
+func (er *EtcdRegister) Register(info RegisterInfo) (err error) {
 	serviceValue := fmt.Sprintf("%s:%d", info.Host, info.Port)
 	er.serviceKey = fmt.Sprintf("/%s/%s/%s", Prefix, info.ServiceName, serviceValue)
-	//TODO
-	logger.Warn(er.serviceKey)
 
 	// get endpoints for register dial address
-	var err error
 	er.client, err = etcd3.New(etcd3.Config{
 		Endpoints: er.target,
 	})
@@ -49,7 +46,7 @@ func (er *EtcdRegister) Register(info RegisterInfo) error {
 			// minimum lease TTL is ttl-second
 			resp, _ := er.client.Grant(signal.GetSignalContext().Ctx, int64(er.ttl))
 			// should get first, if not exist, set it
-			_, err := er.client.Get(signal.GetSignalContext().Ctx, er.serviceKey)
+			_, err = er.client.Get(signal.GetSignalContext().Ctx, er.serviceKey)
 			if err != nil {
 				if err == rpctypes.ErrKeyNotFound {
 					if _, err := er.client.Put(signal.GetSignalContext().Ctx, er.serviceKey, serviceValue, etcd3.WithLease(resp.ID)); err != nil {
