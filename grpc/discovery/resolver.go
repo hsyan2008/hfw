@@ -11,7 +11,8 @@ func GetAndRegisterResolver(cc configs.GrpcConfig) (scheme string, err error) {
 		return resolver.GenerateAndRegisterStaticResolver(cc)
 	case resolver.ConsulResolver:
 		return resolver.GenerateAndRegisterConsulResolver(cc)
-		// case EtcdResolver:
+	case resolver.EtcdResolver:
+		return resolver.GenerateAndRegisterEtcdResolver(cc)
 	default:
 		cc.ResolverType = resolver.StaticResolver
 		return resolver.GenerateAndRegisterStaticResolver(cc)

@@ -62,7 +62,7 @@ type ServerConfig struct {
 	//服务名，必须符合证书的域名规则
 	ServerName string
 	//隔多久检查一次
-	UpdateInterval time.Duration
+	UpdateInterval int64
 	//指定注册的网卡地址，或者在上方的Address里指定ip
 	Interface string
 }

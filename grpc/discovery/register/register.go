@@ -1,12 +1,10 @@
 package register
 
-import "time"
-
 type RegisterInfo struct {
 	Host           string
 	Port           int
 	ServiceName    string
-	UpdateInterval time.Duration
+	UpdateInterval int64
 }
 
 type Register interface {

@@ -5,7 +5,11 @@ go 1.12
 require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/axgle/mahonia v0.0.0-20180208002826-3358181d7394
+	github.com/coreos/etcd v3.3.15+incompatible
+	github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f // indirect
+	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
 	github.com/fsnotify/fsnotify v1.4.7
+	github.com/gogo/protobuf v1.3.0 // indirect
 	github.com/google/gops v0.3.6
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/websocket v1.4.1
@@ -16,5 +20,9 @@ require (
 	github.com/mediocregopher/radix.v2 v0.0.0-20181115013041-b67df6e626f9
 	github.com/robfig/cron/v3 v3.0.0
 	github.com/shirou/gopsutil v2.18.12+incompatible
+	go.uber.org/atomic v1.4.0 // indirect
+	go.uber.org/multierr v1.1.0 // indirect
+	go.uber.org/zap v1.10.0 // indirect
+	golang.org/x/net v0.0.0-20190311183353-d8887717615a
 	google.golang.org/grpc v1.23.1
 )

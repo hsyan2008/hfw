@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	etcd3 "github.com/coreos/etcd/clientv3"
-	"github.com/coreos/etcd/etcdserver/api/v3rpc/rpctypes"
+	"github.com/coreos/etcd/clientv3"
 	"github.com/hsyan2008/go-logger"
+	"github.com/hsyan2008/hfw/grpc/discovery/resolver"
 	"github.com/hsyan2008/hfw/signal"
 )
 
@@ -18,48 +18,52 @@ type EtcdRegister struct {
 	target []string
 	ttl    int
 
-	client     *etcd3.Client
-	serviceKey string
+	//存在etcd里的key
+	key string
+	//本服务的地址
+	addr string
+
+	client *clientv3.Client
+
+	registerInfo RegisterInfo
+
+	ctx context.Context
 }
 
 func NewEtcdRegister(target []string, ttl int) *EtcdRegister {
-	return &EtcdRegister{target: target, ttl: ttl}
+	return &EtcdRegister{target: target, ttl: ttl, ctx: signal.GetSignalContext().Ctx}
 }
 
-// Register
+// Register register service with name as prefix to etcd, multi etcd addr should use ; to split
 func (er *EtcdRegister) Register(info RegisterInfo) (err error) {
-	serviceValue := fmt.Sprintf("%s:%d", info.Host, info.Port)
-	er.serviceKey = fmt.Sprintf("/%s/%s/%s", Prefix, info.ServiceName, serviceValue)
-
-	// get endpoints for register dial address
-	er.client, err = etcd3.New(etcd3.Config{
-		Endpoints: er.target,
-	})
-	if err != nil {
-		return fmt.Errorf("grpclb: create etcd3 client failed: %v", err)
+	if er.client == nil {
+		er.client, err = clientv3.New(clientv3.Config{
+			Endpoints:   er.target,
+			DialTimeout: 5 * time.Second,
+		})
+		if err != nil {
+			return err
+		}
 	}
 
+	er.addr = fmt.Sprintf("%s:%d", info.Host, info.Port)
+	er.key = fmt.Sprintf("/%s/%s/%s", resolver.EtcdResolver, info.ServiceName, er.addr)
+
+	ticker := time.NewTicker(time.Second * time.Duration(info.UpdateInterval))
+
 	go func() {
-		// invoke self-register with ticker
-		ticker := time.NewTicker(info.UpdateInterval)
 		for {
-			// minimum lease TTL is ttl-second
-			resp, _ := er.client.Grant(signal.GetSignalContext().Ctx, int64(er.ttl))
-			// should get first, if not exist, set it
-			_, err = er.client.Get(signal.GetSignalContext().Ctx, er.serviceKey)
+			getResp, err := er.client.Get(er.ctx, er.key)
+			logger.Debug(getResp, err)
 			if err != nil {
-				if err == rpctypes.ErrKeyNotFound {
-					if _, err := er.client.Put(signal.GetSignalContext().Ctx, er.serviceKey, serviceValue, etcd3.WithLease(resp.ID)); err != nil {
-						logger.Warnf("grpclb: set service '%s' with ttl to etcd3 failed: %s", info.ServiceName, err.Error())
-					}
-				} else {
-					logger.Warnf("grpclb: service '%s' connect to etcd3 failed: %s", info.ServiceName, err.Error())
+				logger.Warn(err)
+			} else if getResp.Count == 0 {
+				err = er.withAlive()
+				if err != nil {
+					logger.Warn(err)
 				}
 			} else {
-				// refresh set to true for not notifying the watcher
-				if _, err := er.client.Put(signal.GetSignalContext().Ctx, er.serviceKey, serviceValue, etcd3.WithLease(resp.ID)); err != nil {
-					logger.Warnf("grpclb: refresh service '%s' with ttl to etcd3 failed: %s", info.ServiceName, err.Error())
-				}
+				// do nothing
 			}
 			select {
 			case <-signal.GetSignalContext().Ctx.Done():
@@ -74,15 +78,30 @@ func (er *EtcdRegister) Register(info RegisterInfo) (err error) {
 	return nil
 }
 
-// UnRegister delete registered service from etcd
-func (er *EtcdRegister) UnRegister() error {
-	defer signal.GetSignalContext().WgDone()
-
-	var err error
-	if _, err := er.client.Delete(context.Background(), er.serviceKey); err != nil {
-		logger.Warnf("grpclb: deregister '%s' failed: %s", er.serviceKey, err.Error())
-	} else {
-		logger.Warnf("grpclb: deregister '%s' ok.", er.serviceKey)
+func (er *EtcdRegister) withAlive() error {
+	leaseResp, err := er.client.Grant(er.ctx, int64(er.ttl))
+	if err != nil {
+		return err
 	}
-	return err
+
+	_, err = er.client.Put(er.ctx, er.key, er.addr, clientv3.WithLease(leaseResp.ID))
+	if err != nil {
+		return err
+	}
+
+	_, err = er.client.KeepAlive(er.ctx, leaseResp.ID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UnRegister remove service from etcd
+func (er *EtcdRegister) UnRegister() (err error) {
+	if er.client != nil {
+		defer signal.GetSignalContext().WgDone()
+		_, err = er.client.Delete(context.Background(), er.key)
+	}
+
+	return
 }

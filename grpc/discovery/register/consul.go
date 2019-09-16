@@ -64,7 +64,7 @@ func (cr *ConsulRegister) Register(info RegisterInfo) error {
 	}
 
 	go func() {
-		ticker := time.NewTicker(info.UpdateInterval)
+		ticker := time.NewTicker(time.Duration(info.UpdateInterval) * time.Second)
 		for {
 			select {
 			case <-signal.GetSignalContext().Ctx.Done():

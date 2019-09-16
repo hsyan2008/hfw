@@ -10,6 +10,7 @@ import (
 	"github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/configs"
 	"github.com/hsyan2008/hfw/encoding"
+	"github.com/hsyan2008/hfw/signal"
 	"google.golang.org/grpc/resolver"
 )
 
@@ -81,7 +82,7 @@ type consulResolver struct {
 }
 
 func NewConsulResolver(cc *resolver.ClientConn, cb *consulBuilder, opts resolver.BuildOption) *consulResolver {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(signal.GetSignalContext().Ctx)
 	return &consulResolver{
 		clientConn:           cc,
 		consulBuilder:        cb,

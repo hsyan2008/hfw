@@ -4,7 +4,6 @@ import (
 	"errors"
 	"net"
 	"strconv"
-	"time"
 
 	"github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/configs"
@@ -36,7 +35,7 @@ func RegisterServer(cc configs.ServerConfig, address string) (r register.Registe
 		Host:           host,
 		Port:           port,
 		ServiceName:    cc.ServerName,
-		UpdateInterval: cc.UpdateInterval * time.Second,
+		UpdateInterval: cc.UpdateInterval,
 	})
 	return r, err
 }
