@@ -1,6 +1,7 @@
 package discovery
 
 import (
+	"errors"
 	"net"
 	"strconv"
 	"time"
@@ -13,7 +14,7 @@ import (
 
 func RegisterServer(cc configs.ServerConfig, address string) (r register.Register, err error) {
 	if cc.ResolverType == "" || len(cc.ResolverAddresses) == 0 || cc.ServerName == "" {
-		logger.Warn("ResolverType or ResolverAddresses or ServerName is empty, so do not Registered")
+		logger.Mix("ResolverType or ResolverAddresses or ServerName is empty, so do not Registered")
 		return nil, nil
 	}
 	if cc.UpdateInterval == 0 {
@@ -35,8 +36,7 @@ func RegisterServer(cc configs.ServerConfig, address string) (r register.Registe
 		return r, err
 		// case EtcdResolver:
 	default:
-		logger.Warn("unsupport ResolverType")
-		return nil, nil
+		return nil, errors.New("unsupport ResolverType")
 	}
 }
 
