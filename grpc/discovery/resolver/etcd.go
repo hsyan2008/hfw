@@ -7,6 +7,7 @@ import (
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
+	"github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/configs"
 	"github.com/hsyan2008/hfw/signal"
 	"golang.org/x/net/context"
@@ -68,7 +69,7 @@ func (r *etcdBuilder) watch(keyPrefix string) {
 
 	getResp, err := r.cli.Get(r.ctx, keyPrefix, clientv3.WithPrefix())
 	if err != nil {
-		logger.Println(err)
+		logger.Warn(err)
 	} else {
 		for i := range getResp.Kvs {
 			addrList = append(addrList, resolver.Address{Addr: strings.TrimPrefix(string(getResp.Kvs[i].Key), keyPrefix)})
