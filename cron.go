@@ -1,15 +1,17 @@
 package hfw
 
-import "github.com/robfig/cron"
+import (
+	cron "github.com/robfig/cron/v3"
+)
 
 var crontab *cron.Cron
 
 func init() {
-	crontab = cron.New()
+	crontab = cron.New(cron.WithSeconds())
 	crontab.Start()
 }
 
-func AddCron(spec string, cmd func()) error {
+func AddCron(spec string, cmd func()) (cron.EntryID, error) {
 	return crontab.AddFunc(spec, cmd)
 }
 
