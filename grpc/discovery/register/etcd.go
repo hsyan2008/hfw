@@ -12,12 +12,12 @@ import (
 
 // Prefix should start and end with no slash
 var Prefix = "etcd3_naming"
-var client etcd3.Client
 
 type EtcdRegister struct {
 	target []string
 	ttl    int
 
+	client     *etcd3.Client
 	serviceKey string
 }
 
@@ -34,7 +34,7 @@ func (er *EtcdRegister) Register(info RegisterInfo) error {
 
 	// get endpoints for register dial address
 	var err error
-	client, err := etcd3.New(etcd3.Config{
+	er.client, err = etcd3.New(etcd3.Config{
 		Endpoints: er.target,
 	})
 	if err != nil {
@@ -46,12 +46,12 @@ func (er *EtcdRegister) Register(info RegisterInfo) error {
 		ticker := time.NewTicker(info.UpdateInterval)
 		for {
 			// minimum lease TTL is ttl-second
-			resp, _ := client.Grant(signal.GetSignalContext().Ctx, int64(er.ttl))
+			resp, _ := er.client.Grant(signal.GetSignalContext().Ctx, int64(er.ttl))
 			// should get first, if not exist, set it
-			_, err := client.Get(signal.GetSignalContext().Ctx, er.serviceKey)
+			_, err := er.client.Get(signal.GetSignalContext().Ctx, er.serviceKey)
 			if err != nil {
 				if err == rpctypes.ErrKeyNotFound {
-					if _, err := client.Put(signal.GetSignalContext().Ctx, er.serviceKey, serviceValue, etcd3.WithLease(resp.ID)); err != nil {
+					if _, err := er.client.Put(signal.GetSignalContext().Ctx, er.serviceKey, serviceValue, etcd3.WithLease(resp.ID)); err != nil {
 						logger.Warnf("grpclb: set service '%s' with ttl to etcd3 failed: %s", info.ServiceName, err.Error())
 					}
 				} else {
@@ -59,7 +59,7 @@ func (er *EtcdRegister) Register(info RegisterInfo) error {
 				}
 			} else {
 				// refresh set to true for not notifying the watcher
-				if _, err := client.Put(signal.GetSignalContext().Ctx, er.serviceKey, serviceValue, etcd3.WithLease(resp.ID)); err != nil {
+				if _, err := er.client.Put(signal.GetSignalContext().Ctx, er.serviceKey, serviceValue, etcd3.WithLease(resp.ID)); err != nil {
 					logger.Warnf("grpclb: refresh service '%s' with ttl to etcd3 failed: %s", info.ServiceName, err.Error())
 				}
 			}
@@ -81,7 +81,7 @@ func (er *EtcdRegister) UnRegister() error {
 	defer signal.GetSignalContext().WgDone()
 
 	var err error
-	if _, err := client.Delete(signal.GetSignalContext().Ctx, er.serviceKey); err != nil {
+	if _, err := er.client.Delete(signal.GetSignalContext().Ctx, er.serviceKey); err != nil {
 		logger.Warnf("grpclb: deregister '%s' failed: %s", er.serviceKey, err.Error())
 	} else {
 		logger.Warnf("grpclb: deregister '%s' ok.", er.serviceKey)
