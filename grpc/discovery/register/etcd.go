@@ -71,6 +71,8 @@ func (er *EtcdRegister) Register(info RegisterInfo) error {
 		}
 	}()
 
+	signal.GetSignalContext().WgAdd()
+
 	return nil
 }
 
