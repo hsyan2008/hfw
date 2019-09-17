@@ -37,7 +37,7 @@ func Start(config configs.ServerConfig) (err error) {
 	}
 
 	if common.IsExist(config.CertFile) && common.IsExist(config.KeyFile) {
-		logger.Info("Listen on https", config.Address)
+		logger.Info("Listen on https:", listener.Addr().String())
 		//注册服务
 		r, err := discovery.RegisterServer(config, listener.Addr().String())
 		if err != nil {
@@ -49,7 +49,7 @@ func Start(config configs.ServerConfig) (err error) {
 
 		err = s.ListenAndServeTLS(config.CertFile, config.KeyFile)
 	} else {
-		logger.Info("Listen on http", config.Address)
+		logger.Info("Listen on http:", listener.Addr().String())
 		err = s.ListenAndServe()
 	}
 
