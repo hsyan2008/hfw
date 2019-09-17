@@ -75,28 +75,49 @@ func initLog() error {
 	return nil
 }
 
-func loadConfig() error {
+func loadConfig() (err error) {
 	if len(common.GetEnv()) == 0 {
 		//config目录存在的时候，就必须要指定环境变量来加载config.toml
 		if !common.IsExist(filepath.Join(common.GetAppPath(), "config")) {
 			logger.Warn("config dir not exist")
-			return nil
+			return
 		}
 	}
-	configPath := filepath.Join(common.GetAppPath(), "config", common.GetEnv(), "config.toml")
-	logger.Info("load config file: ", configPath)
-	if common.IsExist(configPath) {
-		_, err := toml.DecodeFile(configPath, &Config)
-		if err != nil {
-			return err
-		}
-	} else {
-		logger.Warnf("config file: %s not exist", configPath)
-		return nil
+
+	//加载通用配置
+	configPath := filepath.Join(common.GetAppPath(), "config", "common.toml")
+	err = loadConfigFromFile(configPath)
+	if err != ErrConfigFileNotExist {
+		return
+	}
+
+	//加载环境配置
+	configPath = filepath.Join(common.GetAppPath(), "config", common.GetEnv(), "config.toml")
+	err = loadConfigFromFile(configPath)
+	if err != ErrConfigFileNotExist {
+		return
 	}
 
 	return initConfig()
 }
+
+var ErrConfigFileNotExist = errors.New("config file not exist")
+
+func loadConfigFromFile(file string) error {
+	logger.Info("load config from file: ", file)
+	if common.IsExist(file) {
+		_, err := toml.DecodeFile(file, &Config)
+		if err != nil {
+			return err
+		}
+	} else {
+		logger.Warnf("config file: %s not exist", file)
+		return ErrConfigFileNotExist
+	}
+
+	return nil
+}
+
 func initConfig() error {
 	//设置默认路由
 	if len(Config.Route.DefaultController) == 0 {
