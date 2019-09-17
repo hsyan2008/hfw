@@ -68,7 +68,6 @@ func (cr *ConsulRegister) Register(info RegisterInfo) error {
 		for {
 			select {
 			case <-signal.GetSignalContext().Ctx.Done():
-				cr.UnRegister()
 				return
 			case <-ticker.C:
 				err = client.Agent().UpdateTTL(serviceId, "", check.Status)
