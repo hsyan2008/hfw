@@ -40,9 +40,9 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	onlineNum := atomic.AddUint32(&online, 1)
-	httpCtx.Mix("online", onlineNum)
+	httpCtx.Mix("online:", onlineNum)
 	defer func() {
-		httpCtx.Mix("offline", atomic.AddUint32(&online, ^uint32(0)))
+		atomic.AddUint32(&online, ^uint32(0))
 	}()
 	err := checkConcurrence(onlineNum)
 	if err != nil {
