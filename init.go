@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/BurntSushi/toml"
 	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/configs"
@@ -76,52 +75,11 @@ func initLog() error {
 }
 
 func loadConfig() (err error) {
-	var configList []string
-	defer func() {
-		logger.Info("load config list:", configList)
-	}()
-	//加载当前目录下的配置
-	configList, err = loadConfigFromFile(common.GetAppPath())
+	err = configs.Load(&Config)
 	if err != nil {
 		return
 	}
-
-	//加载通用配置
-	list, err := loadConfigFromFile(filepath.Join(common.GetAppPath(), "config"))
-	if err != nil {
-		return
-	}
-	configList = append(configList, list...)
-
-	//加载环境配置
-	if len(common.GetEnv()) > 0 {
-		list, err = loadConfigFromFile(filepath.Join(common.GetAppPath(), "config", common.GetEnv()))
-		if err != nil {
-			return
-		}
-		configList = append(configList, list...)
-	}
-
 	return initConfig()
-}
-
-var ErrConfigPathNotExist = errors.New("config path not exist")
-
-func loadConfigFromFile(configPath string) ([]string, error) {
-	if !common.IsExist(configPath) {
-		logger.Warnf("filepath: %s is not exist", configPath)
-		return nil, ErrConfigPathNotExist
-	}
-	files, _ := filepath.Glob(filepath.Join(configPath, "*.toml"))
-	for _, file := range files {
-		// logger.Info("load config from file: ", file)
-		_, err := toml.DecodeFile(file, &Config)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return files, nil
 }
 
 func initConfig() error {
