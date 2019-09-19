@@ -76,46 +76,52 @@ func initLog() error {
 }
 
 func loadConfig() (err error) {
-	if len(common.GetEnv()) == 0 {
-		//config目录存在的时候，就必须要指定环境变量来加载config.toml
-		if !common.IsExist(filepath.Join(common.GetAppPath(), "config")) {
-			logger.Warn("config dir not exist")
-			return
-		}
+	var configList []string
+	defer func() {
+		logger.Info("load config list:", configList)
+	}()
+	//加载当前目录下的配置
+	configList, err = loadConfigFromFile(common.GetAppPath())
+	if err != nil {
+		return
 	}
 
 	//加载通用配置
-	configPath := filepath.Join(common.GetAppPath(), "config", "common.toml")
-	err = loadConfigFromFile(configPath)
-	if err != ErrConfigFileNotExist {
+	list, err := loadConfigFromFile(filepath.Join(common.GetAppPath(), "config"))
+	if err != nil {
 		return
 	}
+	configList = append(configList, list...)
 
 	//加载环境配置
-	configPath = filepath.Join(common.GetAppPath(), "config", common.GetEnv(), "config.toml")
-	err = loadConfigFromFile(configPath)
-	if err != ErrConfigFileNotExist {
-		return
+	if len(common.GetEnv()) > 0 {
+		list, err = loadConfigFromFile(filepath.Join(common.GetAppPath(), "config", common.GetEnv()))
+		if err != nil {
+			return
+		}
+		configList = append(configList, list...)
 	}
 
 	return initConfig()
 }
 
-var ErrConfigFileNotExist = errors.New("config file not exist")
+var ErrConfigPathNotExist = errors.New("config path not exist")
 
-func loadConfigFromFile(file string) error {
-	logger.Info("load config from file: ", file)
-	if common.IsExist(file) {
+func loadConfigFromFile(configPath string) ([]string, error) {
+	if !common.IsExist(configPath) {
+		logger.Warnf("filepath: %s is not exist", configPath)
+		return nil, ErrConfigPathNotExist
+	}
+	files, _ := filepath.Glob(filepath.Join(configPath, "*.toml"))
+	for _, file := range files {
+		// logger.Info("load config from file: ", file)
 		_, err := toml.DecodeFile(file, &Config)
 		if err != nil {
-			return err
+			return nil, err
 		}
-	} else {
-		logger.Warnf("config file: %s not exist", file)
-		return ErrConfigFileNotExist
 	}
 
-	return nil
+	return files, nil
 }
 
 func initConfig() error {
