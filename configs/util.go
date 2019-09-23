@@ -14,6 +14,9 @@ func Load(config interface{}) (err error) {
 	var configList []string
 	defer func() {
 		logger.Info("load config list:", configList)
+		if err == ErrConfigPathNotExist {
+			err = nil
+		}
 	}()
 	//加载当前目录下的配置
 	configList, err = loadFromFile(common.GetAppPath(), config)
@@ -50,16 +53,16 @@ var ErrConfigPathNotExist = errors.New("config path not exist")
 
 func loadFromFile(configPath string, config interface{}) ([]string, error) {
 	if !common.IsExist(configPath) {
-		logger.Warnf("filepath: %s is not exist", configPath)
+		logger.Infof("configPath: %s is not exist", configPath)
 		return nil, ErrConfigPathNotExist
 	}
 	files, _ := filepath.Glob(filepath.Join(configPath, "*.toml"))
 	for _, file := range files {
-		// logger.Info("load config from file: ", file)
 		_, err := toml.DecodeFile(file, config)
 		if err != nil {
 			return nil, err
 		}
+		logger.Info("load config from file success:", file)
 	}
 
 	return files, nil
