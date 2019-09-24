@@ -6,6 +6,7 @@ import (
 	"github.com/google/gops/agent"
 	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/common"
+	"github.com/hsyan2008/hfw/deploy"
 	"github.com/hsyan2008/hfw/serve"
 	"github.com/hsyan2008/hfw/signal"
 )
@@ -33,11 +34,11 @@ func Run() (err error) {
 	defer signalContext.Shutdowned()
 
 	if Config.HotDeploy.Enable {
-		go HotDeploy(Config.HotDeploy)
+		go deploy.HotDeploy(Config.HotDeploy)
 	}
 
 	if len(Config.Server.Address) == 0 {
-		logger.Warn("server address is nil")
+		logger.Fatal("server address is nil")
 		return
 	}
 

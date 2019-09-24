@@ -1,6 +1,10 @@
 package configs
 
-import "time"
+import (
+	"time"
+)
+
+var Config AllConfig
 
 //Config 项目配置
 type AllConfig struct {

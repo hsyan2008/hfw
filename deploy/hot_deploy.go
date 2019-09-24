@@ -1,4 +1,4 @@
-package hfw
+package deploy
 
 import (
 	"os"

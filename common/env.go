@@ -1,6 +1,8 @@
 package common
 
 import (
+	"bytes"
+	"errors"
 	"flag"
 	"os"
 	"path/filepath"
@@ -8,21 +10,31 @@ import (
 	"strings"
 )
 
-func ParseFlag() {
-	ENVIRONMENT = os.Getenv("ENVIRONMENT")
-	if len(ENVIRONMENT) == 0 {
-		flag.StringVar(&ENVIRONMENT, "e", "", "set env, e.g dev test prod")
-	}
+func ParseFlag() (err error) {
 
-	flag.Parse()
+	flagset := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+	// flagset.Usage = func() {}
+	var buf = new(bytes.Buffer)
+	flagset.SetOutput(buf)
+	flagset.StringVar(&ENVIRONMENT, "e", "", "set env, e.g dev test prod")
+
+	err = flagset.Parse(os.Args[1:])
+	if err != nil {
+		err = errors.New(buf.String())
+	}
 
 	if os.Getenv("VERSION") != "" {
 		VERSION = os.Getenv("VERSION")
 	}
 
+	if len(ENVIRONMENT) == 0 {
+		ENVIRONMENT = os.Getenv("ENVIRONMENT")
+	}
 	if len(ENVIRONMENT) == 0 && (IsGoRun() || IsGoTest()) {
 		ENVIRONMENT = DEV
 	}
+
+	return
 }
 
 var (

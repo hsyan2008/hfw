@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 	"github.com/hsyan2008/go-logger"
@@ -66,4 +67,54 @@ func loadFromFile(configPath string, config interface{}) ([]string, error) {
 	}
 
 	return files, nil
+}
+
+func LoadDefaultConfig() (err error) {
+	err = Load(&Config)
+	if err != nil {
+		return
+	}
+	return initDefaultConfig()
+}
+
+func initDefaultConfig() error {
+	//设置默认路由
+	if len(Config.Route.DefaultController) == 0 {
+		Config.Route.DefaultController = "index"
+	} else {
+		Config.Route.DefaultController = strings.ToLower(Config.Route.DefaultController)
+	}
+	if len(Config.Route.DefaultAction) == 0 {
+		Config.Route.DefaultAction = "index"
+	} else {
+		Config.Route.DefaultAction = strings.ToLower(Config.Route.DefaultAction)
+	}
+
+	//转为绝对路径
+	if !filepath.IsAbs(Config.Template.HTMLPath) {
+		Config.Template.HTMLPath = filepath.Join(common.GetAppPath(), Config.Template.HTMLPath)
+	}
+	if len(Config.Template.WidgetsPath) > 0 {
+		if !filepath.IsAbs(Config.Template.WidgetsPath) {
+			Config.Template.WidgetsPath = filepath.Join(common.GetAppPath(), Config.Template.WidgetsPath)
+		}
+		m, err := filepath.Glob(Config.Template.WidgetsPath)
+		if err != nil || len(m) == 0 {
+			return errors.New("error WidgetsPath")
+		}
+	}
+
+	certFile := Config.Server.CertFile
+	keyFile := Config.Server.KeyFile
+	if len(certFile) > 0 && len(keyFile) > 0 {
+		if !filepath.IsAbs(certFile) {
+			certFile = filepath.Join(common.GetAppPath(), certFile)
+		}
+
+		if !filepath.IsAbs(keyFile) {
+			keyFile = filepath.Join(common.GetAppPath(), keyFile)
+		}
+	}
+
+	return nil
 }
