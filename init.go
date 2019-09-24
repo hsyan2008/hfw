@@ -49,11 +49,13 @@ func Init() (err error) {
 	Config = configs.Config
 
 	if len(Config.Redis.Server) > 0 && redis.DefaultRedisIns == nil {
+		logger.Info("begin to connect default redis server")
 		redis.DefaultRedisIns, err = redis.NewRedis(Config.Redis)
 		if err != nil {
-			logger.Warn(err)
-			return fmt.Errorf("error redis config: %s", err.Error())
+			logger.Warn("connect to default redis faild:", err)
+			return fmt.Errorf("connect to default redis faild: %s", err.Error())
 		}
+		logger.Info("connect to default redis server success")
 	}
 
 	return
