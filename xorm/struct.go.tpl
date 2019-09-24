@@ -8,17 +8,25 @@ import (
 {{$ilen := len .Imports}}{{if gt $ilen 0}}{{range .Imports}}"{{.}}"{{end}}{{end}}
 
     "github.com/go-xorm/xorm"
+    "github.com/hsyan2008/go-logger"
     "github.com/hsyan2008/hfw"
     "github.com/hsyan2008/hfw/configs"
     "github.com/hsyan2008/hfw/db"
 )
 
 {{range .Tables}}
+var {{Mapper .Name}}Model = &{{Mapper .Name}}{}
 func init() {
-    //{{Mapper .Name}}Model.Dao.EnableCache({{Mapper .Name}}Model)
+    var err error
+    {{Mapper .Name}}Model.Dao, err = db.NewXormDao(hfw.Config, hfw.Config.Db)
+    if err != nil {
+        logger.Fatal(err)
+        panic(err)    
+    }
+    {{Mapper .Name}}Model.Dao.EnableCache({{Mapper .Name}}Model)
     //{{Mapper .Name}}Model.Dao.DisableCache({{Mapper .Name}}Model)
 	//gob: type not registered for interface
-    gob.Register(&{{Mapper .Name}}{})
+    gob.Register({{Mapper .Name}}Model)
 }
 
 type {{Mapper .Name}} struct {
