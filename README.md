@@ -5,10 +5,6 @@ Useage:
 ### main.go
 ```
 func main() {
-    err := hfw.Init()
-    if err != nil {
-        panic(err)
-    }
     _ = hfw.Handler("/", &Index{})
     _ = hfw.Run()
 }
