@@ -2,6 +2,8 @@ package db
 
 const DefaultPageSize = 1000
 
+var DefaultDao Dao
+
 type Dao interface {
 	UpdateById(Model) (int64, error)
 	UpdateByIds(Model, Cond, []interface{}) (int64, error)

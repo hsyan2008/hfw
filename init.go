@@ -10,6 +10,7 @@ import (
 	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/configs"
+	"github.com/hsyan2008/hfw/db"
 	"github.com/hsyan2008/hfw/redis"
 )
 
@@ -48,6 +49,7 @@ func Init() (err error) {
 
 	Config = configs.Config
 
+	//初始化redis
 	if len(Config.Redis.Server) > 0 && redis.DefaultRedisIns == nil {
 		logger.Info("begin to connect default redis server")
 		redis.DefaultRedisIns, err = redis.NewRedis(Config.Redis)
@@ -56,6 +58,15 @@ func Init() (err error) {
 			return fmt.Errorf("connect to default redis faild: %s", err.Error())
 		}
 		logger.Info("connect to default redis server success")
+	}
+
+	//初始化mysql
+	if Config.Db.Driver != "" {
+		db.DefaultDao, err = db.NewXormDao(Config, Config.Db)
+		if err != nil {
+			return fmt.Errorf("connect to default db faild: %s", err.Error())
+		}
+		logger.Info("connect to default mysql server success")
 	}
 
 	return
