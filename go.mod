@@ -15,16 +15,16 @@ require (
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/go-xorm/cachestore v0.0.0-20170409031804-adfa3466c8e4
 	github.com/go-xorm/xorm v0.7.7
-	github.com/google/gops v0.3.6
+	github.com/google/gops v0.3.6 // indirect
 	github.com/google/uuid v1.1.1
-	github.com/gorilla/websocket v1.4.1
+	github.com/gorilla/websocket v1.4.1 // indirect
 	github.com/hashicorp/consul/api v1.2.0
-	github.com/hsyan2008/go-logger v0.0.0-20190927045747-8dd04f4c1104
+	github.com/hsyan2008/go-logger v0.0.0-20190927053929-48880c5e9898
 	github.com/hsyan2008/gracehttp v0.0.0-20190905124242-f4539a0822c4
 	github.com/json-iterator/go v1.1.7
 	github.com/lib/pq v1.2.0
 	github.com/mediocregopher/radix.v2 v0.0.0-20181115013041-b67df6e626f9
-	github.com/robfig/cron/v3 v3.0.0
+	github.com/robfig/cron/v3 v3.0.0 // indirect
 	github.com/shirou/gopsutil v2.18.12+incompatible
 	github.com/syndtr/goleveldb v1.0.0 // indirect
 	go.uber.org/atomic v1.4.0 // indirect
