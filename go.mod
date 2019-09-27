@@ -12,16 +12,14 @@ require (
 	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
 	github.com/denisenkom/go-mssqldb v0.0.0-20190924004331-208c0a498538
 	github.com/fsnotify/fsnotify v1.4.7
-	github.com/globalsign/mgo v0.0.0-20181015135952-eeefdecb41b8
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/go-xorm/cachestore v0.0.0-20170409031804-adfa3466c8e4
 	github.com/go-xorm/xorm v0.7.7
-	github.com/gogo/protobuf v1.3.0 // indirect
 	github.com/google/gops v0.3.6
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/websocket v1.4.1
 	github.com/hashicorp/consul/api v1.2.0
-	github.com/hsyan2008/go-logger v0.0.0-20190829072121-8c09c5aa4331
+	github.com/hsyan2008/go-logger v0.0.0-20190927045747-8dd04f4c1104
 	github.com/hsyan2008/gracehttp v0.0.0-20190905124242-f4539a0822c4
 	github.com/json-iterator/go v1.1.7
 	github.com/lib/pq v1.2.0
@@ -30,10 +28,10 @@ require (
 	github.com/shirou/gopsutil v2.18.12+incompatible
 	github.com/syndtr/goleveldb v1.0.0 // indirect
 	go.uber.org/atomic v1.4.0 // indirect
-	go.uber.org/multierr v1.1.0 // indirect
+	go.uber.org/multierr v1.2.0 // indirect
 	go.uber.org/zap v1.10.0 // indirect
-	golang.org/x/net v0.0.0-20190603091049-60506f45cf65
-	google.golang.org/grpc v1.23.1
+	golang.org/x/net v0.0.0-20190926025831-c00fd9afed17
+	google.golang.org/grpc v1.24.0
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/yaml.v2 v2.2.2 // indirect
 	xorm.io/core v0.7.0

@@ -50,22 +50,24 @@ func Init() (err error) {
 
 	//初始化redis
 	if len(Config.Redis.Server) > 0 && redis.DefaultRedisIns == nil {
-		logger.Info("begin to connect default redis server")
+		logger.Info("begin to connect default REDIS server")
 		redis.DefaultRedisIns, err = redis.NewRedis(Config.Redis)
 		if err != nil {
-			logger.Warn("connect to default redis faild:", err)
+			logger.Warn("connect to default REDIS faild:", err)
 			return fmt.Errorf("connect to default redis faild: %s", err.Error())
 		}
-		logger.Info("connect to default redis server success")
+		logger.Info("connect to default REDIS server success")
 	}
 
 	//初始化mysql
 	if Config.Db.Driver != "" {
+		logger.Info("begin connect to default MYSQL server")
 		db.DefaultDao, err = db.NewXormDao(Config, Config.Db)
 		if err != nil {
-			return fmt.Errorf("connect to default db faild: %s", err.Error())
+			logger.Warn("connect to default MYSQL faild:", err)
+			return fmt.Errorf("connect to default mysql faild: %s", err.Error())
 		}
-		logger.Info("connect to default mysql server success")
+		logger.Info("connect to default MYSQL server success")
 	}
 
 	return
