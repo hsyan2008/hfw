@@ -31,7 +31,7 @@ func Init() (err error) {
 	isInited = true
 
 	err = common.ParseFlag()
-	if err != nil {
+	if err != nil && !common.IsGoTest() {
 		logger.Warn(err)
 	}
 
