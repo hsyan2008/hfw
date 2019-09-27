@@ -40,14 +40,13 @@ func Init() (err error) {
 		logger.Warn(err)
 		return err
 	}
+	Config = configs.Config
 
 	err = initLog()
 	if err != nil {
 		logger.Warn(err)
 		return err
 	}
-
-	Config = configs.Config
 
 	//初始化redis
 	if len(Config.Redis.Server) > 0 && redis.DefaultRedisIns == nil {
