@@ -8,6 +8,7 @@
 package register
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -20,19 +21,26 @@ type ConsulRegister struct {
 	target string
 	ttl    int
 
+	client *consulapi.Client
+
+	ctx    context.Context
+	cancel context.CancelFunc
+
 	registerInfo RegisterInfo
 }
 
 func NewConsulRegister(target string, ttl int) *ConsulRegister {
-	return &ConsulRegister{target: target, ttl: ttl}
+	cr := &ConsulRegister{target: target, ttl: ttl}
+	cr.ctx, cr.cancel = context.WithCancel(signal.GetSignalContext().Ctx)
+	return cr
 }
 
-func (cr *ConsulRegister) Register(info RegisterInfo) error {
+func (cr *ConsulRegister) Register(info RegisterInfo) (err error) {
 	cr.registerInfo = info
 	// initial consul client config
 	config := consulapi.DefaultConfig()
 	config.Address = cr.target
-	client, err := consulapi.NewClient(config)
+	cr.client, err = consulapi.NewClient(config)
 	if err != nil {
 		return fmt.Errorf("create consul client error: %s", err.Error())
 	}
@@ -47,13 +55,13 @@ func (cr *ConsulRegister) Register(info RegisterInfo) error {
 		Address: info.Host,
 	}
 
-	if err = client.Agent().ServiceRegister(reg); err != nil {
+	if err = cr.client.Agent().ServiceRegister(reg); err != nil {
 		return fmt.Errorf("register service to consul error: %s", err.Error())
 	}
 
 	// initial register service check
 	check := consulapi.AgentServiceCheck{TTL: fmt.Sprintf("%ds", cr.ttl), Status: consulapi.HealthPassing}
-	err = client.Agent().CheckRegister(
+	err = cr.client.Agent().CheckRegister(
 		&consulapi.AgentCheckRegistration{
 			ID:                serviceId,
 			Name:              info.ServiceName,
@@ -68,9 +76,12 @@ func (cr *ConsulRegister) Register(info RegisterInfo) error {
 		for {
 			select {
 			case <-signal.GetSignalContext().Ctx.Done():
+				cr.cancel()
+				return
+			case <-cr.ctx.Done():
 				return
 			case <-ticker.C:
-				err = client.Agent().UpdateTTL(serviceId, "", check.Status)
+				err = cr.client.Agent().UpdateTTL(serviceId, "", check.Status)
 				if err != nil {
 					logger.Warn("update ttl of service error: ", err.Error())
 				}
@@ -83,25 +94,21 @@ func (cr *ConsulRegister) Register(info RegisterInfo) error {
 	return nil
 }
 
-func (cr *ConsulRegister) UnRegister() error {
-	defer signal.GetSignalContext().WgDone()
+func (cr *ConsulRegister) UnRegister() (err error) {
+	defer func() {
+		signal.GetSignalContext().WgDone()
+		cr.cancel()
+	}()
 
 	serviceId := generateServiceId(cr.registerInfo.ServiceName, cr.registerInfo.Host, cr.registerInfo.Port)
 
-	config := consulapi.DefaultConfig()
-	config.Address = cr.target
-	client, err := consulapi.NewClient(config)
-	if err != nil {
-		return fmt.Errorf("create consul client error: %s", err.Error())
-	}
-
-	err = client.Agent().ServiceDeregister(serviceId)
+	err = cr.client.Agent().ServiceDeregister(serviceId)
 	if err != nil {
 		return fmt.Errorf("deregister service error: %s", err.Error())
 	}
 	logger.Info("deregistered service from consul server.")
 
-	err = client.Agent().CheckDeregister(serviceId)
+	err = cr.client.Agent().CheckDeregister(serviceId)
 	if err != nil {
 		return fmt.Errorf("deregister check error: %s", err.Error())
 	}

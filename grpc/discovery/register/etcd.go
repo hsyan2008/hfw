@@ -27,11 +27,15 @@ type EtcdRegister struct {
 
 	registerInfo RegisterInfo
 
-	ctx context.Context
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 func NewEtcdRegister(target []string, ttl int) *EtcdRegister {
-	return &EtcdRegister{target: target, ttl: ttl, ctx: signal.GetSignalContext().Ctx}
+	er := &EtcdRegister{target: target, ttl: ttl}
+	er.ctx, er.cancel = context.WithCancel(signal.GetSignalContext().Ctx)
+
+	return er
 }
 
 // Register register service with name as prefix to etcd, multi etcd addr should use ; to split
@@ -67,6 +71,9 @@ func (er *EtcdRegister) Register(info RegisterInfo) (err error) {
 			}
 			select {
 			case <-signal.GetSignalContext().Ctx.Done():
+				er.cancel()
+				return
+			case <-er.ctx.Done():
 				return
 			case <-ticker.C:
 			}
@@ -99,7 +106,10 @@ func (er *EtcdRegister) withAlive() error {
 // UnRegister remove service from etcd
 func (er *EtcdRegister) UnRegister() (err error) {
 	if er.client != nil {
-		defer signal.GetSignalContext().WgDone()
+		defer func() {
+			signal.GetSignalContext().WgDone()
+			er.cancel()
+		}()
 		_, err = er.client.Delete(context.Background(), er.key)
 	}
 
