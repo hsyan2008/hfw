@@ -71,7 +71,8 @@ func (httpCtx *HTTPContext) ReturnFileContent(contentType, filename string, file
 	httpCtx.SetDownloadMode(filename)
 
 	_, err = io.Copy(w, r)
-	httpCtx.ThrowCheck(500, err)
+	// httpCtx.ThrowCheck(500, err)
+	httpCtx.Warn(err)
 }
 
 var templatesCache = struct {
@@ -103,7 +104,8 @@ func (httpCtx *HTTPContext) Render() {
 	} else {
 		err = t.Execute(httpCtx.ResponseWriter, httpCtx)
 	}
-	httpCtx.ThrowCheck(500, err)
+	// httpCtx.ThrowCheck(500, err)
+	httpCtx.Warn(err)
 }
 
 func (httpCtx *HTTPContext) render() (t *template.Template) {
@@ -214,5 +216,6 @@ func (httpCtx *HTTPContext) ReturnJSON() {
 		//response(err_no + err_msg + results)
 		err = encoding.JSONIO.Marshal(w, httpCtx.Response)
 	}
-	httpCtx.ThrowCheck(500, err)
+	// httpCtx.ThrowCheck(500, err)
+	httpCtx.Warn(err)
 }
