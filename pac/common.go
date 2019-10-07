@@ -20,7 +20,7 @@ func LoadDefault() (err error) {
 	if isLoad {
 		return
 	}
-	err = LoadGwflist()
+	err = LoadFromPac()
 	defer func() {
 		isLoad = true
 	}()
@@ -28,7 +28,7 @@ func LoadDefault() (err error) {
 		return
 	}
 
-	return LoadFromPac()
+	return LoadGwflist()
 }
 
 func GetAll() map[string]bool {
