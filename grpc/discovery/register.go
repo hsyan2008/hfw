@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/hsyan2008/go-logger"
+	"github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/configs"
 	"github.com/hsyan2008/hfw/grpc/discovery/register"
 	"github.com/hsyan2008/hfw/grpc/discovery/resolver"
@@ -23,6 +24,7 @@ func RegisterServer(cc configs.ServerConfig, address string) (r register.Registe
 	if err != nil {
 		return nil, err
 	}
+	logger.Infof("Start register service: %s host: %s port: %d to %s", cc.ServerName, host, port, cc.ResolverType)
 	switch cc.ResolverType {
 	case resolver.ConsulResolver:
 		r = register.NewConsulRegister(cc.ResolverAddresses[0], int(cc.UpdateInterval)*2)
@@ -47,7 +49,11 @@ func getHostPort(cc configs.ServerConfig, address string) (host string, port int
 		return
 	}
 
-	if cc.Interface != "" {
+	if ip := net.ParseIP(host); ip == nil || ip.IsLoopback() || ip.IsUnspecified() {
+		host = ""
+	}
+
+	if host == "" && cc.Interface != "" {
 		var iface *net.Interface
 		iface, err = net.InterfaceByName(cc.Interface)
 		if err != nil {
@@ -65,6 +71,25 @@ func getHostPort(cc configs.ServerConfig, address string) (host string, port int
 				break
 			}
 		}
+	}
+
+	if host == "" {
+		var ips []net.IP
+		ips, err = net.LookupIP(common.GetHostName())
+		if err != nil {
+			return
+		}
+		for _, ip := range ips {
+			if !ip.IsLoopback() && ip.To4() != nil {
+				host = ip.String()
+				break
+			}
+		}
+	}
+
+	if host == "" {
+		err = errors.New("not found host for register")
+		return
 	}
 
 	port, err = strconv.Atoi(p)
