@@ -14,7 +14,7 @@ type Mongo struct {
 	dbName string
 }
 
-var mongoSessions map[string]*mgo.Session
+var mongoSessions = make(map[string]*mgo.Session)
 var lock = new(sync.Mutex)
 
 func NewMongo(address, dbName string) (m *Mongo, err error) {
@@ -71,4 +71,42 @@ func (m *Mongo) SetDbName(dbName string) {
 
 func (m *Mongo) Exec(colName string, colFunc func(collection *mgo.Collection) error) error {
 	return colFunc(m.db.C(colName))
+}
+
+func (m *Mongo) CollectionNames() (names []string, err error) {
+	return m.db.CollectionNames()
+}
+
+func (m *Mongo) CollectionIsExist(name string) (isExist bool, err error) {
+	names, err := m.CollectionNames()
+	if err != nil {
+		return
+	}
+
+	for k := range names {
+		if names[k] == name {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func (m *Mongo) DatabaseNames() (names []string, err error) {
+	return m.db.Session.DatabaseNames()
+}
+
+func (m *Mongo) DbNameIsExist(name string) (isExist bool, err error) {
+	names, err := m.DatabaseNames()
+	if err != nil {
+		return
+	}
+
+	for k := range names {
+		if names[k] == name {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
