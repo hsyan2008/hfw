@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/globalsign/mgo"
 )
@@ -17,9 +18,20 @@ var mongoSessions map[string]*mgo.Session
 var lock = new(sync.Mutex)
 
 func NewMongo(address, dbName string) (m *Mongo, err error) {
-	if address == "" || dbName == "" {
-		return nil, errors.New("nil address or dbName")
+	if address == "" {
+		return nil, errors.New("nil address")
 	}
+	dialInfo, err := mgo.ParseURL(address)
+	if err != nil {
+		return
+	}
+	if dbName == "" {
+		dbName = dialInfo.Database
+	}
+	if dbName == "" {
+		return nil, errors.New("nil dbName")
+	}
+	dialInfo.Timeout = 3 * time.Second
 
 	var (
 		mongoInstance *mgo.Session
@@ -31,7 +43,7 @@ func NewMongo(address, dbName string) (m *Mongo, err error) {
 	lock.Lock()
 	defer lock.Unlock()
 	if mongoInstance, ok = mongoSessions[key]; !ok {
-		mongoInstance, err = mgo.Dial(address)
+		mongoInstance, err = mgo.DialWithInfo(dialInfo)
 		if err != nil {
 			return nil, fmt.Errorf("dial mongo fail: %#v", err)
 		}
