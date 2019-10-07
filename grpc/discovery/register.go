@@ -48,12 +48,15 @@ func getHostPort(cc configs.ServerConfig, address string) (host string, port int
 	if err != nil {
 		return
 	}
+	port, err = strconv.Atoi(p)
 
-	if ip := net.ParseIP(host); ip == nil || ip.IsLoopback() || ip.IsUnspecified() {
-		host = ""
+	//如果是个合格的ip地址
+	if ip := net.ParseIP(host); ip != nil && !ip.IsLoopback() && !ip.IsUnspecified() {
+		return
 	}
 
-	if host == "" && cc.Interface != "" {
+	//根据网卡名字查找ip
+	if cc.Interface != "" {
 		var iface *net.Interface
 		iface, err = net.InterfaceByName(cc.Interface)
 		if err != nil {
@@ -68,31 +71,25 @@ func getHostPort(cc configs.ServerConfig, address string) (host string, port int
 		for _, a := range addrs {
 			if ipnet, ok := a.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && ipnet.IP.To4() != nil {
 				host = ipnet.IP.String()
-				break
+				return
 			}
 		}
 	}
 
-	if host == "" {
-		var ips []net.IP
-		ips, err = net.LookupIP(common.GetHostName())
-		if err != nil {
-			return
-		}
-		for _, ip := range ips {
-			if !ip.IsLoopback() && ip.To4() != nil {
-				host = ip.String()
-				break
-			}
-		}
-	}
-
-	if host == "" {
-		err = errors.New("not found host for register")
+	//根据hostname查找ip
+	var ips []net.IP
+	ips, err = net.LookupIP(common.GetHostName())
+	if err != nil {
 		return
 	}
+	for _, ip := range ips {
+		if !ip.IsLoopback() && ip.To4() != nil {
+			host = ip.String()
+			return
+		}
+	}
 
-	port, err = strconv.Atoi(p)
-
+	//没有host
+	err = errors.New("not found host for register")
 	return
 }
