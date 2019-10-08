@@ -234,6 +234,8 @@ FOR:
 			switch keys[1] {
 			case "in":
 				sess.In(keys[0], v)
+			case "notin":
+				sess.NotIn(keys[0], v)
 			case "like":
 				//key: name like
 				//val: %h%
