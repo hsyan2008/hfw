@@ -12,6 +12,7 @@ require (
 	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
 	github.com/denisenkom/go-mssqldb v0.0.0-20190924004331-208c0a498538
 	github.com/fsnotify/fsnotify v1.4.7
+	github.com/globalsign/mgo v0.0.0-20181015135952-eeefdecb41b8
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/go-xorm/cachestore v0.0.0-20170409031804-adfa3466c8e4
 	github.com/go-xorm/xorm v0.7.7

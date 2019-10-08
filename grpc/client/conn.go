@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/hsyan2008/hfw/configs"
 	"github.com/hsyan2008/hfw/grpc/auth"
 	"github.com/hsyan2008/hfw/grpc/discovery"
+	"github.com/hsyan2008/hfw/grpc/discovery/resolver"
 	"github.com/hsyan2008/hfw/grpc/interceptor"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
@@ -39,6 +41,14 @@ func GetConnWithAuth(ctx context.Context, c configs.GrpcConfig, authValue string
 	opt ...grpc.DialOption) (conn *grpc.ClientConn, err error) {
 	if len(c.ServerName) == 0 {
 		return nil, errors.New("please specify grpc ServerName")
+	}
+	//static下，有可能服务名一样而地址不一样，做特殊处理
+	if c.ResolverType == resolver.StaticResolver {
+		if len(c.Addresses) == 0 {
+			return nil, errors.New("please specify grpc Addresses")
+		}
+		sort.Slice(c.Addresses, func(i, j int) bool { return c.Addresses[i] < c.Addresses[j] })
+		c.ServerName = fmt.Sprintf("%s_%s", common.Md5(strings.Join(c.Addresses, "|")), c.ServerName)
 	}
 	var ok bool
 	var p *connInstance
