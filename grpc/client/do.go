@@ -53,11 +53,10 @@ FOR:
 				continue FOR
 			}
 			func() {
-				startTime := time.Now()
-				defer func() {
+				defer func(t time.Time) {
 					httpCtx.Infof("Call Grpc ServerName: %s CostTime: %s",
-						c.ServerName, time.Since(startTime))
-				}()
+						c.ServerName, time.Since(t))
+				}(time.Now())
 				resp, err = call(ctx, conn)
 			}()
 			if err == nil {
