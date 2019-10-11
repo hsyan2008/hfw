@@ -1,27 +1,31 @@
 package common
 
 import (
-	"bytes"
-	"errors"
 	"flag"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"testing"
 )
 
 func ParseFlag() (err error) {
 
-	flagset := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-	// flagset.Usage = func() {}
-	var buf = new(bytes.Buffer)
-	flagset.SetOutput(buf)
-	flagset.StringVar(&ENVIRONMENT, "e", "", "set env, e.g dev test prod")
+	// flagset := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+	// // flagset.Usage = func() {}
+	// var buf = new(bytes.Buffer)
+	// flagset.SetOutput(buf)
+	// flagset.StringVar(&ENVIRONMENT, "e", "", "set env, e.g dev test prod")
+	// err = flagset.Parse(os.Args[1:])
+	// if err != nil {
+	// 	err = errors.New(buf.String())
+	// }
 
-	err = flagset.Parse(os.Args[1:])
-	if err != nil {
-		err = errors.New(buf.String())
+	flag.StringVar(&ENVIRONMENT, "e", "", "set env, e.g dev test prod")
+	if IsGoTest() {
+		testing.Init()
 	}
+	flag.Parse()
 
 	if os.Getenv("VERSION") != "" {
 		VERSION = os.Getenv("VERSION")
