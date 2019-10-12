@@ -115,6 +115,8 @@ func initDefaultConfig() error {
 			keyFile = filepath.Join(common.GetAppPath(), keyFile)
 		}
 	}
+	Config.Server.CertFile = certFile
+	Config.Server.KeyFile = keyFile
 
 	return nil
 }
