@@ -5,6 +5,7 @@ import (
 
 	"github.com/Nerdmaster/terminal"
 	logger "github.com/hsyan2008/go-logger"
+	"github.com/hsyan2008/hfw"
 	"github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/serve"
 	"github.com/zserge/webview"
@@ -17,7 +18,7 @@ func Run(uri, title string, width, height int, resize bool) {
 		logger.SetConsole(false)
 	}
 
-	addr, err := serve.GetAddr()
+	addr, err := serve.GetAddr(hfw.Config.Server)
 	if err != nil {
 		panic(err)
 	}

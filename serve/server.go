@@ -3,8 +3,8 @@
 package serve
 
 import (
-	"fmt"
 	"net"
+	"sync"
 	"time"
 
 	logger "github.com/hsyan2008/go-logger"
@@ -15,23 +15,43 @@ import (
 )
 
 var listener net.Listener
+var s *gracehttp.Server
+var lock = new(sync.Mutex)
 
-func GetAddr() (string, error) {
-	if listener == nil {
-		return "", fmt.Errorf("nil listener")
+func GetAddr(config configs.ServerConfig) (string, error) {
+
+	err := newServer(config)
+	if err != nil {
+		return "", err
 	}
 
 	return listener.Addr().String(), nil
 }
 
+func newServer(config configs.ServerConfig) (err error) {
+	if s == nil || listener == nil {
+		lock.Lock()
+		defer lock.Unlock()
+		if s == nil {
+			addr := config.Address
+			readTimeout := config.ReadTimeout * time.Second
+			writeTimeout := config.WriteTimeout * time.Second
+			s = gracehttp.NewServer(addr, nil, readTimeout, writeTimeout)
+		}
+		if listener == nil {
+			listener, err = s.InitListener()
+			if err != nil {
+				return
+			}
+		}
+	}
+
+	return
+}
+
 func Start(config configs.ServerConfig) (err error) {
 
-	addr := config.Address
-	readTimeout := config.ReadTimeout * time.Second
-	writeTimeout := config.WriteTimeout * time.Second
-	s := gracehttp.NewServer(addr, nil, readTimeout, writeTimeout)
-
-	listener, err = s.InitListener()
+	err = newServer(config)
 	if err != nil {
 		return
 	}
