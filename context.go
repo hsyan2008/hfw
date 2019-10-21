@@ -24,6 +24,8 @@ type HTTPContext struct {
 	Ctx    context.Context    `json:"-"`
 	Cancel context.CancelFunc `json:"-"`
 
+	HTTPStatus int `json:"-"`
+
 	ResponseWriter http.ResponseWriter `json:"-"`
 	Request        *http.Request       `json:"-"`
 	Session        *session.Session    `json:"-"`
@@ -79,6 +81,9 @@ func NewHTTPContextWithGrpcCtx(ctx context.Context) *HTTPContext {
 }
 
 func (httpCtx *HTTPContext) init(w http.ResponseWriter, r *http.Request) {
+
+	httpCtx.HTTPStatus = http.StatusOK
+
 	httpCtx.ResponseWriter = w
 	httpCtx.Request = r
 

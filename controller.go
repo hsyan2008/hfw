@@ -82,7 +82,8 @@ func (ctl *Controller) Finish(httpCtx *HTTPContext) {
 //NotFound ..
 func (ctl *Controller) NotFound(httpCtx *HTTPContext) {
 
-	httpCtx.ResponseWriter.WriteHeader(http.StatusNotFound)
+	httpCtx.HTTPStatus = http.StatusNotFound
+
 	httpCtx.IsError = true
 
 	httpCtx.ErrNo = 404
@@ -94,7 +95,8 @@ func (ctl *Controller) NotFound(httpCtx *HTTPContext) {
 //该方法不能使用StopRun，也不能panic，因为会被自动调用
 func (ctl *Controller) ServerError(httpCtx *HTTPContext) {
 
-	httpCtx.ResponseWriter.WriteHeader(http.StatusInternalServerError)
+	httpCtx.HTTPStatus = http.StatusInternalServerError
+
 	httpCtx.IsError = true
 
 	httpCtx.ErrNo = 500

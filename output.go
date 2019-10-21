@@ -70,6 +70,8 @@ func (httpCtx *HTTPContext) ReturnFileContent(contentType, filename string, file
 	httpCtx.ResponseWriter.Header().Set("Content-Type", contentType)
 	httpCtx.SetDownloadMode(filename)
 
+	httpCtx.ResponseWriter.WriteHeader(httpCtx.HTTPStatus)
+
 	_, err = io.Copy(w, r)
 	// httpCtx.ThrowCheck(500, err)
 	if err != nil {
@@ -97,15 +99,16 @@ func (httpCtx *HTTPContext) Render() {
 		httpCtx.ResponseWriter.Header().Set("Content-Type", "text/html; charset=utf-8")
 	}
 
+	var w io.Writer = httpCtx.ResponseWriter
 	if !httpCtx.IsError && httpCtx.IsZip {
 		httpCtx.ResponseWriter.Header().Del("Content-Length")
 		httpCtx.ResponseWriter.Header().Set("Content-Encoding", "gzip")
 		writer := gzip.NewWriter(httpCtx.ResponseWriter)
 		defer writer.Close()
-		err = t.Execute(writer, httpCtx)
-	} else {
-		err = t.Execute(httpCtx.ResponseWriter, httpCtx)
+		w = writer
 	}
+	httpCtx.ResponseWriter.WriteHeader(httpCtx.HTTPStatus)
+	err = t.Execute(w, httpCtx)
 	// httpCtx.ThrowCheck(500, err)
 	if err != nil {
 		httpCtx.Warn(err)
@@ -210,6 +213,7 @@ func (httpCtx *HTTPContext) ReturnJSON() {
 		}
 		return string(b)
 	}())
+	httpCtx.ResponseWriter.WriteHeader(httpCtx.HTTPStatus)
 	if httpCtx.IsOnlyResults {
 		//results
 		err = encoding.JSONIO.Marshal(w, httpCtx.Results)
