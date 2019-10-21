@@ -105,12 +105,6 @@ func closeNotify(httpCtx *HTTPContext) {
 	if common.IsGoTest() {
 		return
 	}
-	//panic: net/http: CloseNotify called after ServeHTTP finished
-	defer func() {
-		if err := recover(); err != nil {
-			httpCtx.Warn("closeNotify: ", err)
-		}
-	}()
 	select {
 	case <-httpCtx.Ctx.Done():
 		return
