@@ -7,13 +7,10 @@ import (
 	"fmt"
 	"net/http"
 	_ "net/http/pprof"
-	"os"
-	ossignal "os/signal"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"sync/atomic"
-	"syscall"
 	"time"
 
 	logger "github.com/hsyan2008/go-logger"
@@ -104,26 +101,12 @@ func recoverPanic(httpCtx *HTTPContext, reflectVal reflect.Value, initValue []re
 	}
 }
 
-var c = make(chan os.Signal, 1)
-
-func init() {
-	ossignal.Notify(c, syscall.SIGSEGV)
-}
-
 func closeNotify(httpCtx *HTTPContext) {
 	if common.IsGoTest() {
 		return
 	}
-	select {
-	case <-c:
-		httpCtx.Fatal("panic SIGSEGV", string(common.GetStack()))
-		httpCtx.Cancel()
-	case <-httpCtx.Ctx.Done():
-		return
-	case <-httpCtx.Request.Context().Done():
-		httpCtx.Cancel()
-		return
-	}
+	<-httpCtx.Request.Context().Done()
+	httpCtx.Cancel()
 }
 
 var online uint32
