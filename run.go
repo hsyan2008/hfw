@@ -39,6 +39,7 @@ func Run() (err error) {
 
 	if len(Config.Server.Address) == 0 {
 		logger.Fatal("server address is nil")
+		<-signal.GetSignalContext().Ctx.Done()
 		return
 	}
 

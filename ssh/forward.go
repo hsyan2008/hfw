@@ -14,17 +14,37 @@ type ForwardIni struct {
 	Bind string `toml:"bind"`
 }
 
-type LocalForward struct {
+type ForwardType uint8
+
+const (
+	LOCAL  ForwardType = 1
+	REMOTE ForwardType = 2
+)
+
+type Forward struct {
+	t      ForwardType
 	fi     *ForwardIni
 	c      *SSH
 	c2     *SSH
 	step   uint8
 	lister net.Listener
+
+	close chan struct{}
 }
 
-func NewLocalForward(sshConfig SSHConfig, fi *ForwardIni) (l *LocalForward, err error) {
-	l = &LocalForward{
-		step: 1,
+func NewLocalForward(sshConfig SSHConfig, fi *ForwardIni) (l *Forward, err error) {
+	return NewForward(LOCAL, sshConfig, fi)
+}
+
+func NewRemoteForward(sshConfig SSHConfig, fi *ForwardIni) (l *Forward, err error) {
+	return NewForward(REMOTE, sshConfig, fi)
+}
+
+func NewForward(t ForwardType, sshConfig SSHConfig, fi *ForwardIni) (l *Forward, err error) {
+	l = &Forward{
+		step:  1,
+		t:     t,
+		close: make(chan struct{}),
 	}
 
 	l.c, err = NewSSH(sshConfig)
@@ -35,7 +55,7 @@ func NewLocalForward(sshConfig SSHConfig, fi *ForwardIni) (l *LocalForward, err 
 	return
 }
 
-func (l *LocalForward) Dial(sshConfig SSHConfig, fi *ForwardIni) (err error) {
+func (l *Forward) Dial(sshConfig SSHConfig, fi *ForwardIni) (err error) {
 	l.step++
 	if l.step == 2 {
 		l.c2, err = l.c.DialRemote(sshConfig)
@@ -47,13 +67,17 @@ func (l *LocalForward) Dial(sshConfig SSHConfig, fi *ForwardIni) (err error) {
 	return
 }
 
-func (l *LocalForward) Bind(fi *ForwardIni) (err error) {
+func (l *Forward) Bind(fi *ForwardIni) (err error) {
 	if fi != nil && len(fi.Addr) != 0 && len(fi.Bind) != 0 {
 		if !strings.Contains(fi.Bind, ":") {
 			fi.Bind = ":" + fi.Bind
 		}
 		l.fi = fi
-		l.lister, err = net.Listen("tcp", l.fi.Bind)
+		if l.t == LOCAL {
+			l.lister, err = net.Listen("tcp", l.fi.Bind)
+		} else if l.t == REMOTE {
+			l.lister, err = l.c.Listen(l.fi.Bind)
+		}
 		if err == nil {
 			logger.Infof("Bind %s forward to %s success, start to accept", fi.Bind, fi.Addr)
 			go l.Accept()
@@ -64,22 +88,33 @@ func (l *LocalForward) Bind(fi *ForwardIni) (err error) {
 
 	return
 }
-func (l *LocalForward) Accept() {
+func (l *Forward) Accept() {
 	for {
-		conn, err := l.lister.Accept()
-		if err != nil {
-			if strings.Contains(err.Error(), "use of closed network connection") {
-				return
+		select {
+		case <-l.close:
+			return
+		default:
+			conn, err := l.lister.Accept()
+			if err != nil {
+				if strings.Contains(err.Error(), "use of closed network connection") {
+					return
+				}
+				logger.Error(l.t, err)
+				continue
 			}
-			logger.Error(err)
-			continue
+			go l.Hand(conn)
 		}
-		go l.Hand(conn)
 	}
 }
 
-func (l *LocalForward) Hand(conn net.Conn) {
-	con, err := l.c.Connect(l.fi.Addr)
+func (l *Forward) Hand(conn net.Conn) {
+	var err error
+	var con net.Conn
+	if l.t == LOCAL {
+		con, err = l.c.Connect(l.fi.Addr)
+	} else {
+		con, err = net.Dial("tcp", l.fi.Addr)
+	}
 	if err != nil {
 		logger.Error(err)
 		return
@@ -89,15 +124,14 @@ func (l *LocalForward) Hand(conn net.Conn) {
 	go multiCopy(con, conn)
 }
 
-func (l *LocalForward) Close() {
+func (l *Forward) Close() {
+	close(l.close)
+
 	_ = l.lister.Close()
 	if l.c2 != nil {
 		l.c2.Close()
 	}
 	l.c.Close()
-}
-
-type RemoteForward struct {
 }
 
 func multiCopy(des, src net.Conn) {

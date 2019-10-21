@@ -190,6 +190,18 @@ func (this *SSH) Connect(addr string) (conn net.Conn, err error) {
 	return this.c.Dial("tcp", addr)
 }
 
+func (this *SSH) Listen(addr string) (l net.Listener, err error) {
+	return this.c.Listen("tcp", addr)
+}
+
+func (this *SSH) ListenTCP(addr string) (l net.Listener, err error) {
+	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
+	if err != nil {
+		return nil, err
+	}
+	return this.c.ListenTCP(tcpAddr)
+}
+
 func (this *SSH) Config() SSHConfig {
 	return this.config
 }
