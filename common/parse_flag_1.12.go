@@ -7,7 +7,6 @@ import (
 	"errors"
 	"flag"
 	"os"
-	"testing"
 )
 
 func ParseFlag() (err error) {
@@ -22,9 +21,6 @@ func ParseFlag() (err error) {
 	var buf = new(bytes.Buffer)
 	flag.CommandLine.SetOutput(buf)
 	flag.CommandLine.StringVar(&ENVIRONMENT, "e", "", "set env, e.g dev test prod")
-	if IsGoTest() {
-		testing.Init()
-	}
 
 	err = flag.CommandLine.Parse(os.Args[1:])
 	if err != nil {
