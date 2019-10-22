@@ -18,6 +18,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/hsyan2008/hfw/common"
@@ -87,6 +88,8 @@ type Curl struct {
 
 	ctx    context.Context
 	cancel context.CancelFunc
+
+	proxyURL string
 }
 
 var tr = &http.Transport{
@@ -177,8 +180,13 @@ func (curls *Curl) SetOptions(options map[string]bool) {
 		curls.SetOption(k, v)
 	}
 }
+
 func (curls *Curl) SetOption(key string, val bool) {
 	curls.Options[key] = val
+}
+
+func (curls *Curl) SetProxy(proxyURL string) {
+	curls.proxyURL = proxyURL
 }
 
 //Request 参数不需要传，请使用SetContext
@@ -204,7 +212,7 @@ func (curls *Curl) Request(ctxs ...context.Context) (rs *Response, err error) {
 
 	c := make(chan struct{}, 1)
 	go func() {
-		httpResponse, err = httpClient.Do(httpRequest)
+		httpResponse, err = curls.getHttpClient().Do(httpRequest)
 		c <- struct{}{}
 	}()
 
@@ -475,4 +483,42 @@ func (curls *Curl) rcHeader(header map[string][]string) map[string]string {
 	}
 
 	return headers
+}
+
+var clientMap = new(sync.Map)
+
+func (curls *Curl) getHttpClient() *http.Client {
+	if curls.proxyURL == "" {
+		return httpClient
+	}
+
+	if i, ok := clientMap.Load(curls.proxyURL); ok {
+		return i.(*http.Client)
+	}
+
+	urlParse, err := neturl.Parse(curls.proxyURL)
+	if err != nil || urlParse == nil || urlParse.Host == "" {
+		return httpClient
+	}
+
+	hc := &http.Client{
+		Transport: &http.Transport{
+			Proxy: http.ProxyURL(urlParse),
+			Dial: (&net.Dialer{
+				Timeout:   10 * time.Second,
+				KeepAlive: 3600 * time.Second,
+			}).Dial,
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			// DisableKeepAlives:     true,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ResponseHeaderTimeout: 10 * time.Second,
+		},
+		CheckRedirect: func(_ *http.Request, via []*http.Request) error { return ErrStopRedirect },
+		Jar:           nil,
+		Timeout:       0,
+	}
+
+	clientMap.Store(curls.proxyURL, hc)
+
+	return hc
 }
