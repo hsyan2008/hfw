@@ -18,8 +18,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/hsyan2008/hfw/common"
 )
 
 type Response struct {
@@ -58,14 +56,16 @@ var ErrStopRedirect = errors.New("no redirects allowed")
 var ErrRequestTimeout = errors.New("do request time out")
 
 type Curl struct {
-	Url, Method string
+	Url, method string
 
-	Cookies []*http.Cookie
+	cookies []*http.Cookie
 
 	Headers http.Header
 
-	AutoRedirect bool
+	autoRedirect bool
 
+	//流
+	PostReader io.Reader
 	//[]byte格式
 	PostBytes []byte
 	//string格式
@@ -75,8 +75,6 @@ type Curl struct {
 	PostFieldReaders map[string]io.Reader
 	//文件，key是字段名，val是文件路径
 	PostFiles neturl.Values
-	//流
-	PostReader io.Reader
 
 	timeout time.Duration
 
@@ -106,7 +104,7 @@ func New(ctx context.Context, method string, url string) (curls *Curl) {
 	//使用这个header是因为避免100的状态码
 	curls.Headers.Set("Expect", "")
 
-	curls.Method = strings.ToUpper(method)
+	curls.method = strings.ToUpper(method)
 
 	return
 }
@@ -119,13 +117,17 @@ func NewPost(ctx context.Context, url string) *Curl {
 }
 
 func (curls *Curl) SetAutoRedirect() {
-	curls.AutoRedirect = true
+	curls.autoRedirect = true
 }
 
 func (curls *Curl) SetHeaders(headers map[string]string) {
 	for k, v := range headers {
 		curls.Headers.Set(k, v)
 	}
+}
+
+func (curls *Curl) SetCookies(cookies []*http.Cookie) {
+	curls.cookies = cookies
 }
 
 //秒
@@ -142,6 +144,36 @@ func (curls *Curl) SetProxy(proxyURL string) {
 	curls.proxyURL = proxyURL
 }
 
+//以字节流的方式
+func (curls *Curl) SetPostReader(r io.Reader) {
+	curls.PostReader = r
+}
+
+//以字节的方式
+func (curls *Curl) SetPostBytes(b []byte) {
+	curls.PostBytes = b
+}
+
+//以字符串的方式
+func (curls *Curl) SetPostString(s string) {
+	curls.PostString = s
+}
+
+//以key=>value方式，以下三个都是key=>value方式，可以共同使用
+func (curls *Curl) SetPostField(key, value string) {
+	curls.PostFields.Add(key, value)
+}
+
+//以流的方式
+func (curls *Curl) SetPostFieldReader(key string, r io.Reader) {
+	curls.PostFieldReaders[key] = r
+}
+
+//以上传文件的方式
+func (curls *Curl) SetPostFile(key, path string) {
+	curls.PostFiles.Add(key, path)
+}
+
 func (curls *Curl) Request() (rs *Response, err error) {
 
 	if curls.timeout <= 0 {
@@ -154,9 +186,14 @@ func (curls *Curl) Request() (rs *Response, err error) {
 		return
 	}
 
+	httpClient, err := curls.getHttpClient()
+	if err != nil {
+		return
+	}
+
 	c := make(chan struct{}, 1)
 	go func() {
-		rs.Response, err = curls.getHttpClient().Do(httpRequest)
+		rs.Response, err = httpClient.Do(httpRequest)
 		c <- struct{}{}
 	}()
 
@@ -192,7 +229,7 @@ func (curls *Curl) CreateRequest() (httpRequest *http.Request, err error) {
 		len(curls.PostFieldReaders) > 0 || len(curls.PostFiles) > 0 {
 		httpRequest, err = curls.createPostRequest()
 	} else {
-		httpRequest, err = http.NewRequestWithContext(curls.ctx, curls.Method, curls.Url, nil)
+		httpRequest, err = http.NewRequestWithContext(curls.ctx, curls.method, curls.Url, nil)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("CreateRequest failed: %s %#v", err.Error(), err)
@@ -202,7 +239,7 @@ func (curls *Curl) CreateRequest() (httpRequest *http.Request, err error) {
 		httpRequest.Header = curls.Headers
 	}
 
-	for _, cookie := range curls.Cookies {
+	for _, cookie := range curls.cookies {
 		httpRequest.AddCookie(cookie)
 	}
 
@@ -211,7 +248,7 @@ func (curls *Curl) CreateRequest() (httpRequest *http.Request, err error) {
 
 func (curls *Curl) createPostRequest() (httpRequest *http.Request, err error) {
 	if curls.PostReader != nil {
-		// httpRequest, err = http.NewRequestWithContext(curls.ctx, curls.Method, curls.Url, curls.PostReader)
+		// httpRequest, err = http.NewRequestWithContext(curls.ctx, curls.method, curls.Url, curls.PostReader)
 	} else if len(curls.PostBytes) > 0 {
 		curls.PostReader = bytes.NewReader(curls.PostBytes)
 	} else if len(curls.PostString) > 0 {
@@ -236,9 +273,6 @@ func (curls *Curl) createPostRequest() (httpRequest *http.Request, err error) {
 		//文件
 		for key, val := range curls.PostFiles {
 			for _, v := range val {
-				if !common.IsExist(v) {
-					return nil, errors.New(fmt.Sprintf("PostFiles %s => %s not exist", key, v))
-				}
 				fileWriter, err := bodyWriter.CreateFormFile(key, v)
 				if err != nil {
 					return nil, err
@@ -265,26 +299,29 @@ func (curls *Curl) createPostRequest() (httpRequest *http.Request, err error) {
 		curls.PostReader = b
 	}
 
-	return http.NewRequestWithContext(curls.ctx, curls.Method, curls.Url, curls.PostReader)
+	return http.NewRequestWithContext(curls.ctx, curls.method, curls.Url, curls.PostReader)
 }
 
 var clientMap = new(sync.Map)
 
-func (curls *Curl) getHttpClient() *http.Client {
+func (curls *Curl) getHttpClient() (hc *http.Client, err error) {
 
-	key := fmt.Sprintf("%s||%t", curls.proxyURL, curls.AutoRedirect)
+	key := fmt.Sprintf("%s||%t", curls.proxyURL, curls.autoRedirect)
 
 	if i, ok := clientMap.Load(key); ok {
-		return i.(*http.Client)
+		return i.(*http.Client), nil
 	}
 
 	proxy := http.ProxyFromEnvironment
 	urlParse, err := neturl.Parse(curls.proxyURL)
-	if err == nil && urlParse != nil && urlParse.Host != "" {
+	if err != nil {
+		return nil, err
+	}
+	if urlParse != nil && urlParse.Host != "" {
 		proxy = http.ProxyURL(urlParse)
 	}
 
-	hc := &http.Client{
+	hc = &http.Client{
 		Transport: &http.Transport{
 			Proxy: proxy,
 			Dial: (&net.Dialer{
@@ -297,7 +334,7 @@ func (curls *Curl) getHttpClient() *http.Client {
 			ResponseHeaderTimeout: 10 * time.Second,
 		},
 		CheckRedirect: func(_ *http.Request, via []*http.Request) error {
-			if curls.AutoRedirect {
+			if curls.autoRedirect {
 				return nil
 			}
 			return ErrStopRedirect
@@ -308,5 +345,5 @@ func (curls *Curl) getHttpClient() *http.Client {
 
 	clientMap.Store(key, hc)
 
-	return hc
+	return hc, nil
 }
