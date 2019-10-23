@@ -186,6 +186,8 @@ func (curls *Curl) Request() (rs *Response, err error) {
 		return
 	}
 
+	httpRequest = httpRequest.WithContext(curls.ctx)
+
 	httpClient, err := curls.getHttpClient()
 	if err != nil {
 		return
@@ -216,9 +218,9 @@ func (curls *Curl) Request() (rs *Response, err error) {
 			curls.cancel()
 			return nil, err
 		}
+	} else {
+		err = rs.wrap()
 	}
-
-	err = rs.wrap()
 
 	return
 }
@@ -229,7 +231,7 @@ func (curls *Curl) CreateRequest() (httpRequest *http.Request, err error) {
 		len(curls.PostFieldReaders) > 0 || len(curls.PostFiles) > 0 {
 		httpRequest, err = curls.createPostRequest()
 	} else {
-		httpRequest, err = http.NewRequestWithContext(curls.ctx, curls.method, curls.Url, nil)
+		httpRequest, err = http.NewRequest(curls.method, curls.Url, nil)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("CreateRequest failed: %s %#v", err.Error(), err)
@@ -248,7 +250,7 @@ func (curls *Curl) CreateRequest() (httpRequest *http.Request, err error) {
 
 func (curls *Curl) createPostRequest() (httpRequest *http.Request, err error) {
 	if curls.PostReader != nil {
-		// httpRequest, err = http.NewRequestWithContext(curls.ctx, curls.method, curls.Url, curls.PostReader)
+		// httpRequest, err = http.NewRequest(curls.method, curls.Url, curls.PostReader)
 	} else if len(curls.PostBytes) > 0 {
 		curls.PostReader = bytes.NewReader(curls.PostBytes)
 	} else if len(curls.PostString) > 0 {
@@ -299,7 +301,7 @@ func (curls *Curl) createPostRequest() (httpRequest *http.Request, err error) {
 		curls.PostReader = b
 	}
 
-	return http.NewRequestWithContext(curls.ctx, curls.method, curls.Url, curls.PostReader)
+	return http.NewRequest(curls.method, curls.Url, curls.PostReader)
 }
 
 var clientMap = new(sync.Map)
