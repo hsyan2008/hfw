@@ -187,6 +187,15 @@ func (m *{{Mapper .Name}}) QueryInterface(args ...interface{}) ([]map[string]int
 	return m.Dao.QueryInterface(args...)
 }
 
+//ids可以是数字，也可以是数字切片         
+func (m *{{Mapper .Name}}) DeleteByIds(ids interface{}) (int64, error) { 
+        return m.Dao.DeleteByIds(m, ids)
+}
+
+func (m *{{Mapper .Name}}) Delete(where db.Cond) (int64, error) {
+        return m.Dao.DeleteByWhere(m, where)
+}
+
 //以下用于事务，注意同个实例不能在多个goroutine同时使用
 //使用完毕需要执行Close()，当Close的时候如果没有commit，会自动rollback
 //参数只能是0-1个，可以是

@@ -473,6 +473,50 @@ func (d *XormDao) QueryInterface(args ...interface{}) (rs []map[string]interface
 	return
 }
 
+func (d *XormDao) DeleteByIds(t Model, ids interface{}) (affected int64, err error) {
+
+	if ids == nil {
+		return 0, errors.New("ids parameters error")
+	}
+
+	sess := d.sess
+	if sess == nil {
+		sess = d.engine.NewSession()
+		defer sess.Close()
+	}
+
+	affected, err = sess.In(t.AutoIncrColName(), ids).Unscoped().Delete(t)
+	if err != nil {
+		lastSQL, lastSQLArgs := sess.LastSQL()
+		logger.Error(err, lastSQL, lastSQLArgs)
+	}
+
+	return
+}
+
+func (d *XormDao) DeleteByWhere(t Model, where Cond) (affected int64, err error) {
+	if len(where) == 0 {
+		return 0, errors.New("where paramters error")
+	}
+
+	sess := d.sess
+	if sess == nil {
+		sess = d.engine.NewSession()
+		defer sess.Close()
+	}
+	sess, err = d.buildCond(t, sess, where, false, false)
+	if err != nil {
+		return
+	}
+
+	affected, err = sess.Unscoped().Delete(t)
+	if err != nil {
+		lastSQL, lastSQLArgs := sess.LastSQL()
+		logger.Error(err, lastSQL, lastSQLArgs)
+	}
+	return
+}
+
 func (d *XormDao) EnableCache(t Model) {
 	if d.cacher != nil {
 		d.isCache = true

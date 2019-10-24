@@ -16,6 +16,9 @@ type Dao interface {
 	GetMulti(Model, interface{}, ...interface{}) error
 	Count(Model, Cond) (int64, error)
 
+	DeleteByIds(Model, interface{}) (int64, error)
+	DeleteByWhere(Model, Cond) (int64, error)
+
 	EnableCache(Model)
 	DisableCache(Model)
 	ClearCache(Model)
