@@ -17,8 +17,12 @@ func init() {
 
 func getSqlite3Dns(dbConfig configs.DbStdConfig) string {
 	if len(dbConfig.Params) == 0 {
-		dbConfig.Params = "?cache=shared&mode=memory"
+		dbConfig.Params = fmt.Sprintf("?_auth_user=%s&_auth_pass=%s",
+			dbConfig.Username, dbConfig.Password)
+	} else {
+		dbConfig.Params = fmt.Sprintf("?%s&_auth_user=%s&_auth_pass=%s",
+			dbConfig.Params, dbConfig.Username, dbConfig.Password)
 	}
-	return fmt.Sprintf("file:%s%s&_auth_user=%s&_auth_pass=%s",
-		dbConfig.Address, dbConfig.Params, dbConfig.Username, dbConfig.Password)
+	return fmt.Sprintf("file:%s%s",
+		dbConfig.Address, dbConfig.Params)
 }

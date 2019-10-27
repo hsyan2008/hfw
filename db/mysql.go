@@ -5,7 +5,6 @@ package db
 import (
 	"fmt"
 
-	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/configs"
 
 	//mysql
@@ -13,7 +12,6 @@ import (
 )
 
 func init() {
-	logger.Warn("mysql")
 	dnsFuncMap["mysql"] = getMysqlDns
 	dnsFuncMap["mariadb"] = getMysqlDns
 }
