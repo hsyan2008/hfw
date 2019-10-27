@@ -23,14 +23,18 @@ import (
 type Response struct {
 	*http.Response
 	Body io.ReadCloser
+
+	cancel context.CancelFunc
 }
 
-func (response *Response) wrap() (err error) {
+func (response *Response) wrap(curls *Curl) (err error) {
 	response.Body, err = response.getReader()
 	if err != nil {
 		io.Copy(ioutil.Discard, response.Response.Body)
 		response.Response.Body.Close()
 	}
+
+	response.cancel = curls.cancel
 
 	return
 }
@@ -45,7 +49,8 @@ func (response *Response) getReader() (r io.ReadCloser, err error) {
 	return response.Response.Body, nil
 }
 
-func (resp *Response) Close() {
+func (response *Response) Close() {
+	response.cancel()
 	if resp.Body != nil {
 		io.Copy(ioutil.Discard, resp.Body)
 		resp.Body.Close()
@@ -92,7 +97,7 @@ func New(ctx context.Context, method string, url string) (curls *Curl) {
 		PostFiles:        neturl.Values{},
 		PostFieldReaders: make(map[string]io.Reader),
 	}
-	curls.ctx, curls.cancel = context.WithCancel(ctx)
+	curls.SetContext(ctx)
 
 	curls.Headers.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
 	curls.Headers.Set("Accept-Encoding", "gzip, deflate")
@@ -112,8 +117,13 @@ func New(ctx context.Context, method string, url string) (curls *Curl) {
 func NewGet(ctx context.Context, url string) *Curl {
 	return New(ctx, http.MethodGet, url)
 }
+
 func NewPost(ctx context.Context, url string) *Curl {
 	return New(ctx, http.MethodPost, url)
+}
+
+func (curls *Curl) SetContext(ctx context.Context) {
+	curls.ctx, curls.cancel = context.WithCancel(ctx)
 }
 
 func (curls *Curl) SetAutoRedirect() {
@@ -219,7 +229,7 @@ func (curls *Curl) Request() (rs *Response, err error) {
 			return nil, err
 		}
 	} else {
-		err = rs.wrap()
+		err = rs.wrap(curls)
 	}
 
 	return
