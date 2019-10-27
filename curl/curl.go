@@ -51,9 +51,9 @@ func (response *Response) getReader() (r io.ReadCloser, err error) {
 
 func (response *Response) Close() {
 	response.cancel()
-	if resp.Body != nil {
-		io.Copy(ioutil.Discard, resp.Body)
-		resp.Body.Close()
+	if response.Body != nil {
+		io.Copy(ioutil.Discard, response.Body)
+		response.Body.Close()
 	}
 }
 
