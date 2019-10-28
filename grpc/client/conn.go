@@ -13,7 +13,7 @@ import (
 	"github.com/hsyan2008/hfw/configs"
 	"github.com/hsyan2008/hfw/grpc/auth"
 	"github.com/hsyan2008/hfw/grpc/discovery"
-	"github.com/hsyan2008/hfw/grpc/discovery/resolver"
+	dc "github.com/hsyan2008/hfw/grpc/discovery/common"
 	"github.com/hsyan2008/hfw/grpc/interceptor"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
@@ -43,7 +43,7 @@ func GetConnWithAuth(ctx context.Context, c configs.GrpcConfig, authValue string
 		return nil, errors.New("please specify grpc ServerName")
 	}
 	//static下，有可能服务名一样而地址不一样，做特殊处理
-	if c.ResolverType == resolver.StaticResolver {
+	if c.ResolverType == dc.StaticResolver {
 		if len(c.Addresses) == 0 {
 			return nil, errors.New("please specify grpc Addresses")
 		}
