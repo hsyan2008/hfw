@@ -13,7 +13,6 @@ import (
 
 func init() {
 	dnsFuncMap["mysql"] = getMysqlDns
-	dnsFuncMap["mariadb"] = getMysqlDns
 }
 
 func getMysqlDns(dbConfig configs.DbStdConfig) string {
