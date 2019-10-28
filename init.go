@@ -110,7 +110,8 @@ func initLog() error {
 	}
 
 	// logger.SetPrefix(fmt.Sprintf("Pid:%d", GetPid()))
-	logger.SetPrefix(filepath.Join(common.GetAppName(), common.GetEnv(), common.GetHostName(), common.GetVersion()))
+	// logger.SetPrefix(filepath.Join(common.GetAppName(), common.GetEnv(), common.GetHostName(), common.GetVersion()))
+	logger.SetPrefix(filepath.Join(common.GetAppName(), common.GetEnv(), common.GetHostName()))
 
 	return nil
 }

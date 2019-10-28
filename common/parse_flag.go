@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"errors"
 	"flag"
+	"fmt"
 	"os"
 	"testing"
 )
@@ -22,6 +23,8 @@ func ParseFlag() (err error) {
 	var buf = new(bytes.Buffer)
 	flag.CommandLine.SetOutput(buf)
 	flag.CommandLine.StringVar(&ENVIRONMENT, "e", "", "set env, e.g dev test prod")
+	var p bool
+	flag.CommandLine.BoolVar(&p, "p", false, "print version")
 	if IsGoTest() {
 		testing.Init()
 	}
@@ -40,6 +43,11 @@ func ParseFlag() (err error) {
 	}
 	if len(ENVIRONMENT) == 0 && (IsGoRun() || IsGoTest()) {
 		ENVIRONMENT = DEV
+	}
+
+	if p {
+		fmt.Println(VERSION)
+		os.Exit(0)
 	}
 
 	return
