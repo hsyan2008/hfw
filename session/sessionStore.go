@@ -2,6 +2,7 @@ package session
 
 import (
 	"errors"
+	"sync"
 
 	"github.com/hsyan2008/hfw/configs"
 	"github.com/hsyan2008/hfw/redis"
@@ -16,22 +17,18 @@ type sessRedisStore struct {
 var _ sessionStoreInterface = &sessRedisStore{}
 
 var sessRedisStoreIns *sessRedisStore
+var once = new(sync.Once)
 
-func NewSessRedisStore(redisIns redis.RedisInterface, config configs.AllConfig) (*sessRedisStore, error) {
-	if sessRedisStoreIns == nil {
-		redisConfig := config.Redis
-		sessConfig := config.Session
-		if sessConfig.CookieName != "" && redisConfig.Server == "" {
-			return nil, errors.New("session config error")
-		}
+func NewSessRedisStore(redisIns redis.RedisInterface, config configs.RedisConfig) *sessRedisStore {
+	once.Do(func() {
 		sessRedisStoreIns = &sessRedisStore{
 			redisIns:   redisIns,
 			prefix:     "sess_",
-			expiration: redisConfig.Expiration,
+			expiration: config.Expiration,
 		}
-	}
+	})
 
-	return sessRedisStoreIns, nil
+	return sessRedisStoreIns
 }
 
 func (s *sessRedisStore) SetExpiration(expiration int32) {

@@ -8,7 +8,8 @@ var Config AllConfig
 
 //Config 项目配置
 type AllConfig struct {
-	AppID int64
+	AppID         int64
+	EnableSession bool
 
 	Server    ServerConfig
 	Logger    LoggerConfig

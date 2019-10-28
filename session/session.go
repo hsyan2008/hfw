@@ -1,13 +1,11 @@
 package session
 
 import (
-	"errors"
 	"net/http"
 	"sync"
 
 	"github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/configs"
-	"github.com/hsyan2008/hfw/redis"
 )
 
 type sessionStoreInterface interface {
@@ -34,16 +32,16 @@ var sessPool = sync.Pool{
 	},
 }
 
-func NewSession(request *http.Request, redisIns redis.RedisInterface, config configs.AllConfig) (s *Session, err error) {
+func NewSession(request *http.Request, store sessionStoreInterface, config configs.SessionConfig) (s *Session) {
 	// s := sessPool.Get().(*Session)
-	if config.Session.CookieName == "" || redisIns == nil {
+	if config.CookieName == "" {
 		return
 	}
 
 	s = new(Session)
 	s.newid = common.Uuid()
-	s.cookieName = config.Session.CookieName
-	s.reName = config.Session.ReName
+	s.cookieName = config.CookieName
+	s.reName = config.ReName
 
 	var sessId string
 	cookie, err := request.Cookie(s.cookieName)
@@ -57,12 +55,7 @@ func NewSession(request *http.Request, redisIns redis.RedisInterface, config con
 		s.id = sessId
 	}
 
-	switch config.Session.CacheType {
-	case "redis":
-		s.store, err = NewSessRedisStore(redisIns, config)
-	default:
-		err = errors.New("session config error")
-	}
+	s.store = store
 
 	return
 }

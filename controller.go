@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gorilla/websocket"
+	"github.com/hsyan2008/hfw/configs"
 	"github.com/hsyan2008/hfw/redis"
 	"github.com/hsyan2008/hfw/session"
 )
@@ -49,7 +50,15 @@ func (ctl *Controller) Init(httpCtx *HTTPContext) {
 
 	// _ = httpCtx.Request.ParseMultipartForm(2 * 1024 * 1024)
 
-	httpCtx.Session, err = session.NewSession(httpCtx.Request, redis.DefaultRedisIns, Config)
+	//开启session，暂时只支持redis
+	if configs.Config.EnableSession {
+		if redis.DefaultRedisIns != nil {
+			store := session.NewSessRedisStore(redis.DefaultRedisIns, configs.Config.Redis)
+			httpCtx.Session = session.NewSession(httpCtx.Request, store, configs.Config.Session)
+		} else {
+			httpCtx.Error("session enable faild: redis instance is nil")
+		}
+	}
 	httpCtx.ThrowCheck(500, err)
 }
 
@@ -72,7 +81,11 @@ func (ctl *Controller) Finish(httpCtx *HTTPContext) {
 		return
 	}
 
-	if httpCtx.Session != nil {
+	if httpCtx.Logger.GetTraceID() != "" {
+		httpCtx.ResponseWriter.Header().Set("Trace-Id", httpCtx.Logger.GetTraceID())
+	}
+
+	if configs.Config.EnableSession && httpCtx.Session != nil {
 		httpCtx.Session.Close(httpCtx.Request, httpCtx.ResponseWriter)
 	}
 
