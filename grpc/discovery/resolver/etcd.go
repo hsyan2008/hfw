@@ -1,3 +1,5 @@
+// +build etcd
+
 package resolver
 
 import (
@@ -9,12 +11,11 @@ import (
 	"github.com/coreos/etcd/mvcc/mvccpb"
 	"github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/configs"
+	"github.com/hsyan2008/hfw/grpc/discovery/common"
 	"github.com/hsyan2008/hfw/signal"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/resolver"
 )
-
-const EtcdResolver = "etcd"
 
 type etcdBuilder struct {
 	rawAddr []string
@@ -117,12 +118,16 @@ func remove(s []resolver.Address, addr string) ([]resolver.Address, bool) {
 	return nil, false
 }
 
+func init() {
+	common.ResolverFuncMap[common.EtcdResolver] = GenerateAndRegisterEtcdResolver
+}
+
 func GenerateAndRegisterEtcdResolver(cc configs.GrpcConfig) (schema string, err error) {
 	if len(cc.ResolverAddresses) < 1 {
 		return "", fmt.Errorf("GrpcConfig has nil ResolverAddresses")
 	}
 	if cc.ResolverScheme == "" {
-		cc.ResolverScheme = EtcdResolver
+		cc.ResolverScheme = common.EtcdResolver
 	}
 
 	lock.RLock()

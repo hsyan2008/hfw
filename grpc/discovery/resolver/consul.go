@@ -10,11 +10,10 @@ import (
 	"github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/configs"
 	"github.com/hsyan2008/hfw/encoding"
+	"github.com/hsyan2008/hfw/grpc/discovery/common"
 	"github.com/hsyan2008/hfw/signal"
 	"google.golang.org/grpc/resolver"
 )
-
-const ConsulResolver = "consul"
 
 type consulBuilder struct {
 	scheme      string
@@ -151,12 +150,16 @@ func (cc *consulClientConn) NewServiceConfig(serviceConfig string) {
 	cc.sc = serviceConfig
 }
 
+func init() {
+	common.ResolverFuncMap[common.ConsulResolver] = GenerateAndRegisterConsulResolver
+}
+
 func GenerateAndRegisterConsulResolver(cc configs.GrpcConfig) (schema string, err error) {
 	if len(cc.ResolverAddresses) < 1 {
 		return "", fmt.Errorf("GrpcConfig has nil ResolverAddresses")
 	}
 	if cc.ResolverScheme == "" {
-		cc.ResolverScheme = ConsulResolver
+		cc.ResolverScheme = common.ConsulResolver
 	}
 
 	lock.RLock()

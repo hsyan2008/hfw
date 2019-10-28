@@ -8,11 +8,10 @@ import (
 	"github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/configs"
-	"github.com/hsyan2008/hfw/grpc/discovery/register"
-	"github.com/hsyan2008/hfw/grpc/discovery/resolver"
+	dc "github.com/hsyan2008/hfw/grpc/discovery/common"
 )
 
-func RegisterServer(cc configs.ServerConfig, address string) (r register.Register, err error) {
+func RegisterServer(cc configs.ServerConfig, address string) (r dc.Register, err error) {
 	if cc.ResolverType == "" || len(cc.ResolverAddresses) == 0 || cc.ServerName == "" {
 		logger.Mix("ResolverType or ResolverAddresses or ServerName is empty, so do not Registered")
 		return nil, nil
@@ -25,15 +24,12 @@ func RegisterServer(cc configs.ServerConfig, address string) (r register.Registe
 		return nil, err
 	}
 	logger.Infof("Start register service: %s host: %s port: %d to %s", cc.ServerName, host, port, cc.ResolverType)
-	switch cc.ResolverType {
-	case resolver.ConsulResolver:
-		r = register.NewConsulRegister(cc.ResolverAddresses[0], int(cc.UpdateInterval)*2)
-	case resolver.EtcdResolver:
-		r = register.NewEtcdRegister(cc.ResolverAddresses, int(cc.UpdateInterval)*2)
-	default:
+	if rf, ok := dc.RegisterFuncMap[cc.ResolverType]; ok {
+		r = rf(cc.ResolverAddresses, int(cc.UpdateInterval)*2)
+	} else {
 		return nil, errors.New("unsupport ResolverType")
 	}
-	err = r.Register(register.RegisterInfo{
+	err = r.Register(dc.RegisterInfo{
 		Host:           host,
 		Port:           port,
 		ServiceName:    cc.ServerName,

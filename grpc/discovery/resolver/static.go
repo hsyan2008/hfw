@@ -5,10 +5,9 @@ import (
 	"strings"
 
 	"github.com/hsyan2008/hfw/configs"
+	"github.com/hsyan2008/hfw/grpc/discovery/common"
 	"google.golang.org/grpc/resolver"
 )
-
-const StaticResolver = "static"
 
 type staticBuilder struct {
 	scheme string
@@ -55,13 +54,17 @@ func (r *staticResolver) start() {
 func (*staticResolver) ResolveNow(o resolver.ResolveNowOption) {}
 func (*staticResolver) Close()                                 {}
 
+func init() {
+	common.ResolverFuncMap[common.StaticResolver] = GenerateAndRegisterStaticResolver
+}
+
 func GenerateAndRegisterStaticResolver(cc configs.GrpcConfig) (schema string, err error) {
 	if len(cc.Addresses) < 1 {
 		return "", fmt.Errorf("GrpcConfig has nil Addresses")
 	}
 	if cc.ResolverScheme == "" {
 		//每个服务调用地址不一样，所以必须区分
-		cc.ResolverScheme = fmt.Sprintf("%s_%s", StaticResolver, strings.SplitN(cc.ServerName, ".", 2)[0])
+		cc.ResolverScheme = fmt.Sprintf("%s_%s", common.StaticResolver, strings.SplitN(cc.ServerName, ".", 2)[0])
 	}
 	lock.RLock()
 	if resolver.Get(cc.ResolverScheme) != nil {

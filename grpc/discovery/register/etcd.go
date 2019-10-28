@@ -1,3 +1,5 @@
+// +build etcd
+
 package register
 
 import (
@@ -7,6 +9,7 @@ import (
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/hsyan2008/go-logger"
+	"github.com/hsyan2008/hfw/grpc/discovery/common"
 	"github.com/hsyan2008/hfw/grpc/discovery/resolver"
 	"github.com/hsyan2008/hfw/signal"
 )
@@ -25,10 +28,14 @@ type EtcdRegister struct {
 
 	client *clientv3.Client
 
-	registerInfo RegisterInfo
+	registerInfo common.RegisterInfo
 
 	ctx    context.Context
 	cancel context.CancelFunc
+}
+
+func init() {
+	common.RegisterFuncMap[common.EtcdRegister] = NewEtcdRegister
 }
 
 func NewEtcdRegister(target []string, ttl int) *EtcdRegister {
@@ -39,7 +46,7 @@ func NewEtcdRegister(target []string, ttl int) *EtcdRegister {
 }
 
 // Register register service with name as prefix to etcd, multi etcd addr should use ; to split
-func (er *EtcdRegister) Register(info RegisterInfo) (err error) {
+func (er *EtcdRegister) Register(info common.RegisterInfo) (err error) {
 	if er.client == nil {
 		er.client, err = clientv3.New(clientv3.Config{
 			Endpoints:   er.target,

@@ -1,4 +1,4 @@
-package register
+package common
 
 type RegisterInfo struct {
 	Host           string

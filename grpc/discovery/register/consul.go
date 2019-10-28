@@ -1,6 +1,6 @@
 // // register service
 // cr := register.NewConsulRegister(fmt.Sprintf("%s:%d", host, consul_port), 15)
-// cr.Register(RegisterInfo{
+// cr.Register(common.RegisterInfo{
 // 	Host:           host,
 // 	Port:           port,
 // 	ServiceName:    "HelloService",
@@ -14,6 +14,7 @@ import (
 
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/hsyan2008/go-logger"
+	"github.com/hsyan2008/hfw/grpc/discovery/common"
 	"github.com/hsyan2008/hfw/signal"
 )
 
@@ -26,16 +27,20 @@ type ConsulRegister struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	registerInfo RegisterInfo
+	registerInfo common.RegisterInfo
 }
 
-func NewConsulRegister(target string, ttl int) *ConsulRegister {
-	cr := &ConsulRegister{target: target, ttl: ttl}
+func init() {
+	common.RegisterFuncMap[common.ConsulResolver] = NewConsulRegister
+}
+
+func NewConsulRegister(target []string, ttl int) *ConsulRegister {
+	cr := &ConsulRegister{target: target[0], ttl: ttl}
 	cr.ctx, cr.cancel = context.WithCancel(signal.GetSignalContext().Ctx)
 	return cr
 }
 
-func (cr *ConsulRegister) Register(info RegisterInfo) (err error) {
+func (cr *ConsulRegister) Register(info common.RegisterInfo) (err error) {
 	cr.registerInfo = info
 	// initial consul client config
 	config := consulapi.DefaultConfig()
