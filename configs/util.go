@@ -118,5 +118,15 @@ func initDefaultConfig() error {
 	Config.Server.CertFile = certFile
 	Config.Server.KeyFile = keyFile
 
+	//session
+	if Config.EnableSession {
+		if Config.Session.CookieName == "" {
+			Config.Session.CookieName = "sessionid"
+		}
+		if Config.Session.CacheType == "" {
+			Config.Session.CacheType = "redis"
+		}
+	}
+
 	return nil
 }
