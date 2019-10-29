@@ -70,7 +70,11 @@ func (m *Mongo) SetDbName(dbName string) {
 }
 
 func (m *Mongo) Exec(colName string, colFunc func(collection *mgo.Collection) error) error {
-	return colFunc(m.db.C(colName))
+	err := colFunc(m.db.C(colName))
+	if err == mgo.ErrNotFound {
+		err = nil
+	}
+	return err
 }
 
 func (m *Mongo) CollectionNames() (names []string, err error) {
