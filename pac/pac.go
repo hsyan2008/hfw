@@ -52,8 +52,8 @@ func parsePac(body string) (err error) {
 }
 
 func updatePacFile() (err error) {
-	c := curl.NewCurl(pacUrl)
-	res, err := c.Request(context.Background())
+	c := curl.NewGet(context.Background(), pacUrl)
+	res, err := c.Request()
 	if err != nil {
 		return
 	}
