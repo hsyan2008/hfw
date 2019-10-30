@@ -280,7 +280,7 @@ func (this *SSH) keepalive() {
 func (this *SSH) keep() {
 	err := this.Check()
 	if err != nil {
-		logger.Warn(err)
+		logger.Warn(this.config.Addr, err)
 		this.mt.Lock()
 		defer this.mt.Unlock()
 		if this.ref <= 0 {
@@ -301,6 +301,8 @@ func (this *SSH) keep() {
 		if err != nil {
 			logger.Warn(err)
 			this.timer.Reset(0)
+		} else {
+			logger.Info(this.config.Addr, "reconnect success")
 		}
 	}
 }
@@ -310,7 +312,7 @@ func (this *SSH) Check() (err error) {
 		return errors.New("Check no ins")
 	}
 
-	logger.Info("ping", this.config.Addr)
+	logger.Info(this.config.Addr, "ping")
 
 	sess, err := this.c.NewSession()
 	if err != nil {
