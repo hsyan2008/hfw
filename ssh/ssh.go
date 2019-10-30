@@ -234,17 +234,17 @@ func (this *SSH) getAuth() ssh.AuthMethod {
 	phrase := this.config.Phrase
 
 	if common.IsExist(auth) {
-		logger.Info("auth is file")
+		logger.Info(this.config.Addr, "auth is file")
 		key, _ = ioutil.ReadFile(auth)
 	}
 
 	//密码
 	if len(key) == 0 {
 		if len(auth) < 50 {
-			logger.Info("auth is password")
+			logger.Info(this.config.Addr, "auth is password")
 			return ssh.Password(auth)
 		}
-		logger.Info("auth is key")
+		logger.Info(this.config.Addr, "auth is key")
 		key = []byte(auth)
 	}
 
