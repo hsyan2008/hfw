@@ -310,6 +310,8 @@ func (this *SSH) Check() (err error) {
 		return errors.New("Check no ins")
 	}
 
+	logger.Info("ping", this.config.Addr)
+
 	sess, err := this.c.NewSession()
 	if err != nil {
 		return
