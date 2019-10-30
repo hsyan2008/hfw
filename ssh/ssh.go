@@ -317,7 +317,7 @@ func (this *SSH) Check() (err error) {
 		if err == nil {
 			logger.Info(this.config.Addr, "ping success")
 		} else {
-			logger.Info(this.config.Addr, "ping faild:", errr)
+			logger.Info(this.config.Addr, "ping faild:", err)
 		}
 	}()
 
