@@ -57,7 +57,14 @@ func updatePacFile() (err error) {
 	if err != nil {
 		return
 	}
-	err = ioutil.WriteFile(pacFile, res.Body, 0600)
+	defer res.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return
+	}
+
+	err = ioutil.WriteFile(pacFile, body, 0600)
 
 	return
 }
