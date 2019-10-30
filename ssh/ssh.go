@@ -312,7 +312,14 @@ func (this *SSH) Check() (err error) {
 		return errors.New("Check no ins")
 	}
 
-	logger.Info(this.config.Addr, "ping")
+	logger.Info(this.config.Addr, "ping start")
+	defer func() {
+		if err == nil {
+			logger.Info(this.config.Addr, "ping success")
+		} else {
+			logger.Info(this.config.Addr, "ping faild:", errr)
+		}
+	}()
 
 	sess, err := this.c.NewSession()
 	if err != nil {

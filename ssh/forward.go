@@ -96,10 +96,10 @@ func (l *Forward) Accept() {
 		default:
 			conn, err := l.lister.Accept()
 			if err != nil {
+				logger.Error(l.t, err)
 				if strings.Contains(err.Error(), "use of closed network connection") {
 					return
 				}
-				logger.Error(l.t, err)
 				continue
 			}
 			go l.Hand(conn)
