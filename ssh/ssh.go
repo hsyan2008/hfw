@@ -280,6 +280,7 @@ func (this *SSH) keepalive() {
 func (this *SSH) keep() {
 	err := this.Check()
 	if err != nil {
+		logger.Warn(err)
 		this.mt.Lock()
 		defer this.mt.Unlock()
 		if this.ref <= 0 {
