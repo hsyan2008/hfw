@@ -10,6 +10,7 @@ var Config AllConfig
 type AllConfig struct {
 	AppID         int64
 	EnableSession bool
+	ErrorBase     int64
 
 	Server    ServerConfig
 	Logger    LoggerConfig

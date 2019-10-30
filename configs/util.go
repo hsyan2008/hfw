@@ -3,6 +3,7 @@ package configs
 import (
 	"errors"
 	"fmt"
+	"math"
 	"path/filepath"
 	"strings"
 
@@ -78,6 +79,15 @@ func LoadDefaultConfig() (err error) {
 }
 
 func initDefaultConfig() error {
+
+	//错误码基数，如果小于10就认为是位数
+	if Config.ErrorBase == 0 {
+		Config.ErrorBase = 6
+	}
+	if Config.ErrorBase < 10 {
+		Config.ErrorBase = int64(math.Pow10(int(Config.ErrorBase)))
+	}
+
 	//设置默认路由
 	if len(Config.Route.DefaultController) == 0 {
 		Config.Route.DefaultController = "index"

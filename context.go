@@ -154,8 +154,8 @@ func (httpCtx *HTTPContext) ThrowCheck(errNo int64, i interface{}) {
 		httpCtx.ErrMsg = errMsg
 	}
 
-	if httpCtx.ErrNo < 100000 && Config.AppID > 0 {
-		httpCtx.ErrNo = Config.AppID*100000 + httpCtx.ErrNo
+	if httpCtx.ErrNo < Config.ErrorBase && Config.AppID > 0 {
+		httpCtx.ErrNo = Config.AppID*Config.ErrorBase + httpCtx.ErrNo
 	}
 
 	httpCtx.StopRun()
@@ -182,8 +182,8 @@ func (httpCtx *HTTPContext) CheckErr(errNo int64, i interface{}) (int64, string)
 		errMsg = httpCtx.ErrMsg
 	}
 
-	if errNo < 100000 && Config.AppID > 0 {
-		errNo = Config.AppID*100000 + errNo
+	if errNo < Config.ErrorBase && Config.AppID > 0 {
+		errNo = Config.AppID*Config.ErrorBase + errNo
 	}
 
 	return errNo, errMsg
