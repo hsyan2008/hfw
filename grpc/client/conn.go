@@ -100,6 +100,9 @@ func newClientConn(ctx context.Context, address string, c configs.GrpcConfig, au
 	}
 	if len(c.CertFile) > 0 && !filepath.IsAbs(c.CertFile) {
 		c.CertFile = filepath.Join(common.GetAppPath(), c.CertFile)
+		if !common.IsExist(c.CertFile) {
+			return nil, fmt.Errorf("cert file: %s not exist", c.CertFile)
+		}
 	}
 	if len(c.ServerName) > 0 && len(c.CertFile) > 0 && common.IsExist(c.CertFile) {
 		if c.IsAuth {
