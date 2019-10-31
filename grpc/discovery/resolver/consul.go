@@ -85,7 +85,7 @@ func NewConsulResolver(cc *resolver.ClientConn, cb *consulBuilder, opts resolver
 	return &consulResolver{
 		clientConn:           cc,
 		consulBuilder:        cb,
-		t:                    time.NewTicker(time.Second),
+		t:                    time.NewTicker(time.Second * 3),
 		ctx:                  ctx,
 		cancel:               cancel,
 		disableServiceConfig: opts.DisableServiceConfig}
@@ -159,7 +159,7 @@ func GenerateAndRegisterConsulResolver(cc configs.GrpcConfig) (schema string, er
 		return "", fmt.Errorf("GrpcConfig has nil ResolverAddresses")
 	}
 	if cc.ResolverScheme == "" {
-		cc.ResolverScheme = common.ConsulResolver
+		cc.ResolverScheme = cc.ServerName
 	}
 
 	lock.RLock()

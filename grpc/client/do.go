@@ -37,9 +37,16 @@ func Do(httpCtx *hfw.HTTPContext, c configs.GrpcConfig,
 	})
 
 	var conn *grpc.ClientConn
+	var retryNum int
+	if len(c.Addresses) > 0 {
+		retryNum = common.Min(retry, len(c.Addresses)+1)
+	} else {
+		//服务发现下，len是0
+		retryNum = retry
+	}
 
 FOR:
-	for i := 0; i < common.Min(retry, len(c.Addresses)+1); i++ {
+	for i := 0; i < retryNum; i++ {
 		select {
 		case <-ctx.Done():
 			return nil, common.NewRespErr(500, ctx.Err())
@@ -63,6 +70,7 @@ FOR:
 				return
 			}
 			httpCtx.Warnf("Call Grpc ServerName: %s %v", c.ServerName, err)
+			// removeClientConn(c, err)
 			if err == context.Canceled || err == context.DeadlineExceeded {
 				return
 			}

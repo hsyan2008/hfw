@@ -17,6 +17,8 @@ import (
 	"github.com/hsyan2008/hfw/grpc/interceptor"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type connInstance struct {
@@ -87,6 +89,24 @@ func GetConnWithAuth(ctx context.Context, c configs.GrpcConfig, authValue string
 	p.c = conn
 
 	return
+}
+
+func removeClientConn(c configs.GrpcConfig, err error) {
+	code := status.Code(err)
+	if code != codes.Unavailable {
+		return
+	}
+	//static下，有可能服务名一样而地址不一样，做特殊处理
+	if c.ResolverType == dc.StaticResolver {
+		sort.Slice(c.Addresses, func(i, j int) bool { return c.Addresses[i] < c.Addresses[j] })
+		c.ServerName = fmt.Sprintf("%s_%s", common.Md5(strings.Join(c.Addresses, "|")), c.ServerName)
+	}
+	lock.Lock()
+	if p, ok := connInstanceMap[c.ServerName]; ok {
+		p.c.Close()
+		delete(connInstanceMap, c.ServerName)
+	}
+	lock.Unlock()
 }
 
 func newClientConn(ctx context.Context, address string, c configs.GrpcConfig, authValue string, opt ...grpc.DialOption) (*grpc.ClientConn, error) {
