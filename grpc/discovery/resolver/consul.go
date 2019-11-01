@@ -20,6 +20,8 @@ type consulBuilder struct {
 	address     string
 	client      *consulapi.Client
 	serviceName string
+
+	isWatching bool
 }
 
 func NewConsulBuilder(scheme, address string) resolver.Builder {
@@ -93,6 +95,10 @@ func NewConsulResolver(cc *resolver.ClientConn, cb *consulBuilder, opts resolver
 
 func (cr *consulResolver) watcher() {
 	cr.wg.Done()
+	if cr.consulBuilder.isWatching {
+		return
+	}
+	cr.consulBuilder.isWatching = true
 	for {
 		select {
 		case <-cr.ctx.Done():
@@ -103,6 +109,7 @@ func (cr *consulResolver) watcher() {
 		adds, serviceConfig, err := cr.consulBuilder.resolve()
 		if err != nil {
 			logger.Fatal("query service entries error:", err.Error())
+			continue
 		}
 		(*cr.clientConn).NewAddress(adds)
 		(*cr.clientConn).NewServiceConfig(serviceConfig)
