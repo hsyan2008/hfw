@@ -3,7 +3,7 @@
 // cr.Register(common.RegisterInfo{
 // 	Host:           host,
 // 	Port:           port,
-// 	ServiceName:    "HelloService",
+// 	ServerName:     "HelloService",
 // 	UpdateInterval: time.Second})
 package register
 
@@ -30,11 +30,13 @@ type ConsulRegister struct {
 	registerInfo common.RegisterInfo
 }
 
+var _ common.Register = &ConsulRegister{}
+
 func init() {
 	common.RegisterFuncMap[common.ConsulResolver] = NewConsulRegister
 }
 
-func NewConsulRegister(target []string, ttl int) *ConsulRegister {
+func NewConsulRegister(target []string, ttl int) common.Register {
 	cr := &ConsulRegister{target: target[0], ttl: ttl}
 	cr.ctx, cr.cancel = context.WithCancel(signal.GetSignalContext().Ctx)
 	return cr
@@ -50,12 +52,12 @@ func (cr *ConsulRegister) Register(info common.RegisterInfo) (err error) {
 		return fmt.Errorf("create consul client error: %s", err.Error())
 	}
 
-	serviceId := generateServiceId(info.ServiceName, info.Host, info.Port)
+	serviceId := generateServiceId(info.ServerName, info.Host, info.Port)
 
 	reg := &consulapi.AgentServiceRegistration{
 		ID:      serviceId,
-		Name:    info.ServiceName,
-		Tags:    []string{info.ServiceName},
+		Name:    info.ServerName,
+		Tags:    []string{info.ServerName},
 		Port:    info.Port,
 		Address: info.Host,
 	}
@@ -69,7 +71,7 @@ func (cr *ConsulRegister) Register(info common.RegisterInfo) (err error) {
 	err = cr.client.Agent().CheckRegister(
 		&consulapi.AgentCheckRegistration{
 			ID:                serviceId,
-			Name:              info.ServiceName,
+			Name:              info.ServerName,
 			ServiceID:         serviceId,
 			AgentServiceCheck: check})
 	if err != nil {
@@ -105,7 +107,7 @@ func (cr *ConsulRegister) UnRegister() (err error) {
 		cr.cancel()
 	}()
 
-	serviceId := generateServiceId(cr.registerInfo.ServiceName, cr.registerInfo.Host, cr.registerInfo.Port)
+	serviceId := generateServiceId(cr.registerInfo.ServerName, cr.registerInfo.Host, cr.registerInfo.Port)
 
 	err = cr.client.Agent().ServiceDeregister(serviceId)
 	if err != nil {

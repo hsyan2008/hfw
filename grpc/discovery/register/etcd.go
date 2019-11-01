@@ -10,9 +10,10 @@ import (
 	"github.com/coreos/etcd/clientv3"
 	"github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/grpc/discovery/common"
-	"github.com/hsyan2008/hfw/grpc/discovery/resolver"
 	"github.com/hsyan2008/hfw/signal"
 )
+
+var _ common.Register = &EtcdRegister{}
 
 // Prefix should start and end with no slash
 var Prefix = "etcd3_naming"
@@ -35,10 +36,10 @@ type EtcdRegister struct {
 }
 
 func init() {
-	common.RegisterFuncMap[common.EtcdRegister] = NewEtcdRegister
+	common.RegisterFuncMap[common.EtcdResolver] = NewEtcdRegister
 }
 
-func NewEtcdRegister(target []string, ttl int) *EtcdRegister {
+func NewEtcdRegister(target []string, ttl int) common.Register {
 	er := &EtcdRegister{target: target, ttl: ttl}
 	er.ctx, er.cancel = context.WithCancel(signal.GetSignalContext().Ctx)
 
@@ -58,7 +59,7 @@ func (er *EtcdRegister) Register(info common.RegisterInfo) (err error) {
 	}
 
 	er.addr = fmt.Sprintf("%s:%d", info.Host, info.Port)
-	er.key = fmt.Sprintf("/%s/%s/%s", resolver.EtcdResolver, info.ServiceName, er.addr)
+	er.key = fmt.Sprintf("/%s/%s/%s", fmt.Sprintf("%s_%s", common.EtcdResolver, info.ServerName), info.ServerName, er.addr)
 
 	ticker := time.NewTicker(time.Second * time.Duration(info.UpdateInterval))
 

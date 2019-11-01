@@ -9,6 +9,7 @@ import (
 	"github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/configs"
 	dc "github.com/hsyan2008/hfw/grpc/discovery/common"
+	_ "github.com/hsyan2008/hfw/grpc/discovery/register"
 )
 
 func RegisterServer(cc configs.ServerConfig, address string) (r dc.Register, err error) {
@@ -32,7 +33,7 @@ func RegisterServer(cc configs.ServerConfig, address string) (r dc.Register, err
 	err = r.Register(dc.RegisterInfo{
 		Host:           host,
 		Port:           port,
-		ServiceName:    cc.ServerName,
+		ServerName:     cc.ServerName,
 		UpdateInterval: cc.UpdateInterval,
 	})
 	return r, err

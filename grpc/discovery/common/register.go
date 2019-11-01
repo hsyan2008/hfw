@@ -3,7 +3,7 @@ package common
 type RegisterInfo struct {
 	Host           string
 	Port           int
-	ServiceName    string
+	ServerName     string
 	UpdateInterval int64
 }
 
