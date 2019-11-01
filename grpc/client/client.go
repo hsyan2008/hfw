@@ -29,9 +29,9 @@ type ClientCreds struct {
 
 //https://github.com/grpc/grpc-go/blob/master/examples/features/keepalive/client/main.go
 var kacp = keepalive.ClientParameters{
-	Time:                10 * time.Second, // send pings every 10 seconds if there is no activity
-	Timeout:             time.Second,      // wait 1 second for ping ack before considering the connection dead
-	PermitWithoutStream: true,             // send pings even without active streams
+	Time:                5 * time.Second, // send pings every 5 seconds if there is no activity
+	Timeout:             time.Second,     // wait 1 second for ping ack before considering the connection dead
+	PermitWithoutStream: true,            // send pings even without active streams
 
 }
 
