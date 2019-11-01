@@ -52,14 +52,17 @@ func GetConnWithAuth(ctx context.Context, c configs.GrpcConfig, authValue string
 		sort.Slice(c.Addresses, func(i, j int) bool { return c.Addresses[i] < c.Addresses[j] })
 		c.ServerName = fmt.Sprintf("%s_%s", common.Md5(strings.Join(c.Addresses, "|")), c.ServerName)
 	}
+	if c.ResolverScheme == "" {
+		c.ResolverScheme = fmt.Sprintf("%s_%s", c.ResolverType, c.ServerName)
+	}
 	var ok bool
 	var p *connInstance
 	lock.Lock()
-	if p, ok = connInstanceMap[c.ServerName]; !ok {
+	if p, ok = connInstanceMap[c.ResolverScheme]; !ok {
 		p = &connInstance{
 			l: new(sync.Mutex),
 		}
-		connInstanceMap[c.ServerName] = p
+		connInstanceMap[c.ResolverScheme] = p
 		lock.Unlock()
 	} else {
 		lock.Unlock()
@@ -101,10 +104,13 @@ func removeClientConn(c configs.GrpcConfig, err error) {
 		sort.Slice(c.Addresses, func(i, j int) bool { return c.Addresses[i] < c.Addresses[j] })
 		c.ServerName = fmt.Sprintf("%s_%s", common.Md5(strings.Join(c.Addresses, "|")), c.ServerName)
 	}
+	if c.ResolverScheme == "" {
+		c.ResolverScheme = fmt.Sprintf("%s_%s", c.ResolverType, c.ServerName)
+	}
 	lock.Lock()
-	if p, ok := connInstanceMap[c.ServerName]; ok {
+	if p, ok := connInstanceMap[c.ResolverScheme]; ok {
 		p.c.Close()
-		delete(connInstanceMap, c.ServerName)
+		delete(connInstanceMap, c.ResolverScheme)
 	}
 	lock.Unlock()
 }

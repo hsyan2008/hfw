@@ -155,11 +155,11 @@ func init() {
 }
 
 func GenerateAndRegisterConsulResolver(cc configs.GrpcConfig) (schema string, err error) {
-	if len(cc.ResolverAddresses) < 1 {
+	if len(cc.ResolverAddresses) == 0 {
 		return "", fmt.Errorf("GrpcConfig has nil ResolverAddresses")
 	}
 	if cc.ResolverScheme == "" {
-		cc.ResolverScheme = cc.ServerName
+		cc.ResolverScheme = fmt.Sprintf("%s_%s", cc.ResolverType, cc.ServerName)
 	}
 
 	lock.RLock()

@@ -2,7 +2,6 @@ package resolver
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/hsyan2008/hfw/configs"
 	"github.com/hsyan2008/hfw/grpc/discovery/common"
@@ -59,12 +58,11 @@ func init() {
 }
 
 func GenerateAndRegisterStaticResolver(cc configs.GrpcConfig) (schema string, err error) {
-	if len(cc.Addresses) < 1 {
+	if len(cc.Addresses) == 0 {
 		return "", fmt.Errorf("GrpcConfig has nil Addresses")
 	}
 	if cc.ResolverScheme == "" {
-		//每个服务调用地址不一样，所以必须区分
-		cc.ResolverScheme = fmt.Sprintf("%s_%s", common.StaticResolver, strings.SplitN(cc.ServerName, ".", 2)[0])
+		cc.ResolverScheme = fmt.Sprintf("%s_%s", cc.ResolverType, cc.ServerName)
 	}
 	lock.RLock()
 	if resolver.Get(cc.ResolverScheme) != nil {
