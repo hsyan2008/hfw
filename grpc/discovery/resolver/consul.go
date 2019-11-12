@@ -9,7 +9,6 @@ import (
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/configs"
-	"github.com/hsyan2008/hfw/encoding"
 	"github.com/hsyan2008/hfw/grpc/discovery/common"
 	"github.com/hsyan2008/hfw/signal"
 	"google.golang.org/grpc/resolver"
@@ -133,30 +132,6 @@ func (cr *consulResolver) Close() {
 	cr.t.Stop()
 }
 
-type consulClientConn struct {
-	adds []resolver.Address
-	sc   string
-}
-
-func NewConsulClientConn() resolver.ClientConn {
-	return &consulClientConn{}
-}
-
-func (cc *consulClientConn) UpdateState(state resolver.State) {
-	cc.NewAddress(state.Addresses)
-
-	sc, _ := encoding.JSON.Marshal(state.ServiceConfig)
-	cc.NewServiceConfig(string(sc))
-}
-
-func (cc *consulClientConn) NewAddress(addresses []resolver.Address) {
-	cc.adds = addresses
-}
-
-func (cc *consulClientConn) NewServiceConfig(serviceConfig string) {
-	cc.sc = serviceConfig
-}
-
 func init() {
 	common.ResolverFuncMap[common.ConsulResolver] = GenerateAndRegisterConsulResolver
 }
@@ -183,11 +158,6 @@ func GenerateAndRegisterConsulResolver(cc configs.GrpcConfig) (schema string, er
 		return cc.ResolverScheme, nil
 	}
 	builder := NewConsulBuilder(cc.ResolverScheme, cc.ResolverAddresses[0])
-	// target := resolver.Target{Scheme: builder.Scheme(), Endpoint: cc.ServerName}
-	// _, err = builder.Build(target, NewConsulClientConn(), resolver.BuildOption{})
-	// if err != nil {
-	// 	return builder.Scheme(), err
-	// }
 	resolver.Register(builder)
 	schema = builder.Scheme()
 	return
