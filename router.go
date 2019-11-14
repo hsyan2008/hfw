@@ -40,7 +40,7 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	onlineNum := atomic.AddUint32(&online, 1)
-	httpCtx.Mix("online:", onlineNum)
+	httpCtx.Mix(r.URL.String(), "online:", onlineNum)
 	defer func() {
 		atomic.AddUint32(&online, ^uint32(0))
 	}()
