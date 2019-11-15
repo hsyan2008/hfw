@@ -20,10 +20,10 @@ var (
 )
 
 func ParseFlag() (err error) {
-	restore := flag.CommandLine
-	defer func() {
-		flag.CommandLine = restore
-	}()
+	// restore := flag.CommandLine
+	// defer func() {
+	// 	flag.CommandLine = restore
+	// }()
 	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 
 	// flag.CommandLine.Usage = func() {}
