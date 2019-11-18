@@ -73,7 +73,7 @@ func NewHTTPContext() *HTTPContext {
 
 func NewHTTPContextWithGrpcCtx(ctx context.Context) *HTTPContext {
 	httpCtx := &HTTPContext{}
-	httpCtx.Ctx, httpCtx.Cancel = context.WithCancel(signal.GetSignalContext().Ctx)
+	httpCtx.Ctx, httpCtx.Cancel = context.WithCancel(ctx)
 	httpCtx.Logger = logger.NewLogger()
 	httpCtx.Logger.SetTraceID(interceptor.GetTraceIDFromIncomingContext(ctx))
 
