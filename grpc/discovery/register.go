@@ -48,6 +48,9 @@ func getHostPort(cc configs.ServerConfig, address string) (host string, port int
 		return
 	}
 	port, err = strconv.Atoi(p)
+	if err != nil {
+		return
+	}
 
 	//如果是个合格的ip地址
 	if ip := net.ParseIP(host); ip != nil && !ip.IsLoopback() && !ip.IsUnspecified() {
@@ -63,11 +66,7 @@ func getHostPort(cc configs.ServerConfig, address string) (host string, port int
 	}
 
 	//根据hostname查找ip
-	var ips []net.IP
-	ips, err = net.LookupIP(common.GetHostName())
-	if err != nil {
-		return
-	}
+	ips, _ := net.LookupIP(common.GetHostName())
 	for _, ip := range ips {
 		if !ip.IsLoopback() && ip.To4() != nil {
 			host = ip.String()
