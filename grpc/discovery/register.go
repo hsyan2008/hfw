@@ -1,8 +1,10 @@
 package discovery
 
 import (
+	"bytes"
 	"errors"
 	"net"
+	"os/exec"
 	"strconv"
 
 	"github.com/hsyan2008/go-logger"
@@ -54,22 +56,9 @@ func getHostPort(cc configs.ServerConfig, address string) (host string, port int
 
 	//根据网卡名字查找ip
 	if cc.Interface != "" {
-		var iface *net.Interface
-		iface, err = net.InterfaceByName(cc.Interface)
-		if err != nil {
+		host = getIpByInterface(cc.Interface)
+		if host != "" {
 			return
-		}
-		var addrs []net.Addr
-		addrs, err = iface.Addrs()
-		if err != nil {
-			return
-		}
-
-		for _, a := range addrs {
-			if ipnet, ok := a.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && ipnet.IP.To4() != nil {
-				host = ipnet.IP.String()
-				return
-			}
 		}
 	}
 
@@ -86,7 +75,54 @@ func getHostPort(cc configs.ServerConfig, address string) (host string, port int
 		}
 	}
 
+	//获取默认网卡的ip
+	host = getIpByInterface(getDefaultInerfaceByRoute())
+	if host != "" {
+		return
+	}
+
 	//没有host
 	err = errors.New("not found host for register")
+	return
+}
+
+//根据ip route获取默认的网卡名称
+func getDefaultInerfaceByRoute() string {
+	cmd := exec.Command("ip", "route")
+	b, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+
+	fields := bytes.Fields(b)
+	if len(fields) < 5 {
+		return ""
+	}
+
+	return string(fields[4])
+}
+
+func getIpByInterface(ifName string) (host string) {
+
+	if ifName == "" {
+		return
+	}
+
+	iface, err := net.InterfaceByName(ifName)
+	if err != nil {
+		return
+	}
+	addrs, err := iface.Addrs()
+	if err != nil {
+		return
+	}
+
+	for _, a := range addrs {
+		if ipnet, ok := a.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && ipnet.IP.To4() != nil {
+			host = ipnet.IP.String()
+			return
+		}
+	}
+
 	return
 }
