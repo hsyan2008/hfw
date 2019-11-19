@@ -68,6 +68,14 @@ func getListenAddr(addr string) (string, error) {
 	return fmt.Sprintf(":%s", port), nil
 }
 
+//取listend的端口，加上配置的host，用于注册
+func mergeAddr(listendAddr, addr string) string {
+	_, port, _ := net.SplitHostPort(listendAddr)
+	host, _, _ := net.SplitHostPort(addr)
+
+	return net.JoinHostPort(host, port)
+}
+
 func Start(config configs.ServerConfig) (err error) {
 
 	err = newServer(config)
@@ -78,7 +86,7 @@ func Start(config configs.ServerConfig) (err error) {
 	if common.IsExist(config.CertFile) && common.IsExist(config.KeyFile) {
 		logger.Mix("Listen on https:", listener.Addr().String())
 		//注册服务
-		r, err := discovery.RegisterServer(config, listener.Addr().String())
+		r, err := discovery.RegisterServer(config, mergeAddr(listener.Addr().String(), config.Address))
 		if err != nil {
 			return err
 		}

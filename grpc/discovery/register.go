@@ -53,8 +53,7 @@ func getHostPort(cc configs.ServerConfig, address string) (host string, port int
 	}
 
 	//如果是个合格的ip地址
-	// if ip := net.ParseIP(host); ip != nil && !ip.IsLoopback() && !ip.IsUnspecified() {
-	if ip := net.ParseIP(host); ip != nil && !ip.IsLoopback() {
+	if ip := net.ParseIP(host); ip != nil && !ip.IsLoopback() && !ip.IsUnspecified() {
 		return
 	}
 
