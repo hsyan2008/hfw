@@ -28,6 +28,8 @@ type ConsulRegister struct {
 	cancel context.CancelFunc
 
 	registerInfo common.RegisterInfo
+
+	serviceID string
 }
 
 var _ common.Register = &ConsulRegister{}
@@ -52,10 +54,10 @@ func (cr *ConsulRegister) Register(info common.RegisterInfo) (err error) {
 		return fmt.Errorf("create consul client error: %s", err.Error())
 	}
 
-	serviceId := generateServiceId(info.ServerName, info.Host, info.Port)
+	cr.serviceID = generateServiceId(info.ServerName, info.Host, info.Port)
 
 	reg := &consulapi.AgentServiceRegistration{
-		ID:      serviceId,
+		ID:      cr.serviceID,
 		Name:    info.ServerName,
 		Tags:    []string{info.ServerName},
 		Port:    info.Port,
@@ -70,9 +72,9 @@ func (cr *ConsulRegister) Register(info common.RegisterInfo) (err error) {
 	check := consulapi.AgentServiceCheck{TTL: fmt.Sprintf("%ds", cr.ttl), Status: consulapi.HealthPassing}
 	err = cr.client.Agent().CheckRegister(
 		&consulapi.AgentCheckRegistration{
-			ID:                serviceId,
+			ID:                cr.serviceID,
 			Name:              info.ServerName,
-			ServiceID:         serviceId,
+			ServiceID:         cr.serviceID,
 			AgentServiceCheck: check})
 	if err != nil {
 		return fmt.Errorf("initial register service check to consul error: %s", err.Error())
@@ -88,7 +90,7 @@ func (cr *ConsulRegister) Register(info common.RegisterInfo) (err error) {
 			case <-cr.ctx.Done():
 				return
 			case <-ticker.C:
-				err = cr.client.Agent().UpdateTTL(serviceId, "", check.Status)
+				err = cr.client.Agent().UpdateTTL(cr.serviceID, "", check.Status)
 				if err != nil {
 					logger.Warn("update ttl of service error: ", err.Error())
 				}
@@ -107,15 +109,13 @@ func (cr *ConsulRegister) UnRegister() (err error) {
 		cr.cancel()
 	}()
 
-	serviceId := generateServiceId(cr.registerInfo.ServerName, cr.registerInfo.Host, cr.registerInfo.Port)
-
-	err = cr.client.Agent().ServiceDeregister(serviceId)
+	err = cr.client.Agent().ServiceDeregister(cr.serviceID)
 	if err != nil {
 		return fmt.Errorf("deregister service error: %s", err.Error())
 	}
 	logger.Info("deregistered service from consul server.")
 
-	err = cr.client.Agent().CheckDeregister(serviceId)
+	err = cr.client.Agent().CheckDeregister(cr.serviceID)
 	if err != nil {
 		return fmt.Errorf("deregister check error: %s", err.Error())
 	}
