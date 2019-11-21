@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw"
 )
 
@@ -59,6 +58,7 @@ func NewWSWithUpgrader(httpCtx *hfw.HTTPContext, h http.Header, upgrader websock
 }
 
 func (wsIns *WsIns) Close() error {
+	wsIns.HTTPCtx.Cancel()
 	return wsIns.ws.Close()
 }
 
@@ -68,16 +68,13 @@ FOR:
 		select {
 		case <-wsIns.HTTPCtx.Ctx.Done():
 			//发送个信号给客户端，由客户端关闭
-			err := wsIns.WriteCloseMessage(websocket.CloseServiceRestart, "keep ctx done")
-			if err != nil {
-				logger.Warn("keep ctx done:", err)
-			}
+			wsIns.WriteCloseMessage(websocket.CloseServiceRestart, "keep ctx done")
 			break FOR
 		case <-time.After(wsIns.keepTimeout * time.Second):
 			err := wsIns.WritePingMessage()
 			if err != nil {
-				logger.Warnf("keep error: %v", err)
-				logger.Warn(wsIns.Close())
+				wsIns.HTTPCtx.Warnf("keep error: %v", err)
+				wsIns.HTTPCtx.Warn(wsIns.Close())
 				break FOR
 			}
 		}
@@ -115,15 +112,15 @@ func (wsIns *WsIns) IsWebSocketCloseError(err error) bool {
 	}
 	//服务器端或客户端close后，再对客户端写入，就会ErrCloseSent
 	if websocket.IsCloseError(err, close...) || err == websocket.ErrCloseSent {
-		logger.Infof("error: %v", err)
+		wsIns.HTTPCtx.Infof("error: %v", err)
 		return true
 	}
 	//服务器端close后，再对客户端读取，就会这个错误
 	if strings.Contains(err.Error(), "closed network") {
-		logger.Infof("error: %v", err)
+		wsIns.HTTPCtx.Infof("error: %v", err)
 		return true
 	}
 
-	logger.Warn(err)
+	wsIns.HTTPCtx.Warn(err)
 	return false
 }
