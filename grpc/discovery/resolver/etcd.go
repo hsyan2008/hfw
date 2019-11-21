@@ -70,7 +70,7 @@ func (r *etcdBuilder) watch(keyPrefix string) {
 
 	getResp, err := r.cli.Get(r.ctx, keyPrefix, clientv3.WithPrefix())
 	if err != nil {
-		logger.Warn(err)
+		logger.Warn(keyPrefix, err)
 	} else {
 		for i := range getResp.Kvs {
 			addrList = append(addrList, resolver.Address{Addr: strings.TrimPrefix(string(getResp.Kvs[i].Key), keyPrefix)})

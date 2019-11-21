@@ -68,11 +68,11 @@ func (er *EtcdRegister) Register(info common.RegisterInfo) (err error) {
 			getResp, err := er.client.Get(er.ctx, er.key)
 			logger.Debug(getResp, err)
 			if err != nil {
-				logger.Warn(err)
+				logger.Warn(er.key, err)
 			} else if getResp.Count == 0 {
 				err = er.withAlive()
 				if err != nil {
-					logger.Warn(err)
+					logger.Warn(er.key, err)
 				}
 			} else {
 				// do nothing
