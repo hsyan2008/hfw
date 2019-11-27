@@ -178,7 +178,7 @@ func (httpCtx *HTTPContext) CheckErr(errNo int64, i interface{}) (int64, string)
 	}
 
 	httpCtx.ErrMsg = common.GetErrorMap(errNo)
-	if httpCtx.ErrMsg == "" {
+	if httpCtx.ErrMsg != "" {
 		errMsg = httpCtx.ErrMsg
 	}
 
