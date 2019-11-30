@@ -123,12 +123,17 @@ func checkConcurrence(onlineNum uint32) (err error) {
 }
 
 func init() {
-	http.HandleFunc("/", Router)
 	http.HandleFunc("/logger/adjust", loggerAdjust)
 }
 
+var isInit bool
+
 //Handler 暂时只支持2段
 func Handler(pattern string, handler ControllerInterface) (err error) {
+	if isInit == false {
+		isInit = true
+		http.HandleFunc("/", Router)
+	}
 
 	controllerPath := completeURL(pattern)
 
