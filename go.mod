@@ -15,7 +15,7 @@ require (
 	github.com/gorilla/websocket v1.4.1 // indirect
 	github.com/hashicorp/consul/api v1.3.0
 	github.com/hsyan2008/go-logger v0.0.0-20191115110345-dfc343898182
-	github.com/hsyan2008/gracehttp v0.0.0-20190905124242-f4539a0822c4
+	github.com/hsyan2008/gracehttp v0.0.0-20191130080041-8a1dc4ac8e6c
 	github.com/json-iterator/go v1.1.8
 	github.com/mediocregopher/radix.v2 v0.0.0-20181115013041-b67df6e626f9
 	github.com/robfig/cron/v3 v3.0.0 // indirect

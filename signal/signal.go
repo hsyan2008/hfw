@@ -64,7 +64,7 @@ func (ctx *signalContext) Listen() {
 	} else {
 		logger.Mix("Stopping console server")
 		switch s {
-		case syscall.SIGHUP, syscall.SIGTERM:
+		case syscall.SIGTERM:
 			execSpec := &syscall.ProcAttr{
 				Env:   os.Environ(),
 				Files: []uintptr{os.Stdin.Fd(), os.Stdout.Fd(), os.Stderr.Fd()},
@@ -73,7 +73,7 @@ func (ctx *signalContext) Listen() {
 			if err != nil {
 				logger.Errorf("failed to forkexec: %v", err)
 			}
-		case syscall.SIGQUIT, syscall.SIGINT:
+		case syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGINT:
 		}
 	}
 }
