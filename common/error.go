@@ -59,7 +59,7 @@ func (respErr *RespErr) String() string {
 
 //记录调用的地方，请直接在需要的地方调用，不要间接调用
 func NewRespErr(errNo int64, i interface{}) (respErr *RespErr) {
-	if errNo == 0 {
+	if errNo == 0 || i == nil {
 		return nil
 	}
 	respErr = &RespErr{
