@@ -63,15 +63,7 @@ func NewSSH(sshConfig SSHConfig) (ins *SSH, err error) {
 
 	mt.Lock()
 	var ok bool
-	if ins, ok = sshIns[key]; ok {
-		mt.Unlock()
-		ins.mt.Lock()
-		defer ins.mt.Unlock()
-		if ins.ref > 0 {
-			ins.ref += 1
-			return ins, err
-		}
-	} else {
+	if ins, ok = sshIns[key]; !ok {
 		ins = &SSH{
 			ref:   0,
 			close: make(chan bool),
@@ -81,11 +73,12 @@ func NewSSH(sshConfig SSHConfig) (ins *SSH, err error) {
 		ins.SetConfig(sshConfig)
 		ins.timer = time.NewTimer(ins.config.Timeout * time.Second)
 		sshIns[key] = ins
-
-		mt.Unlock()
-		ins.mt.Lock()
-		defer ins.mt.Unlock()
 	}
+
+	ins.mt.Lock()
+	defer ins.mt.Unlock()
+
+	mt.Unlock()
 
 	if ins.ref > 0 {
 		ins.ref += 1
@@ -93,9 +86,6 @@ func NewSSH(sshConfig SSHConfig) (ins *SSH, err error) {
 	}
 
 	err = ins.Dial()
-	if err == nil {
-		ins.ref += 1
-	}
 
 	return
 }
@@ -109,7 +99,7 @@ func (this *SSH) Close() {
 	this.ref -= 1
 
 	if this.ref <= 0 {
-		this.close <- true
+		close(this.close)
 		_ = this.c.Close()
 	}
 }
@@ -135,6 +125,7 @@ func (this *SSH) Dial() (err error) {
 	if err == nil {
 		logger.Info("dial success:", this.config.Addr, this.config.User)
 		go this.keepalive()
+		this.ref += 1
 	} else {
 		logger.Warn("dial faild:", this.config.Addr, this.config.User, err)
 	}
@@ -262,7 +253,7 @@ func (this *SSH) getAuth() ssh.AuthMethod {
 
 func (this *SSH) keepalive() {
 	//因为jumpserver.org的问题，无法检测，所以不检测
-	if this.config.SkipKeep {
+	if this.config.SkipKeep || this.c == nil {
 		return
 	}
 	for {
