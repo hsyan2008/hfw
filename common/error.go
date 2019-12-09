@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 	"runtime"
+	"strings"
 )
 
 var errorMap = map[int64]string{
@@ -67,7 +68,9 @@ func NewRespErr(errNo int64, i interface{}) (respErr *RespErr) {
 		errMsg: fmt.Sprintf("%v", i),
 	}
 	_, respErr.file, respErr.line, _ = runtime.Caller(1)
-	// respErr.file = strings.Replace(respErr.file, GetAppPath(), "", -1)
+	if GOPATH != "" {
+		respErr.file = strings.Replace(respErr.file, GOPATH, "", 1)
+	}
 
 	return
 }
