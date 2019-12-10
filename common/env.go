@@ -133,7 +133,7 @@ var (
 	ENVIRONMENT string
 
 	//通过go build -ldflags "-X github.com/hsyan2008/hfw/common.GOPATH=~/go"赋值
-	GOPATH string
+	GOPATH string = os.Getenv("GOPATH")
 
 	PID         = os.Getpid()
 	HOSTNAME, _ = os.Hostname()
