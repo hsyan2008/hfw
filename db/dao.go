@@ -1,8 +1,12 @@
 package db
 
+import "errors"
+
 const DefaultPageSize = 1000
 
 var DefaultDao Dao
+
+var ErrDaoNotInited = errors.New("dao not inited")
 
 type Dao interface {
 	UpdateById(Model) (int64, error)
