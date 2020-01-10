@@ -264,7 +264,8 @@ func (p *Proxy) dial(addr string) (con net.Conn, err error) {
 	if !isSSH && p.pi.IsPac && p.pi.IsBreak {
 		return nil, errors.New("不在Pac名单")
 	}
-	if !strings.Contains(addr, ":") {
+	if strings.HasPrefix(addr, "[") && strings.HasSuffix(addr, "]") ||
+		!strings.Contains(addr, ":") {
 		addr = fmt.Sprintf("%s:80", addr)
 	}
 	if isSSH {
