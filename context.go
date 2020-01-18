@@ -75,7 +75,11 @@ func NewHTTPContextWithGrpcCtx(ctx context.Context) *HTTPContext {
 	httpCtx := &HTTPContext{}
 	httpCtx.Ctx, httpCtx.Cancel = context.WithCancel(ctx)
 	httpCtx.Logger = logger.NewLogger()
-	httpCtx.Logger.SetTraceID(interceptor.GetTraceIDFromIncomingContext(ctx))
+	traceID := interceptor.GetTraceIDFromIncomingContext(ctx)
+	if traceID == "" {
+		traceID = uuid.New().String()
+	}
+	httpCtx.Logger.SetTraceID(traceID)
 
 	return httpCtx
 }
