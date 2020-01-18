@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"time"
 
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/hsyan2008/go-logger"
@@ -75,9 +74,9 @@ func (cb *consulBuilder) Scheme() string {
 }
 
 type consulResolver struct {
-	clientConn           *resolver.ClientConn
-	consulBuilder        *consulBuilder
-	t                    *time.Ticker
+	clientConn    *resolver.ClientConn
+	consulBuilder *consulBuilder
+	// t                    *time.Ticker
 	wg                   sync.WaitGroup
 	rn                   chan struct{}
 	ctx                  context.Context
@@ -88,9 +87,9 @@ type consulResolver struct {
 func NewConsulResolver(cc *resolver.ClientConn, cb *consulBuilder, opts resolver.BuildOption) *consulResolver {
 	ctx, cancel := context.WithCancel(signal.GetSignalContext().Ctx)
 	return &consulResolver{
-		clientConn:           cc,
-		consulBuilder:        cb,
-		t:                    time.NewTicker(time.Second * 3),
+		clientConn:    cc,
+		consulBuilder: cb,
+		// t:                    time.NewTicker(time.Second * 3),
 		ctx:                  ctx,
 		cancel:               cancel,
 		disableServiceConfig: opts.DisableServiceConfig}
@@ -103,7 +102,8 @@ func (cr *consulResolver) watcher() {
 		case <-cr.ctx.Done():
 			return
 		case <-cr.rn:
-		case <-cr.t.C:
+		// case <-cr.t.C:
+		default:
 		}
 		adds, serviceConfig, err := cr.consulBuilder.resolve()
 		if err != nil {
