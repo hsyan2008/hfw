@@ -129,7 +129,7 @@ func (cr *consulResolver) ResolveNow(rno resolver.ResolveNowOption) {
 func (cr *consulResolver) Close() {
 	cr.cancel()
 	cr.wg.Wait()
-	cr.t.Stop()
+	// cr.t.Stop()
 }
 
 func init() {
