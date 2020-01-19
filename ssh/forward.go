@@ -2,10 +2,10 @@ package ssh
 
 import (
 	"errors"
-	"io"
 	"net"
 	"strings"
 
+	"acln.ro/zerocopy"
 	logger "github.com/hsyan2008/go-logger"
 )
 
@@ -140,5 +140,5 @@ func multiCopy(des, src net.Conn) {
 		_ = des.Close()
 	}()
 
-	_, _ = io.Copy(des, src)
+	_, _ = zerocopy.Transfer(des, src)
 }

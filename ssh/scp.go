@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"acln.ro/zerocopy"
 )
 
 //实现了文件和目录的上传，未限速
@@ -94,7 +96,7 @@ func (this *SSH) scpFile(src, des string, fileinfo os.FileInfo) (err error) {
 		if err != nil {
 			return
 		}
-		_, err = io.Copy(w, File)
+		_, err = zerocopy.Transfer(w, File)
 		if err != nil {
 			return
 		}
