@@ -1,7 +1,8 @@
 package pac
 
 import (
-	"context"
+	"bufio"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -9,24 +10,15 @@ import (
 	"time"
 
 	"github.com/hsyan2008/hfw/common"
-	"github.com/hsyan2008/hfw/curl"
 )
 
-var pacUrl = "https://pac.itzmx.com/abc.pac"
 var pacFile = filepath.Join(common.GetAppPath(), "abc.pac")
 
 func LoadFromPac() (err error) {
 	fileInfo, err := os.Stat(pacFile)
-	if err != nil {
-		err = updatePacFile()
-		if err != nil {
-			return err
-		}
-	} else if time.Now().Unix()-fileInfo.ModTime().Unix() > 86400 {
+	if err != nil || time.Now().Unix()-fileInfo.ModTime().Unix() > 86400 {
 		//超过一天就更新一下
-		go func() {
-			_ = updatePacFile()
-		}()
+		return updatePacFile()
 	}
 
 	body, err := ioutil.ReadFile(pacFile)
@@ -40,10 +32,12 @@ func LoadFromPac() (err error) {
 func parsePac(body string) (err error) {
 	lines := strings.Split(body, "\n")
 	for _, line := range lines {
-		if strings.Contains(line, "\": 1") {
-			fileds := strings.Split(line, "\"")
-			if len(fileds) == 3 {
-				Add(fileds[1], true)
+		fields := strings.Split(line, ":")
+		if len(fields) == 2 {
+			if fields[1] == "1" {
+				Add(fields[0], true)
+			} else {
+				Add(fields[0], false)
 			}
 		}
 	}
@@ -52,19 +46,25 @@ func parsePac(body string) (err error) {
 }
 
 func updatePacFile() (err error) {
-	c := curl.NewGet(context.Background(), pacUrl)
-	res, err := c.Request()
-	if err != nil {
-		return
-	}
-	defer res.Close()
-
-	body, err := ioutil.ReadAll(res.Body)
+	err = LoadGwflist()
 	if err != nil {
 		return
 	}
 
-	err = ioutil.WriteFile(pacFile, body, 0600)
+	f, err := os.Create(pacFile)
+	if err != nil {
+		return
+	}
+	defer f.Close()
 
-	return
+	w := bufio.NewWriter(f)
+	for host, ok := range pac {
+		if ok {
+			w.WriteString(fmt.Sprintf("%s:1\n", host))
+		} else {
+			w.WriteString(fmt.Sprintf("%s:0\n", host))
+		}
+	}
+
+	return w.Flush()
 }

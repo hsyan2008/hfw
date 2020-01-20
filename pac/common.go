@@ -20,15 +20,8 @@ func LoadDefault() (err error) {
 	if isLoad {
 		return
 	}
-	err = LoadFromPac()
-	defer func() {
-		isLoad = true
-	}()
-	if err == nil {
-		return
-	}
-
-	return LoadGwflist()
+	isLoad = true
+	return LoadFromPac()
 }
 
 func GetAll() map[string]bool {
