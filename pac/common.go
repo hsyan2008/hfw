@@ -16,7 +16,14 @@ func Reset() (err error) {
 	return LoadDefault()
 }
 
+var loadMt = new(sync.Mutex)
+
 func LoadDefault() (err error) {
+	if isLoad {
+		return
+	}
+	loadMt.Lock()
+	defer loadMt.Unlock()
 	if isLoad {
 		return
 	}
