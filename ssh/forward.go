@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"acln.ro/zerocopy"
-	logger "github.com/hsyan2008/go-logger"
+	"github.com/hsyan2008/hfw"
 )
 
 type ForwardIni struct {
@@ -22,6 +22,8 @@ const (
 )
 
 type Forward struct {
+	httpCtx *hfw.HTTPContext
+
 	t      ForwardType
 	fi     *ForwardIni
 	c      *SSH
@@ -32,19 +34,23 @@ type Forward struct {
 	close chan struct{}
 }
 
-func NewLocalForward(sshConfig SSHConfig, fi *ForwardIni) (l *Forward, err error) {
-	return NewForward(LOCAL, sshConfig, fi)
+func NewLocalForward(httpCtx *hfw.HTTPContext, sshConfig SSHConfig, fi *ForwardIni) (l *Forward, err error) {
+	return NewForward(httpCtx, LOCAL, sshConfig, fi)
 }
 
-func NewRemoteForward(sshConfig SSHConfig, fi *ForwardIni) (l *Forward, err error) {
-	return NewForward(REMOTE, sshConfig, fi)
+func NewRemoteForward(httpCtx *hfw.HTTPContext, sshConfig SSHConfig, fi *ForwardIni) (l *Forward, err error) {
+	return NewForward(httpCtx, REMOTE, sshConfig, fi)
 }
 
-func NewForward(t ForwardType, sshConfig SSHConfig, fi *ForwardIni) (l *Forward, err error) {
+func NewForward(httpCtx *hfw.HTTPContext, t ForwardType, sshConfig SSHConfig, fi *ForwardIni) (l *Forward, err error) {
+	if httpCtx == nil {
+		httpCtx = hfw.NewHTTPContext()
+	}
 	l = &Forward{
-		step:  1,
-		t:     t,
-		close: make(chan struct{}),
+		httpCtx: httpCtx,
+		step:    1,
+		t:       t,
+		close:   make(chan struct{}),
 	}
 
 	l.c, err = NewSSH(sshConfig)
@@ -79,7 +85,7 @@ func (l *Forward) Bind(fi *ForwardIni) (err error) {
 			l.lister, err = l.c.Listen(l.fi.Bind)
 		}
 		if err == nil {
-			logger.Infof("Bind %s forward to %s success, start to accept", fi.Bind, fi.Addr)
+			l.httpCtx.Infof("Bind %s forward to %s success, start to accept", fi.Bind, fi.Addr)
 			go l.Accept()
 		}
 	} else {
@@ -96,7 +102,7 @@ func (l *Forward) Accept() {
 		default:
 			conn, err := l.lister.Accept()
 			if err != nil {
-				logger.Error(l.t, err)
+				l.httpCtx.Error(l.t, err)
 				if strings.Contains(err.Error(), "use of closed network connection") {
 					return
 				}
@@ -116,7 +122,7 @@ func (l *Forward) Hand(conn net.Conn) {
 		con, err = net.Dial("tcp", l.fi.Addr)
 	}
 	if err != nil {
-		logger.Error(err)
+		l.httpCtx.Error(err)
 		return
 	}
 

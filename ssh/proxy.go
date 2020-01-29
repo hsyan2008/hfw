@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	logger "github.com/hsyan2008/go-logger"
+	"github.com/hsyan2008/hfw"
 	"github.com/hsyan2008/hfw/pac"
 )
 
@@ -29,12 +29,13 @@ type ProxyIni struct {
 	IsBreak bool `toml:"is_break"`
 }
 type Proxy struct {
-	pi     *ProxyIni
-	c      *SSH
-	lister net.Listener
+	httpCtx  *hfw.HTTPContext
+	pi       *ProxyIni
+	c        *SSH
+	listener net.Listener
 }
 
-func NewProxy(sshConfig SSHConfig, pi *ProxyIni) (p *Proxy, err error) {
+func NewProxy(httpCtx *hfw.HTTPContext, sshConfig SSHConfig, pi *ProxyIni) (p *Proxy, err error) {
 	if pi == nil || pi.Bind == "" {
 		return nil, errors.New("err ini")
 	}
@@ -47,8 +48,12 @@ func NewProxy(sshConfig SSHConfig, pi *ProxyIni) (p *Proxy, err error) {
 			return
 		}
 	}
+	if httpCtx == nil {
+		httpCtx = hfw.NewHTTPContext()
+	}
 	p = &Proxy{
-		pi: pi,
+		pi:      pi,
+		httpCtx: httpCtx,
 	}
 
 	p.c, err = NewSSH(sshConfig)
@@ -56,7 +61,7 @@ func NewProxy(sshConfig SSHConfig, pi *ProxyIni) (p *Proxy, err error) {
 	if err == nil {
 		err = p.Bind()
 		if err == nil {
-			logger.Infof("Bind %s for proxy success, start to accept", pi.Bind)
+			p.httpCtx.Infof("Bind %s for proxy success, start to accept", p.listener.Addr().String())
 			go p.Accept()
 		}
 	}
@@ -64,18 +69,26 @@ func NewProxy(sshConfig SSHConfig, pi *ProxyIni) (p *Proxy, err error) {
 	return
 }
 
+func (p *Proxy) Listener() net.Listener {
+	return p.listener
+}
+
+func (p *Proxy) SSH() *SSH {
+	return p.c
+}
+
 func (p *Proxy) Bind() (err error) {
-	p.lister, err = net.Listen("tcp", p.pi.Bind)
+	p.listener, err = net.Listen("tcp", p.pi.Bind)
 	return
 }
 func (p *Proxy) Accept() {
 	for {
-		conn, err := p.lister.Accept()
+		conn, err := p.listener.Accept()
 		if err != nil {
 			if strings.Contains(err.Error(), "use of closed network connection") {
 				return
 			}
-			logger.Error(err)
+			p.httpCtx.Error(err)
 			continue
 		}
 
@@ -105,14 +118,14 @@ func (p *Proxy) HandHTTP(conn net.Conn) (err error) {
 	//否则远程连接不会关闭，导致Copy卡住
 	req.Header.Set("Connection", "close")
 
-	logger.Info(p.pi.Bind, conn.RemoteAddr().String(), p.isSSH(req.Host), req.Host, "connecting...")
+	p.httpCtx.Info(p.listener.Addr().String(), conn.RemoteAddr().String(), p.isSSH(req.Host), req.Host, "connecting...")
 	con, err := p.dial(req.Host)
 	if err != nil {
-		logger.Info(p.pi.Bind, conn.RemoteAddr().String(), p.isSSH(req.Host), req.Host, "connected faild", err)
+		p.httpCtx.Info(p.listener.Addr().String(), conn.RemoteAddr().String(), p.isSSH(req.Host), req.Host, "connected faild", err)
 		_ = conn.Close()
 		return
 	}
-	logger.Info(p.pi.Bind, conn.RemoteAddr().String(), p.isSSH(req.Host), req.Host, "connected.")
+	p.httpCtx.Info(p.listener.Addr().String(), conn.RemoteAddr().String(), p.isSSH(req.Host), req.Host, "connected.")
 	if req.Method == "CONNECT" {
 		_, err = io.WriteString(conn, "HTTP/1.0 200 Connection Established\r\n\r\n")
 		if err != nil {
@@ -200,16 +213,16 @@ func (p *Proxy) HandSocks5(conn net.Conn) (err error) {
 		return
 	}
 
-	logger.Info(p.pi.Bind, conn.RemoteAddr().String(), p.isSSH(host), host, "connecting...")
+	p.httpCtx.Info(p.listener.Addr().String(), conn.RemoteAddr().String(), p.isSSH(host), host, "connecting...")
 	host = host + ":" + strconv.Itoa(int(port))
 	con, err := p.dial(host)
 	if err != nil {
 		// _, _ = conn.Write([]byte{0x05, 0x06, 0x00, atyp})
 		_ = conn.Close()
-		logger.Info(p.pi.Bind, conn.RemoteAddr().String(), p.isSSH(host), host, "connected faild", err)
+		p.httpCtx.Info(p.listener.Addr().String(), conn.RemoteAddr().String(), p.isSSH(host), host, "connected faild", err)
 		return
 	}
-	logger.Info(p.pi.Bind, conn.RemoteAddr().String(), p.isSSH(host), host, "connected.")
+	p.httpCtx.Info(p.listener.Addr().String(), conn.RemoteAddr().String(), p.isSSH(host), host, "connected.")
 
 	_, err = conn.Write([]byte{0x05, 0x00, 0x00, atyp})
 	if err != nil {
@@ -255,7 +268,7 @@ func (p *Proxy) isSSH(addr string) bool {
 }
 
 func (p *Proxy) Close() {
-	_ = p.lister.Close()
+	_ = p.listener.Close()
 	p.c.Close()
 }
 
