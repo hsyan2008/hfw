@@ -83,17 +83,17 @@ func Start(config configs.ServerConfig) (err error) {
 		return
 	}
 
+	//注册服务
+	r, err := discovery.RegisterServer(config, mergeAddr(listener.Addr().String(), config.Address))
+	if err != nil {
+		return err
+	}
+	if r != nil {
+		defer r.UnRegister()
+	}
+
 	if common.IsExist(config.CertFile) && common.IsExist(config.KeyFile) {
 		logger.Mix("Listen on https:", listener.Addr().String())
-		//注册服务
-		r, err := discovery.RegisterServer(config, mergeAddr(listener.Addr().String(), config.Address))
-		if err != nil {
-			return err
-		}
-		if r != nil {
-			defer r.UnRegister()
-		}
-
 		err = s.ListenAndServeTLS(config.CertFile, config.KeyFile)
 	} else {
 		logger.Mix("Listen on http:", listener.Addr().String())
