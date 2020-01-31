@@ -15,13 +15,17 @@ import (
 
 //SSHConfig ..
 type SSHConfig struct {
-	Id       string        `toml:"id"`
-	Addr     string        `toml:"addr"`
-	User     string        `toml:"user"`
-	Auth     string        `toml:"auth"`
-	Phrase   string        `toml:"phrase"`
-	Timeout  time.Duration `toml:"timeout"`
-	SkipKeep bool          `toml:"skipKeep"`
+	Id   string `toml:"id"`
+	Addr string `toml:"addr"`
+	User string `toml:"user"`
+	//证书和密码，可以共存
+	Certs     []string      `toml:"certs"`
+	Passwords []string      `toml:"passwords"`
+	Timeout   time.Duration `toml:"timeout"`
+	SkipKeep  bool          `toml:"skipKeep"`
+	//以下两个是兼容
+	Auth   string `toml:"auth"`
+	Phrase string `toml:"phrase"`
 }
 
 type sshMode uint
@@ -134,7 +138,11 @@ func (this *SSH) Dial() (err error) {
 }
 
 func (this *SSH) dial() (c *ssh.Client, err error) {
-	return ssh.Dial("tcp", this.config.Addr, this.getSshClientConfig())
+	scc, err := this.getSshClientConfig()
+	if err != nil {
+		return
+	}
+	return ssh.Dial("tcp", this.config.Addr, scc)
 }
 
 //DialRemote 通过跳板连接其他服务器
@@ -169,7 +177,11 @@ func (this *SSH) dialRemote() (c *ssh.Client, err error) {
 		return
 	}
 
-	conn, nc, req, err := ssh.NewClientConn(rc, "", this.getSshClientConfig())
+	scc, err := this.getSshClientConfig()
+	if err != nil {
+		return
+	}
+	conn, nc, req, err := ssh.NewClientConn(rc, "", scc)
 	if err != nil {
 		return
 	}
@@ -205,37 +217,68 @@ func (this *SSH) SetConfig(sshConfig SSHConfig) {
 	this.config = sshConfig
 }
 
-func (this *SSH) getSshClientConfig() *ssh.ClientConfig {
-	return &ssh.ClientConfig{
+func (this *SSH) getSshClientConfig() (cc *ssh.ClientConfig, err error) {
+	auth, err := this.getAuth()
+	if err != nil {
+		return
+	}
+	cc = &ssh.ClientConfig{
 		User: this.config.User,
-		Auth: []ssh.AuthMethod{
-			this.getAuth(),
-		},
+		Auth: auth,
 		//如果没有这个，会提示需要know_hosts文件
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 		Timeout:         this.config.Timeout * time.Second,
 	}
+
+	return
 }
 
-func (this *SSH) getAuth() ssh.AuthMethod {
+func (this *SSH) getAuth() (auths []ssh.AuthMethod, err error) {
 	//是文件
 	var key []byte
-	var err error
+
+	for _, v := range this.config.Cert {
+		if common.IsExist(v) {
+			logger.Info(this.config.Addr, "auth is file")
+			key, _ = ioutil.ReadFile(v)
+		} else {
+			logger.Info(this.config.Addr, "auth is key string")
+			key = []byte(v)
+		}
+		signer, err := ssh.ParsePrivateKey(key)
+		if err != nil {
+			return nil, err
+		}
+		auths = append(auths, ssh.PublicKeys(signer))
+	}
+	for _, v := range this.config.Password {
+		logger.Info(this.config.Addr, "auth is password")
+		auths = append(auths, ssh.Password(v))
+	}
+
+	if this.config.Auth == "" {
+		return
+	}
+
 	auth := this.config.Auth
 	phrase := this.config.Phrase
 
 	if common.IsExist(auth) {
 		logger.Info(this.config.Addr, "auth is file")
-		key, _ = ioutil.ReadFile(auth)
+		key, err = ioutil.ReadFile(auth)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	//密码
 	if len(key) == 0 {
 		if len(auth) < 50 {
 			logger.Info(this.config.Addr, "auth is password")
-			return ssh.Password(auth)
+			auths = append(auths, ssh.Password(auth))
+			return
 		}
-		logger.Info(this.config.Addr, "auth is key")
+		logger.Info(this.config.Addr, "auth is key string")
 		key = []byte(auth)
 	}
 
@@ -246,9 +289,11 @@ func (this *SSH) getAuth() ssh.AuthMethod {
 		signer, err = ssh.ParsePrivateKey(key)
 	}
 	if err != nil {
-		panic("err private key:" + err.Error())
+		return nil, err
 	}
-	return ssh.PublicKeys(signer)
+	auths = append(auths, ssh.PublicKeys(signer))
+
+	return
 }
 
 func (this *SSH) keepalive() {
