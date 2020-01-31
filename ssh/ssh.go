@@ -237,7 +237,7 @@ func (this *SSH) getAuth() (auths []ssh.AuthMethod, err error) {
 	//是文件
 	var key []byte
 
-	for _, v := range this.config.Cert {
+	for _, v := range this.config.Certs {
 		if common.IsExist(v) {
 			logger.Info(this.config.Addr, "auth is file")
 			key, _ = ioutil.ReadFile(v)
@@ -251,7 +251,7 @@ func (this *SSH) getAuth() (auths []ssh.AuthMethod, err error) {
 		}
 		auths = append(auths, ssh.PublicKeys(signer))
 	}
-	for _, v := range this.config.Password {
+	for _, v := range this.config.Passwords {
 		logger.Info(this.config.Addr, "auth is password")
 		auths = append(auths, ssh.Password(v))
 	}
