@@ -85,7 +85,7 @@ func (l *Forward) Bind(fi *ForwardIni) (err error) {
 			l.lister, err = l.c.Listen(l.fi.Bind)
 		}
 		if err == nil {
-			l.httpCtx.Infof("Bind %s forward to %s success, start to accept", fi.Bind, fi.Addr)
+			l.httpCtx.Infof("Bind %s forward to %s success, start to accept", l.lister.Addr().String(), fi.Addr)
 			go l.Accept()
 		}
 	} else {
