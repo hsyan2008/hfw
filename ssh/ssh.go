@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	logger "github.com/hsyan2008/go-logger"
+	"github.com/hsyan2008/hfw"
 	"github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/encoding"
 	"golang.org/x/crypto/ssh"
@@ -51,6 +51,8 @@ type SSH struct {
 	timer *time.Timer
 
 	mt *sync.Mutex
+
+	httpCtx *hfw.HTTPContext
 }
 
 var mt = new(sync.Mutex)
@@ -69,10 +71,11 @@ func NewSSH(sshConfig SSHConfig) (ins *SSH, err error) {
 	var ok bool
 	if ins, ok = sshIns[key]; !ok {
 		ins = &SSH{
-			ref:   0,
-			close: make(chan bool),
-			m:     NormalSSHMode,
-			mt:    new(sync.Mutex),
+			ref:     0,
+			close:   make(chan bool),
+			m:       NormalSSHMode,
+			mt:      new(sync.Mutex),
+			httpCtx: hfw.NewHTTPContext(),
 		}
 		ins.SetConfig(sshConfig)
 		ins.timer = time.NewTimer(ins.config.Timeout * time.Second)
@@ -127,11 +130,11 @@ func (this *SSH) Dial() (err error) {
 	this.c, err = this.dial()
 
 	if err == nil {
-		logger.Info("dial success:", this.config.Addr, this.config.User)
+		this.httpCtx.Info("dial success:", this.config.Addr, this.config.User)
 		go this.keepalive()
 		this.ref += 1
 	} else {
-		logger.Warn("dial faild:", this.config.Addr, this.config.User, err)
+		this.httpCtx.Warn("dial faild:", this.config.Addr, this.config.User, err)
 	}
 
 	return
@@ -153,11 +156,12 @@ func (this *SSH) DialRemote(sshConfig SSHConfig) (ins *SSH, err error) {
 	}
 
 	ins = &SSH{
-		ref:    1,
-		close:  make(chan bool),
-		m:      RemoteSSHMode,
-		mt:     new(sync.Mutex),
-		preIns: this,
+		ref:     1,
+		close:   make(chan bool),
+		m:       RemoteSSHMode,
+		mt:      new(sync.Mutex),
+		preIns:  this,
+		httpCtx: this.httpCtx,
 	}
 	ins.SetConfig(sshConfig)
 	ins.timer = time.NewTimer(ins.config.Timeout * time.Second)
@@ -239,10 +243,10 @@ func (this *SSH) getAuth() (auths []ssh.AuthMethod, err error) {
 
 	for _, v := range this.config.Certs {
 		if common.IsExist(v) {
-			logger.Info(this.config.Addr, "auth is file")
+			this.httpCtx.Info(this.config.Addr, "auth is file")
 			key, _ = ioutil.ReadFile(v)
 		} else {
-			logger.Info(this.config.Addr, "auth is key string")
+			this.httpCtx.Info(this.config.Addr, "auth is key string")
 			key = []byte(v)
 		}
 		signer, err := ssh.ParsePrivateKey(key)
@@ -252,7 +256,7 @@ func (this *SSH) getAuth() (auths []ssh.AuthMethod, err error) {
 		auths = append(auths, ssh.PublicKeys(signer))
 	}
 	for _, v := range this.config.Passwords {
-		logger.Info(this.config.Addr, "auth is password")
+		this.httpCtx.Info(this.config.Addr, "auth is password")
 		auths = append(auths, ssh.Password(v))
 	}
 
@@ -264,7 +268,7 @@ func (this *SSH) getAuth() (auths []ssh.AuthMethod, err error) {
 	phrase := this.config.Phrase
 
 	if common.IsExist(auth) {
-		logger.Info(this.config.Addr, "auth is file")
+		this.httpCtx.Info(this.config.Addr, "auth is file")
 		key, err = ioutil.ReadFile(auth)
 		if err != nil {
 			return nil, err
@@ -274,11 +278,11 @@ func (this *SSH) getAuth() (auths []ssh.AuthMethod, err error) {
 	//密码
 	if len(key) == 0 {
 		if len(auth) < 50 {
-			logger.Info(this.config.Addr, "auth is password")
+			this.httpCtx.Info(this.config.Addr, "auth is password")
 			auths = append(auths, ssh.Password(auth))
 			return
 		}
-		logger.Info(this.config.Addr, "auth is key string")
+		this.httpCtx.Info(this.config.Addr, "auth is key string")
 		key = []byte(auth)
 	}
 
@@ -302,21 +306,26 @@ func (this *SSH) keepalive() {
 		return
 	}
 	for {
-		this.timer.Reset(this.config.Timeout * time.Second)
 		select {
 		case <-this.close:
 			this.timer.Stop()
 			return
 		case <-this.timer.C:
-			go this.keep()
+			err := this.keep()
+			if err != nil {
+				this.timer.Reset(0)
+			} else {
+				this.timer.Reset(this.config.Timeout * time.Second)
+			}
 		}
 	}
 }
 
-func (this *SSH) keep() {
-	err := this.Check()
+func (this *SSH) keep() (err error) {
+	this.httpCtx.Info(this.config.Addr, "ping start")
+	err = this.Check()
 	if err != nil {
-		logger.Warn(this.config.Addr, err)
+		this.httpCtx.Info(this.config.Addr, "ping faild:", err)
 		this.mt.Lock()
 		defer this.mt.Unlock()
 		if this.ref <= 0 {
@@ -332,30 +341,24 @@ func (this *SSH) keep() {
 			_ = this.c.Close()
 			this.c, err = this.dialRemote()
 		default:
-			logger.Debug("error sshMode")
+			err = errors.New("error sshMode")
 		}
 		if err != nil {
-			logger.Warn(err)
-			this.timer.Reset(0)
+			this.httpCtx.Warn(this.config.Addr, "reconnect faild:", err)
 		} else {
-			logger.Info(this.config.Addr, "reconnect success")
+			this.httpCtx.Info(this.config.Addr, "reconnect success")
 		}
+	} else {
+		this.httpCtx.Info(this.config.Addr, "ping success")
 	}
+
+	return
 }
 
 func (this *SSH) Check() (err error) {
 	if this.c == nil {
 		return errors.New("Check no ins")
 	}
-
-	logger.Info(this.config.Addr, "ping start")
-	defer func() {
-		if err == nil {
-			logger.Info(this.config.Addr, "ping success")
-		} else {
-			logger.Info(this.config.Addr, "ping faild:", err)
-		}
-	}()
 
 	sess, err := this.c.NewSession()
 	if err != nil {
