@@ -24,6 +24,6 @@ require (
 	github.com/shirou/gopsutil v2.19.10+incompatible
 	github.com/syndtr/goleveldb v1.0.0 // indirect
 	golang.org/x/crypto v0.0.0-20190325154230-a5d413f7728c
-	google.golang.org/grpc v1.25.1
+	google.golang.org/grpc v1.26.0
 	xorm.io/core v0.7.2
 )
