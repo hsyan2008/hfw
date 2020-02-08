@@ -104,7 +104,7 @@ func New(ctx context.Context, method string, url string) (curls *Curl) {
 	curls.Headers.Set("Accept-Language", "zh-cn,zh;q=0.8,en-us;q=0.5,en;q=0.3")
 	// curls.Headers.Set("Connection"] = "close"
 	curls.Headers.Set("Connection", "keep-alive")
-	curls.Headers.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.146 Safari/537.36")
+	curls.Headers.Set("User-Agent", "Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36")
 
 	//使用这个header是因为避免100的状态码
 	curls.Headers.Set("Expect", "")
