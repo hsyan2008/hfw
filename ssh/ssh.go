@@ -106,7 +106,11 @@ func (this *SSH) Close() {
 	this.ref -= 1
 
 	if this.ref <= 0 {
-		close(this.close)
+		select {
+		case <-this.close:
+		default:
+			close(this.close)
+		}
 		_ = this.c.Close()
 	}
 }
