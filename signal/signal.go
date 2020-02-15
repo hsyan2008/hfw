@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/google/uuid"
 	logger "github.com/hsyan2008/go-logger"
 )
 
@@ -29,6 +30,8 @@ type signalContext struct {
 	//Shutdown 业务方手动监听此通道获知通知
 	Ctx    context.Context    `json:"-"`
 	Cancel context.CancelFunc `json:"-"`
+
+	*logger.Logger
 }
 
 var scx *signalContext
@@ -39,6 +42,8 @@ func init() {
 		done: make(chan bool),
 		mu:   new(sync.Mutex),
 	}
+	scx.Logger = logger.NewLogger()
+	scx.Logger.SetTraceID(uuid.New().String())
 	scx.Ctx, scx.Cancel = context.WithCancel(context.Background())
 }
 
