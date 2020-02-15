@@ -89,14 +89,11 @@ func (p *Proxy) Accept() {
 		default:
 			conn, err := p.listener.Accept()
 			if err != nil {
-				p.httpCtx.Error(err)
 				p.Close()
+				if err != io.EOF && !strings.Contains(err.Error(), "use of closed network connection") {
+					p.httpCtx.Error(err)
+				}
 				return
-				// if err == io.EOF || strings.Contains(err.Error(), "use of closed network connection") {
-				// 	return
-				// }
-				// p.httpCtx.Error(err)
-				// continue
 			}
 
 			go func() {

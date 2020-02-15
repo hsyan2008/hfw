@@ -2,6 +2,7 @@ package ssh
 
 import (
 	"errors"
+	"io"
 	"net"
 	"strings"
 
@@ -99,14 +100,11 @@ func (l *Forward) Accept() {
 		default:
 			conn, err := l.lister.Accept()
 			if err != nil {
-				l.httpCtx.Error(l.t, err)
 				l.Close()
+				if err != io.EOF && !strings.Contains(err.Error(), "use of closed network connection") {
+					l.httpCtx.Error(l.t, err)
+				}
 				return
-				// if err == io.EOF || strings.Contains(err.Error(), "use of closed network connection") {
-				// 	return
-				// }
-				// l.httpCtx.Error(l.t, err)
-				// continue
 			}
 			go l.Hand(conn)
 		}
