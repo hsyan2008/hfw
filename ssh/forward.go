@@ -30,8 +30,6 @@ type Forward struct {
 	c2     *SSH
 	step   uint8
 	lister net.Listener
-
-	close chan struct{}
 }
 
 func NewLocalForward(httpCtx *hfw.HTTPContext, sshConfig SSHConfig, fi *ForwardIni) (l *Forward, err error) {
@@ -50,7 +48,6 @@ func NewForward(httpCtx *hfw.HTTPContext, t ForwardType, sshConfig SSHConfig, fi
 		httpCtx: httpCtx,
 		step:    1,
 		t:       t,
-		close:   make(chan struct{}),
 	}
 
 	l.c, err = NewSSH(sshConfig)
@@ -97,16 +94,19 @@ func (l *Forward) Bind(fi *ForwardIni) (err error) {
 func (l *Forward) Accept() {
 	for {
 		select {
-		case <-l.close:
+		case <-l.httpCtx.Ctx.Done():
 			return
 		default:
 			conn, err := l.lister.Accept()
 			if err != nil {
 				l.httpCtx.Error(l.t, err)
-				if strings.Contains(err.Error(), "use of closed network connection") {
-					return
-				}
-				continue
+				l.Close()
+				return
+				// if err == io.EOF || strings.Contains(err.Error(), "use of closed network connection") {
+				// 	return
+				// }
+				// l.httpCtx.Error(l.t, err)
+				// continue
 			}
 			go l.Hand(conn)
 		}
@@ -131,7 +131,7 @@ func (l *Forward) Hand(conn net.Conn) {
 }
 
 func (l *Forward) Close() {
-	close(l.close)
+	l.httpCtx.Cancel()
 
 	_ = l.lister.Close()
 	if l.c2 != nil {

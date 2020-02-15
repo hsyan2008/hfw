@@ -83,22 +83,28 @@ func (p *Proxy) Bind() (err error) {
 }
 func (p *Proxy) Accept() {
 	for {
-		conn, err := p.listener.Accept()
-		if err != nil {
-			if strings.Contains(err.Error(), "use of closed network connection") {
+		select {
+		case <-p.httpCtx.Ctx.Done():
+			return
+		default:
+			conn, err := p.listener.Accept()
+			if err != nil {
+				p.httpCtx.Error(err)
+				p.Close()
 				return
+				// if err == io.EOF || strings.Contains(err.Error(), "use of closed network connection") {
+				// 	return
+				// }
+				// p.httpCtx.Error(err)
+				// continue
 			}
-			p.httpCtx.Error(err)
-			continue
-		}
 
-		if p.pi.IsHTTP {
 			go func() {
-				_ = p.HandHTTP(conn)
-			}()
-		} else {
-			go func() {
-				_ = p.HandSocks5(conn)
+				if p.pi.IsHTTP {
+					_ = p.HandHTTP(conn)
+				} else {
+					_ = p.HandSocks5(conn)
+				}
 			}()
 		}
 	}
@@ -268,6 +274,7 @@ func (p *Proxy) isSSH(addr string) bool {
 }
 
 func (p *Proxy) Close() {
+	p.httpCtx.Cancel()
 	_ = p.listener.Close()
 	p.c.Close()
 }
