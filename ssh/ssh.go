@@ -326,7 +326,7 @@ func (this *SSH) keepalive() {
 }
 
 func (this *SSH) keep() (err error) {
-	this.httpCtx.Info(this.config.Addr, "ping start")
+	this.httpCtx.Debug(this.config.Addr, "ping start")
 	err = this.Check()
 	if err != nil {
 		this.httpCtx.Info(this.config.Addr, "ping faild:", err)
@@ -353,7 +353,7 @@ func (this *SSH) keep() (err error) {
 			this.httpCtx.Info(this.config.Addr, "reconnect success")
 		}
 	} else {
-		this.httpCtx.Info(this.config.Addr, "ping success")
+		this.httpCtx.Debug(this.config.Addr, "ping success")
 	}
 
 	return
