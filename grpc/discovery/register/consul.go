@@ -42,11 +42,11 @@ func init() {
 
 func NewConsulRegister(target []string, ttl int) common.Register {
 	cr := &ConsulRegister{target: target[0], ttl: ttl}
-	cr.ctx, cr.cancel = context.WithCancel(signal.GetSignalContext().Ctx)
 	return cr
 }
 
 func (cr *ConsulRegister) Register(info common.RegisterInfo) (err error) {
+	cr.ctx, cr.cancel = context.WithCancel(signal.GetSignalContext().Ctx)
 	cr.registerInfo = info
 	// initial consul client config
 	config := consulapi.DefaultConfig()
