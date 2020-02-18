@@ -111,7 +111,9 @@ func (this *SSH) Close() {
 		default:
 			close(this.close)
 		}
-		_ = this.c.Close()
+		if this.c != nil {
+			_ = this.c.Close()
+		}
 	}
 }
 
@@ -337,12 +339,14 @@ func (this *SSH) keep() (err error) {
 			return
 		}
 
+		if this.c != nil {
+			_ = this.c.Close()
+		}
+
 		switch this.m {
 		case NormalSSHMode:
-			_ = this.c.Close()
 			this.c, err = this.dial()
 		case RemoteSSHMode:
-			_ = this.c.Close()
 			this.c, err = this.dialRemote()
 		default:
 			err = errors.New("error sshMode")
