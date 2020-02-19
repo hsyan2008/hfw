@@ -11,6 +11,9 @@ import (
 
 //一个Session只能执行一次，获取ssh执行命令的结果
 func (this *SSH) Exec(cmd string) (string, error) {
+	if this.c == nil {
+		return "", errors.New("nil client")
+	}
 
 	sess, err := this.c.NewSession()
 	if err != nil {
@@ -26,6 +29,9 @@ func (this *SSH) Exec(cmd string) (string, error) {
 //一个Session只能执行一次，直接把结果输出到终端
 //不允许超过3s
 func (this *SSH) ExecWithPty(cmd string, timeout time.Duration) error {
+	if this.c == nil {
+		return errors.New("nil client")
+	}
 
 	fd := 0
 	if terminal.IsTerminal(fd) {
@@ -87,6 +93,9 @@ func (this *SSH) ExecWithPty(cmd string, timeout time.Duration) error {
 
 //一个Session只能执行一次，进入ssh模式
 func (this *SSH) Shell() error {
+	if this.c == nil {
+		return errors.New("nil client")
+	}
 
 	fd := 0
 	if terminal.IsTerminal(fd) {

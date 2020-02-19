@@ -200,10 +200,16 @@ func (this *SSH) dialRemote() (c *ssh.Client, err error) {
 }
 
 func (this *SSH) Connect(addr string) (conn net.Conn, err error) {
+	if this.c == nil {
+		return nil, errors.New("nil client")
+	}
 	return this.c.Dial("tcp", addr)
 }
 
 func (this *SSH) Listen(addr string) (l net.Listener, err error) {
+	if this.c == nil {
+		return nil, errors.New("nil client")
+	}
 	return this.c.Listen("tcp", addr)
 }
 
