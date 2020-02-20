@@ -368,21 +368,22 @@ func (this *SSH) Check() (err error) {
 		return errors.New("Check no ins")
 	}
 
-	sess, err := this.c.NewSession()
-	if err != nil {
-		return
-	}
-
-	//开个协程，超过一定时间就认为不通，关闭
+	//因为sess的操作会卡住，sess.Close也无用，所以开个协程，超过一定时间就认为不通，关闭
 	ctx, cancel := context.WithCancel(this.httpCtx.Ctx)
 	defer cancel()
 	go func() {
 		select {
 		case <-ctx.Done():
-		case <-time.After(3 * time.Second):
+		case <-time.After(5 * time.Second):
 		}
-		sess.Close()
+		this.c.Close()
 	}()
+
+	sess, err := this.c.NewSession()
+	if err != nil {
+		return
+	}
+	defer sess.Close()
 
 	if err = sess.Shell(); err != nil {
 		return
