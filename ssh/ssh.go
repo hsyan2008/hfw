@@ -320,7 +320,7 @@ func (this *SSH) keepalive() {
 		case <-this.timer.C:
 			err := this.keep()
 			if err != nil {
-				this.timer.Reset(0)
+				this.timer.Reset(time.Millisecond * 300)
 			} else {
 				this.timer.Reset(this.config.Timeout * time.Second)
 			}
