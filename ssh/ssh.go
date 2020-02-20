@@ -1,6 +1,7 @@
 package ssh
 
 import (
+	"context"
 	"errors"
 	"io/ioutil"
 	"net"
@@ -371,7 +372,18 @@ func (this *SSH) Check() (err error) {
 	if err != nil {
 		return
 	}
-	defer sess.Close()
+
+	//开个协程，超过一定时间就认为不通，关闭
+	ctx, cancel := context.WithCancel(this.httpCtx.Ctx)
+	defer cancel()
+	go func() {
+		select {
+		case <-ctx.Done():
+		case <-time.After(3 * time.Second):
+		}
+		sess.Close()
+	}()
+
 	if err = sess.Shell(); err != nil {
 		return
 	}
