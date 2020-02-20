@@ -71,13 +71,11 @@ func NewSSH(sshConfig SSHConfig) (ins *SSH, err error) {
 	var ok bool
 	if ins, ok = sshIns[key]; !ok {
 		ins = &SSH{
-			ref:     0,
-			m:       NormalSSHMode,
-			mt:      new(sync.Mutex),
-			httpCtx: hfw.NewHTTPContext(),
+			ref: 0,
+			m:   NormalSSHMode,
+			mt:  new(sync.Mutex),
 		}
 		ins.SetConfig(sshConfig)
-		ins.timer = time.NewTimer(ins.config.Timeout * time.Second)
 		sshIns[key] = ins
 	}
 
@@ -91,6 +89,9 @@ func NewSSH(sshConfig SSHConfig) (ins *SSH, err error) {
 		return
 	}
 
+	//可能被cancel了，所以每次重新生成
+	ins.httpCtx = hfw.NewHTTPContext()
+	ins.timer = time.NewTimer(ins.config.Timeout * time.Second)
 	err = ins.Dial()
 
 	return
@@ -375,8 +376,8 @@ func (this *SSH) Check() (err error) {
 		select {
 		case <-ctx.Done():
 		case <-time.After(5 * time.Second):
+			this.c.Close()
 		}
-		this.c.Close()
 	}()
 
 	sess, err := this.c.NewSession()
