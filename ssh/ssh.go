@@ -47,7 +47,6 @@ type SSH struct {
 
 	preIns *SSH
 
-	close chan bool
 	timer *time.Timer
 
 	mt *sync.Mutex
@@ -72,7 +71,6 @@ func NewSSH(sshConfig SSHConfig) (ins *SSH, err error) {
 	if ins, ok = sshIns[key]; !ok {
 		ins = &SSH{
 			ref:     0,
-			close:   make(chan bool),
 			m:       NormalSSHMode,
 			mt:      new(sync.Mutex),
 			httpCtx: hfw.NewHTTPContext(),
@@ -106,11 +104,7 @@ func (this *SSH) Close() {
 	this.ref -= 1
 
 	if this.ref <= 0 {
-		select {
-		case <-this.close:
-		default:
-			close(this.close)
-		}
+		this.httpCtx.Cancel()
 		if this.c != nil {
 			_ = this.c.Close()
 		}
@@ -163,7 +157,6 @@ func (this *SSH) DialRemote(sshConfig SSHConfig) (ins *SSH, err error) {
 
 	ins = &SSH{
 		ref:     1,
-		close:   make(chan bool),
 		m:       RemoteSSHMode,
 		mt:      new(sync.Mutex),
 		preIns:  this,
@@ -319,7 +312,7 @@ func (this *SSH) keepalive() {
 	}
 	for {
 		select {
-		case <-this.close:
+		case <-this.httpCtx.Ctx.Done():
 			this.timer.Stop()
 			return
 		case <-this.timer.C:
