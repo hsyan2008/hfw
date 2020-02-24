@@ -54,8 +54,8 @@ func GetRegisterAddress(interfaceName, address string) (host string, port int, e
 
 //根据ip route获取默认的网卡名称
 func getDefaultInerfaceByRoute() string {
-	cmd := exec.Command("ip", "route")
-	b, err := cmd.Output()
+	cmd := exec.Command("sh", "-c", "ip route show | grep default")
+	b, err := cmd.CombinedOutput()
 	if err != nil {
 		return ""
 	}
