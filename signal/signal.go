@@ -13,7 +13,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/google/uuid"
 	logger "github.com/hsyan2008/go-logger"
 )
 
@@ -43,7 +42,7 @@ func init() {
 		mu:   new(sync.Mutex),
 	}
 	scx.Logger = logger.NewLogger()
-	scx.Logger.SetTraceID(uuid.New().String())
+	scx.Logger.SetTraceID("PRIME")
 	scx.Ctx, scx.Cancel = context.WithCancel(context.Background())
 }
 
