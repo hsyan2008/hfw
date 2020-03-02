@@ -3,6 +3,7 @@ package wslib
 import (
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -25,6 +26,7 @@ type WsIns struct {
 	HTTPCtx     *hfw.HTTPContext
 	ws          *websocket.Conn
 	keepTimeout time.Duration
+	mt          *sync.Mutex
 }
 
 func NewWS(httpCtx *hfw.HTTPContext, h http.Header) (wsIns *WsIns, err error) {
@@ -35,6 +37,7 @@ func NewWS(httpCtx *hfw.HTTPContext, h http.Header) (wsIns *WsIns, err error) {
 	wsIns = &WsIns{
 		HTTPCtx:     httpCtx,
 		keepTimeout: 60,
+		mt:          new(sync.Mutex),
 	}
 	wsIns.ws = ws
 	go wsIns.keep()
@@ -85,14 +88,20 @@ func (wsIns *WsIns) ReadMessage() (messageType int, p []byte, err error) {
 }
 
 func (wsIns *WsIns) WritePingMessage() (err error) {
+	wsIns.mt.Lock()
+	defer wsIns.mt.Unlock()
 	return wsIns.ws.WriteMessage(websocket.PingMessage, nil)
 }
 
 func (wsIns *WsIns) WriteTextMessage(data []byte) (err error) {
+	wsIns.mt.Lock()
+	defer wsIns.mt.Unlock()
 	return wsIns.ws.WriteMessage(websocket.TextMessage, data)
 }
 
 func (wsIns *WsIns) WriteCloseMessage(closeCode int, text string) error {
+	wsIns.mt.Lock()
+	defer wsIns.mt.Unlock()
 	return wsIns.ws.WriteMessage(websocket.CloseMessage,
 		websocket.FormatCloseMessage(closeCode, text))
 }
