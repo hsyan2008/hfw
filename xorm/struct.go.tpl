@@ -21,6 +21,7 @@ func init() {
 }
 
 type {{Mapper .Name}} struct {
+    tableName string `xorm:"-"`
 	Dao *db.XormDao `json:"-" xorm:"-"`
 {{$table := .}}
 {{range .ColumnsSeq}}{{$col := $table.GetColumn .}}	{{Mapper $col.Name}}	{{Type $col}} {{Tag $table $col}}
@@ -91,8 +92,15 @@ func (m *{{Mapper .Name}}) String() string {
     return fmt.Sprintf("%#v", m)
 }
 
+func (m *{{Mapper .Name}}) SetTableName(tableName string) {
+    m.tableName = tableName
+}
+
 func (m *{{Mapper .Name}}) TableName() string {
-	return "{{.Name}}"
+    if m.tableName == "" {
+	    return "{{.Name}}"
+    }
+    return m.tableName
 }
 
 func (m *{{Mapper .Name}}) Save(t ...*{{Mapper .Name}}) (affected int64, err error) {
