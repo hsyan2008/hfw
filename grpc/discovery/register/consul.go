@@ -115,7 +115,7 @@ func (cr *ConsulRegister) UnRegister() (err error) {
 	if err != nil {
 		return fmt.Errorf("deregister service error: %s", err.Error())
 	}
-	logger.Info("deregistered service from consul server.")
+	logger.Infof("deregistered service: %s from consul server.", cr.registerInfo.ServerName)
 
 	err = cr.client.Agent().CheckDeregister(cr.serviceID)
 	if err != nil {
