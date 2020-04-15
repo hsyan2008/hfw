@@ -131,24 +131,17 @@ func (p *Proxy) HandHTTP(conn net.Conn) (err error) {
 	p.httpCtx.Info(p.listener.Addr().String(), conn.RemoteAddr().String(), p.isSSH(req.Host), req.Host, "connected.")
 	if req.Method == "CONNECT" {
 		_, err = io.WriteString(conn, "HTTP/1.0 200 Connection Established\r\n\r\n")
-		if err != nil {
-			_ = conn.Close()
-			_ = con.Close()
-			return
-		}
-
-		go multiCopy(conn, con)
-		go multiCopy(con, conn)
 	} else {
 		err = req.Write(con)
-		if err != nil {
-			_ = conn.Close()
-			_ = con.Close()
-			return
-		}
-		go multiCopy(con, conn) //可以不用，但可以关闭连接
-		go multiCopy(conn, con)
 	}
+	if err != nil {
+		_ = conn.Close()
+		_ = con.Close()
+		return
+	}
+
+	go multiCopy(conn, con)
+	go multiCopy(con, conn)
 
 	return
 }
