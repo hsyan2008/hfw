@@ -92,8 +92,9 @@ func (m *{{Mapper .Name}}) String() string {
     return fmt.Sprintf("%#v", m)
 }
 
-func (m *{{Mapper .Name}}) SetTableName(tableName string) {
+func (m *{{Mapper .Name}}) SetTableName(tableName string) (m *{{Mapper .Name}}) {
     m.tableName = tableName
+    return
 }
 
 func (m *{{Mapper .Name}}) TableName() string {
