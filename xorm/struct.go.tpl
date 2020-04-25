@@ -92,9 +92,11 @@ func (m *{{Mapper .Name}}) String() string {
     return fmt.Sprintf("%#v", m)
 }
 
-func (m *{{Mapper .Name}}) SetTableName(tableName string) (m *{{Mapper .Name}}) {
-    m.tableName = tableName
-    return
+func (m *{{Mapper .Name}}) SetTableName(tableName string) *{{Mapper .Name}} {
+    if m != nil {
+        m.tableName = tableName
+    }
+    return m
 }
 
 func (m *{{Mapper .Name}}) TableName() string {
@@ -311,7 +313,11 @@ func (m *{{Mapper .Name}}) Delete(where db.Cond) (i int64, err error) {
 //  *db.XormDao         使用现有的dao
 //  空                  使用默认的数据库配置
 func New{{Mapper .Name}}IgnoreErr(c ...interface{}) (m *{{Mapper .Name}}) {
-    m, _ = New{{Mapper .Name}}(c...)
+    var err error
+    m, err = New{{Mapper .Name}}(c...)
+    if err != nil {
+        panic(err)
+    }
     return
 }
 
