@@ -53,6 +53,9 @@ type SSH struct {
 	mt *sync.Mutex
 
 	httpCtx *hfw.HTTPContext
+
+	//是否已经keepalive
+	isKeepAlive bool
 }
 
 var mt = new(sync.Mutex)
@@ -97,7 +100,7 @@ func NewSSH(sshConfig SSHConfig) (ins *SSH, err error) {
 	return
 }
 
-//到0后，保留连接
+//到0后，关闭连接
 func (this *SSH) Close() {
 
 	this.mt.Lock()
@@ -309,9 +312,10 @@ func (this *SSH) getAuth() (auths []ssh.AuthMethod, err error) {
 
 func (this *SSH) keepalive() {
 	//因为jumpserver.org的问题，无法检测，所以不检测
-	if this.config.SkipKeep || this.c == nil {
+	if this.isKeepAlive || this.config.SkipKeep || this.c == nil {
 		return
 	}
+	this.isKeepAlive = true
 	for {
 		select {
 		case <-this.httpCtx.Ctx.Done():
