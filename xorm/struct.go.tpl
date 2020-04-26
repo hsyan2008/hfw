@@ -112,7 +112,7 @@ func (m *{{Mapper .Name}}) Save(t ...*{{Mapper .Name}}) (affected int64, err err
 		return
 	}
     if len(t) > 1 {
-        return dao.InsertMulti(t)
+        return dao.InsertMulti(m, t)
     } else {
         var i *{{Mapper .Name}}
         if len(t) == 0 {
@@ -133,7 +133,7 @@ func (m *{{Mapper .Name}}) Saves(t []*{{Mapper .Name}}) (affected int64, err err
 	if err != nil {
 		return
 	}
-	return dao.InsertMulti(t)
+	return dao.InsertMulti(m, t)
 }
 
 func (m *{{Mapper .Name}}) Insert(t ...*{{Mapper .Name}}) (affected int64, err error) {
@@ -142,7 +142,7 @@ func (m *{{Mapper .Name}}) Insert(t ...*{{Mapper .Name}}) (affected int64, err e
 		return
 	}
 	if len(t) > 1 {
-		return dao.InsertMulti(t)
+		return dao.InsertMulti(m, t)
 	} else {
 		var i *{{Mapper .Name}}
 		if len(t) == 0 {

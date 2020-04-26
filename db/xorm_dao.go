@@ -43,14 +43,14 @@ type XormDao struct {
 	sess    *xorm.Session
 }
 
-func (d *XormDao) UpdateById(t Model) (affected int64, err error) {
+func (d *XormDao) UpdateById(m, t Model) (affected int64, err error) {
 	sess := d.sess
 	if sess == nil {
 		sess = d.engine.NewSession()
 		defer sess.Close()
 	}
 
-	affected, err = sess.Id(t.AutoIncrColValue()).AllCols().Update(t)
+	affected, err = sess.Table(m).Id(t.AutoIncrColValue()).AllCols().Update(t)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
 		logger.Error(err, lastSQL, lastSQLArgs)
@@ -105,14 +105,14 @@ func (d *XormDao) UpdateByWhere(t Model, params Cond,
 	return
 }
 
-func (d *XormDao) Insert(t Model) (affected int64, err error) {
+func (d *XormDao) Insert(m, t Model) (affected int64, err error) {
 	sess := d.sess
 	if sess == nil {
 		sess = d.engine.NewSession()
 		defer sess.Close()
 	}
 
-	affected, err = sess.Insert(t)
+	affected, err = sess.Table(m).Insert(t)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
 		logger.Error(err, lastSQL, lastSQLArgs)
@@ -120,14 +120,14 @@ func (d *XormDao) Insert(t Model) (affected int64, err error) {
 	return
 }
 
-func (d *XormDao) InsertMulti(t interface{}) (affected int64, err error) {
+func (d *XormDao) InsertMulti(m Model, t interface{}) (affected int64, err error) {
 	sess := d.sess
 	if sess == nil {
 		sess = d.engine.NewSession()
 		defer sess.Close()
 	}
 
-	affected, err = sess.InsertMulti(t)
+	affected, err = sess.Table(m).InsertMulti(t)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
 		logger.Error(err, lastSQL, lastSQLArgs)
@@ -163,6 +163,7 @@ func (d *XormDao) buildCond(t Model, sess *xorm.Session, cond Cond, isOrder, isP
 		where    string
 		args     []interface{}
 	)
+	sess = sess.Table(t)
 FOR:
 	for k, v := range cond {
 		k = strings.ToLower(k)
@@ -359,7 +360,7 @@ func (d *XormDao) GetMulti(t Model, ts interface{}, ids ...interface{}) (err err
 		defer sess.Close()
 	}
 
-	err = sess.In(t.AutoIncrColName(), ids...).Find(ts)
+	err = sess.Table(t).In(t.AutoIncrColName(), ids...).Find(ts)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
 		logger.Error(err, lastSQL, lastSQLArgs)
@@ -485,7 +486,7 @@ func (d *XormDao) DeleteByIds(t Model, ids interface{}) (affected int64, err err
 		defer sess.Close()
 	}
 
-	affected, err = sess.In(t.AutoIncrColName(), ids).Unscoped().Delete(t)
+	affected, err = sess.Table(t).In(t.AutoIncrColName(), ids).Unscoped().Delete(t)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
 		logger.Error(err, lastSQL, lastSQLArgs)
