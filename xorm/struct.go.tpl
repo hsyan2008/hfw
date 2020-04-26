@@ -121,9 +121,9 @@ func (m *{{Mapper .Name}}) Save(t ...*{{Mapper .Name}}) (affected int64, err err
             i = t[0]
         }
 	    if i.AutoIncrColValue() > 0 {
-		    return dao.UpdateById(i)
+		    return dao.UpdateById(m, i)
     	} else {
-            return dao.Insert(i)
+            return dao.Insert(m, i)
     	}
     }
 }
@@ -150,7 +150,7 @@ func (m *{{Mapper .Name}}) Insert(t ...*{{Mapper .Name}}) (affected int64, err e
 		} else if len(t) == 1 {
 			i = t[0]
 		}
-		return dao.Insert(i)
+		return dao.Insert(m, i)
 	}
 }
 
