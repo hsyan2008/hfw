@@ -227,6 +227,9 @@ func (curls *Curl) Request() (rs *Response, err error) {
 		if !ok || urlError.Err != ErrStopRedirect {
 			curls.cancel()
 			return nil, err
+		} else if urlError.Err == ErrStopRedirect {
+			err = rs.wrap(curls)
+			return rs, err
 		}
 	} else {
 		err = rs.wrap(curls)
