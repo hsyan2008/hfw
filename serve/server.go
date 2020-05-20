@@ -3,9 +3,7 @@
 package serve
 
 import (
-	"fmt"
 	"net"
-	"strings"
 	"sync"
 	"time"
 
@@ -35,7 +33,7 @@ func newServer(config configs.ServerConfig) (err error) {
 		lock.Lock()
 		defer lock.Unlock()
 		if s == nil {
-			addr, err := getListenAddr(config.Address)
+			addr, err := common.GetAddrForListen(config.Address)
 			if err != nil {
 				return err
 			}
@@ -54,28 +52,6 @@ func newServer(config configs.ServerConfig) (err error) {
 	return
 }
 
-//可能监听127.0.0.1用于限定内部访问，完整的返回
-//可能其他情况用于注册服务，只返回端口部分
-func getListenAddr(addr string) (string, error) {
-	if strings.HasPrefix(addr, "127.0.0.1:") {
-		return addr, nil
-	}
-	_, port, err := net.SplitHostPort(addr)
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf(":%s", port), nil
-}
-
-//取listend的端口，加上配置的host，用于注册
-func mergeAddr(listendAddr, addr string) string {
-	_, port, _ := net.SplitHostPort(listendAddr)
-	host, _, _ := net.SplitHostPort(addr)
-
-	return net.JoinHostPort(host, port)
-}
-
 func Start(config configs.ServerConfig) (err error) {
 
 	err = newServer(config)
@@ -84,7 +60,7 @@ func Start(config configs.ServerConfig) (err error) {
 	}
 
 	//注册服务
-	r, err := discovery.RegisterServer(config, mergeAddr(listener.Addr().String(), config.Address))
+	r, err := discovery.RegisterServer(config, common.GetListendAddrForRegister(listener.Addr().String(), config.Address))
 	if err != nil {
 		return err
 	}
