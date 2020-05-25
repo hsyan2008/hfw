@@ -242,8 +242,10 @@ FOR:
 				//val: %h%
 				str = append(str, fmt.Sprintf("`%s` like ?", keys[0]))
 				args = append(args, v)
-			default:
-				return nil, errors.New("error cond key")
+			default: // > >= < <=等
+				str = append(str, fmt.Sprintf("%s ?", keys[0]))
+				args = append(args, v)
+				// return nil, errors.New("error cond key")
 			}
 			continue FOR
 		default:
