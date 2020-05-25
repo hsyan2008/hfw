@@ -225,7 +225,7 @@ FOR:
 			continue FOR
 		}
 
-		keys := strings.Fields(k)
+		keys := strings.Fields(strings.TrimSpace(k))
 		switch len(keys) {
 		case 1:
 			str = append(str, fmt.Sprintf("`%s` = ?", k))
