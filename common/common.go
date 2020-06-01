@@ -52,6 +52,10 @@ func IsExist(filepath string) bool {
 	if err == nil {
 		return true
 	}
+	//mac
+	if strings.Contains(err.Error(), "file name too long") {
+		return false
+	}
 	return !os.IsNotExist(err)
 }
 
