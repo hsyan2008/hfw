@@ -211,6 +211,7 @@ func (curls *Curl) Request() (rs *Response, err error) {
 
 	select {
 	case <-time.After(curls.timeout):
+		curls.cancel()
 		<-c
 		err = ErrRequestTimeout
 	case <-curls.ctx.Done():
