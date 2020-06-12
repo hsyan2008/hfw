@@ -106,6 +106,14 @@ func (m *{{Mapper .Name}}) TableName() string {
     return m.tableName
 }
 
+func (m *{{Mapper .Name}}) IsTableExist(tableName string) (isExist bool, err error) {
+	dao, err := m.GetDao()
+	if err != nil {
+		return
+	}
+    return dao.IsTableExist(tableName)
+}
+
 func (m *{{Mapper .Name}}) Save(t ...*{{Mapper .Name}}) (affected int64, err error) {
 	dao, err := m.GetDao()
 	if err != nil {

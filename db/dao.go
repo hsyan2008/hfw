@@ -9,6 +9,7 @@ var DefaultDao Dao
 var ErrDaoNotInited = errors.New("dao not inited")
 
 type Dao interface {
+	IsTableExist(interface{}) (bool, error)
 	UpdateById(Model, Model) (int64, error)
 	UpdateByIds(Model, Cond, []interface{}) (int64, error)
 	UpdateByWhere(Model, Cond, Cond) (int64, error)

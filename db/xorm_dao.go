@@ -43,6 +43,10 @@ type XormDao struct {
 	sess    *xorm.Session
 }
 
+func (d *XormDao) IsTableExist(beanOrTableName interface{}) (bool, error) {
+	return d.engine.IsTableExist(beanOrTableName)
+}
+
 func (d *XormDao) UpdateById(m, t Model) (affected int64, err error) {
 	sess := d.sess
 	if sess == nil {
