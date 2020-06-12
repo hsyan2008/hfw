@@ -71,6 +71,15 @@ func NewHTTPContext() *HTTPContext {
 	return httpCtx
 }
 
+func NewHTTPContextWithCtx(ctx *HTTPContext) *HTTPContext {
+	httpCtx := &HTTPContext{}
+	httpCtx.Ctx, httpCtx.Cancel = context.WithCancel(ctx.Ctx)
+	httpCtx.Logger = logger.NewLogger()
+	httpCtx.Logger.SetTraceID(fmt.Sprintf("%s_%s", ctx.GetTraceID(), uuid.New().String()))
+
+	return httpCtx
+}
+
 func NewHTTPContextWithGrpcCtx(ctx context.Context) *HTTPContext {
 	httpCtx := &HTTPContext{}
 	httpCtx.Ctx, httpCtx.Cancel = context.WithCancel(ctx)
