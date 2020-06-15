@@ -68,6 +68,7 @@ type Curl struct {
 	Headers http.Header
 
 	autoRedirect bool
+	keepAlive    bool
 
 	//流
 	PostReader io.Reader
@@ -128,6 +129,10 @@ func (curls *Curl) SetContext(ctx context.Context) {
 
 func (curls *Curl) SetAutoRedirect() {
 	curls.autoRedirect = true
+}
+
+func (curls *Curl) SetKeepAlive() {
+	curls.keepAlive = true
 }
 
 func (curls *Curl) SetHeaders(headers map[string]string) {
@@ -326,7 +331,7 @@ func (curls *Curl) getHttpClient() (hc *http.Client, err error) {
 
 	if i, ok := clientMap.Load(key); ok {
 		hc = i.(*http.Client)
-		hc.CloseIdleConnections()
+		// hc.CloseIdleConnections()
 		return
 	}
 
@@ -346,8 +351,8 @@ func (curls *Curl) getHttpClient() (hc *http.Client, err error) {
 				Timeout:   10 * time.Second,
 				KeepAlive: 3600 * time.Second,
 			}).Dial,
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			// DisableKeepAlives:     true,
+			TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
+			DisableKeepAlives:     curls.keepAlive == false,
 			TLSHandshakeTimeout:   10 * time.Second,
 			ResponseHeaderTimeout: 10 * time.Second,
 		},
