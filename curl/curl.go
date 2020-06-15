@@ -325,7 +325,9 @@ func (curls *Curl) getHttpClient() (hc *http.Client, err error) {
 	key := fmt.Sprintf("%s||%t", curls.proxyURL, curls.autoRedirect)
 
 	if i, ok := clientMap.Load(key); ok {
-		return i.(*http.Client), nil
+		hc = i.(*http.Client)
+		hc.CloseIdleConnections()
+		return
 	}
 
 	proxy := http.ProxyFromEnvironment
