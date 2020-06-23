@@ -26,6 +26,7 @@ func StopCron() {
 func AddWrapCron(spec string, cmd func(httpCtx *HTTPContext) error) (cron.EntryID, error) {
 	return AddCron(spec, func() {
 		httpCtx := NewHTTPContext()
+		defer httpCtx.Cancel()
 		signal.GetSignalContext().WgAdd()
 		defer func(now time.Time) {
 			if err := recover(); err != nil {
