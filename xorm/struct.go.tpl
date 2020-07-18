@@ -11,6 +11,7 @@ import (
     "github.com/hsyan2008/hfw"
     "github.com/hsyan2008/hfw/configs"
     "github.com/hsyan2008/hfw/db"
+    "github.com/hsyan2008/hfw/encoding"
 )
 
 {{range .Tables}}
@@ -89,7 +90,8 @@ func (m *{{Mapper $table.Name}}) AutoIncrColValue() (val int64) {
 {{end}}
 
 func (m *{{Mapper .Name}}) String() string {
-    return fmt.Sprintf("%#v", m)
+    b, _ := encoding.JSON.Marshal(m)
+    return string(b)
 }
 
 func (m *{{Mapper .Name}}) SetTableName(tableName string) *{{Mapper .Name}} {
