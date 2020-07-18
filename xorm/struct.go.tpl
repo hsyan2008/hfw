@@ -94,6 +94,10 @@ func (m *{{Mapper .Name}}) String() string {
     return string(b)
 }
 
+func (m *{{Mapper .Name}}) GoString() string {
+    return m.String()
+}
+
 func (m *{{Mapper .Name}}) SetTableName(tableName string) *{{Mapper .Name}} {
     if m != nil {
         m.tableName = tableName
