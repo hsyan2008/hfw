@@ -43,6 +43,8 @@ type SSH struct {
 	config SSHConfig
 	ref    int
 
+	reconnectTime int
+
 	m sshMode
 	c *ssh.Client
 
@@ -348,6 +350,7 @@ func (this *SSH) keep() (err error) {
 			_ = this.c.Close()
 		}
 
+		this.reconnectTime++
 		switch this.m {
 		case NormalSSHMode:
 			this.c, err = this.dial()
@@ -366,6 +369,10 @@ func (this *SSH) keep() (err error) {
 	}
 
 	return
+}
+
+func (this *SSH) GetReconnectionTime() int {
+	return this.reconnectTime
 }
 
 func (this *SSH) Check() (err error) {
