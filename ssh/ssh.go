@@ -384,15 +384,6 @@ func (this *SSH) Check() (err error) {
 		}
 	}()
 
-	sess, err := this.c.NewSession()
-	if err != nil {
-		return
-	}
-	defer sess.Close()
-
-	if err = sess.Shell(); err != nil {
-		return
-	}
-
-	return sess.Wait()
+	_, err = this.Exec("ls")
+	return
 }
