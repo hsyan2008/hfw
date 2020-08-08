@@ -161,7 +161,7 @@ func (d *XormDao) SearchOne(t Model, cond Cond) (has bool, err error) {
 func (d *XormDao) buildCond(t Model, sess *xorm.Session, cond Cond, isOrder, isPaging bool) (session *xorm.Session, err error) {
 	var (
 		str      []string
-		orderby  = fmt.Sprintf("%s desc", t.AutoIncrColName())
+		orderby  string
 		page     = 1
 		pageSize = DefaultPageSize
 		where    string
@@ -270,7 +270,12 @@ FOR:
 
 	sess.Where(where, args...)
 	if isOrder {
-		sess.OrderBy(orderby)
+		if orderby == "" && t.AutoIncrColName() != "" {
+			orderby = fmt.Sprintf("%s desc", t.AutoIncrColName())
+		}
+		if orderby != "" {
+			sess.OrderBy(orderby)
+		}
 	}
 	if isPaging {
 		sess.Limit(pageSize, (page-1)*pageSize)
