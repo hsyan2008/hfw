@@ -15,21 +15,21 @@ import (
 )
 
 {{range .Tables}}
-var {{Mapper .Name}}Model = &{{Mapper .Name}}{}
+var {{TableMapper .Name}}Model = &{{TableMapper .Name}}{}
 func init() {
 	//gob: type not registered for interface
-    gob.Register({{Mapper .Name}}Model)
+    gob.Register({{TableMapper .Name}}Model)
 }
 
-type {{Mapper .Name}} struct {
+type {{TableMapper .Name}} struct {
     tableName string `xorm:"-"`
 	Dao *db.XormDao `json:"-" xorm:"-"`
 {{$table := .}}
-{{range .ColumnsSeq}}{{$col := $table.GetColumn .}}	{{Mapper $col.Name}}	{{Type $col}} {{Tag $table $col}}
+{{range .ColumnsSeq}}{{$col := $table.GetColumn .}}	{{ColumnMapper $col.Name}}	{{Type $col}} `json:"{{$col.Name}}" {{Tag $table $col}}`
 {{end}}
 }
 
-func (m *{{Mapper .Name}}) GetDao(c ...interface{}) (d *db.XormDao, err error) {
+func (m *{{TableMapper .Name}}) GetDao(c ...interface{}) (d *db.XormDao, err error) {
 	if m == nil {
 		return nil, db.ErrDaoNotInited
 	}
@@ -69,50 +69,50 @@ func (m *{{Mapper .Name}}) GetDao(c ...interface{}) (d *db.XormDao, err error) {
 }
 
 {{range .ColumnsSeq}}{{$col := $table.GetColumn .}}
-func (m *{{Mapper $table.Name}}) Get{{Mapper $col.Name}}() (val {{Type $col}}) {
+func (m *{{TableMapper $table.Name}}) Get{{ColumnMapper $col.Name}}() (val {{Type $col}}) {
     if m == nil {
         return
     }
-    return m.{{Mapper $col.Name}}
+    return m.{{ColumnMapper $col.Name}}
 }
 {{if $col.IsAutoIncrement}}
-func (m *{{Mapper $table.Name}}) AutoIncrColName() string {
+func (m *{{TableMapper $table.Name}}) AutoIncrColName() string {
     return "{{$col.Name}}"
 }
 
-func (m *{{Mapper $table.Name}}) AutoIncrColValue() (val int64) {
+func (m *{{TableMapper $table.Name}}) AutoIncrColValue() (val int64) {
     if m == nil {
         return
     }
-    return int64(m.{{Mapper $col.Name}})
+    return int64(m.{{ColumnMapper $col.Name}})
 }
 {{end}}
 {{end}}
 
-func (m *{{Mapper .Name}}) String() string {
+func (m *{{TableMapper .Name}}) String() string {
     b, _ := encoding.JSON.Marshal(m)
     return string(b)
 }
 
-func (m *{{Mapper .Name}}) GoString() string {
+func (m *{{TableMapper .Name}}) GoString() string {
     return m.String()
 }
 
-func (m *{{Mapper .Name}}) SetTableName(tableName string) *{{Mapper .Name}} {
+func (m *{{TableMapper .Name}}) SetTableName(tableName string) *{{TableMapper .Name}} {
     if m != nil {
         m.tableName = tableName
     }
     return m
 }
 
-func (m *{{Mapper .Name}}) TableName() string {
+func (m *{{TableMapper .Name}}) TableName() string {
     if m.tableName == "" {
 	    return "{{.Name}}"
     }
     return m.tableName
 }
 
-func (m *{{Mapper .Name}}) IsTableExist(tableName string) (isExist bool, err error) {
+func (m *{{TableMapper .Name}}) IsTableExist(tableName string) (isExist bool, err error) {
 	dao, err := m.GetDao()
 	if err != nil {
 		return
@@ -120,7 +120,7 @@ func (m *{{Mapper .Name}}) IsTableExist(tableName string) (isExist bool, err err
     return dao.IsTableExist(tableName)
 }
 
-func (m *{{Mapper .Name}}) Save(t ...*{{Mapper .Name}}) (affected int64, err error) {
+func (m *{{TableMapper .Name}}) Save(t ...*{{TableMapper .Name}}) (affected int64, err error) {
 	dao, err := m.GetDao()
 	if err != nil {
 		return
@@ -128,7 +128,7 @@ func (m *{{Mapper .Name}}) Save(t ...*{{Mapper .Name}}) (affected int64, err err
     if len(t) > 1 {
         return dao.InsertMulti(m, t)
     } else {
-        var i *{{Mapper .Name}}
+        var i *{{TableMapper .Name}}
         if len(t) == 0 {
             i = m
         } else if len(t) == 1 {
@@ -142,7 +142,7 @@ func (m *{{Mapper .Name}}) Save(t ...*{{Mapper .Name}}) (affected int64, err err
     }
 }
 
-func (m *{{Mapper .Name}}) Saves(t []*{{Mapper .Name}}) (affected int64, err error) {
+func (m *{{TableMapper .Name}}) Saves(t []*{{TableMapper .Name}}) (affected int64, err error) {
 	dao, err := m.GetDao()
 	if err != nil {
 		return
@@ -150,7 +150,7 @@ func (m *{{Mapper .Name}}) Saves(t []*{{Mapper .Name}}) (affected int64, err err
 	return dao.InsertMulti(m, t)
 }
 
-func (m *{{Mapper .Name}}) Insert(t ...*{{Mapper .Name}}) (affected int64, err error) {
+func (m *{{TableMapper .Name}}) Insert(t ...*{{TableMapper .Name}}) (affected int64, err error) {
 	dao, err := m.GetDao()
 	if err != nil {
 		return
@@ -158,7 +158,7 @@ func (m *{{Mapper .Name}}) Insert(t ...*{{Mapper .Name}}) (affected int64, err e
 	if len(t) > 1 {
 		return dao.InsertMulti(m, t)
 	} else {
-		var i *{{Mapper .Name}}
+		var i *{{TableMapper .Name}}
 		if len(t) == 0 {
 			i = m
 		} else if len(t) == 1 {
@@ -168,7 +168,7 @@ func (m *{{Mapper .Name}}) Insert(t ...*{{Mapper .Name}}) (affected int64, err e
 	}
 }
 
-func (m *{{Mapper .Name}}) Update(params db.Cond,
+func (m *{{TableMapper .Name}}) Update(params db.Cond,
 	where db.Cond) (affected int64, err error) {
 	dao, err := m.GetDao()
 	if err != nil {
@@ -177,7 +177,7 @@ func (m *{{Mapper .Name}}) Update(params db.Cond,
 	return dao.UpdateByWhere(m, params, where)
 }
 
-func (m *{{Mapper .Name}}) SearchOne(cond db.Cond) (t *{{Mapper .Name}}, err error) {
+func (m *{{TableMapper .Name}}) SearchOne(cond db.Cond) (t *{{TableMapper .Name}}, err error) {
     if cond == nil {
         cond = db.Cond{}
     }
@@ -195,7 +195,7 @@ func (m *{{Mapper .Name}}) SearchOne(cond db.Cond) (t *{{Mapper .Name}}, err err
 	return
 }
 
-func (m *{{Mapper .Name}}) Search(cond db.Cond) (t []*{{Mapper .Name}}, err error) {
+func (m *{{TableMapper .Name}}) Search(cond db.Cond) (t []*{{TableMapper .Name}}, err error) {
 	dao, err := m.GetDao()
 	if err != nil {
 		return
@@ -204,7 +204,7 @@ func (m *{{Mapper .Name}}) Search(cond db.Cond) (t []*{{Mapper .Name}}, err erro
 	return
 }
 
-func (m *{{Mapper .Name}}) SearchAndCount(cond db.Cond) (t []*{{Mapper .Name}}, total int64, err error) {
+func (m *{{TableMapper .Name}}) SearchAndCount(cond db.Cond) (t []*{{TableMapper .Name}}, total int64, err error) {
 	dao, err := m.GetDao()
 	if err != nil {
 		return
@@ -213,7 +213,7 @@ func (m *{{Mapper .Name}}) SearchAndCount(cond db.Cond) (t []*{{Mapper .Name}}, 
 	return
 }
 
-func (m *{{Mapper .Name}}) Rows(cond db.Cond) (rows *xorm.Rows, err error) {
+func (m *{{TableMapper .Name}}) Rows(cond db.Cond) (rows *xorm.Rows, err error) {
 	dao, err := m.GetDao()
 	if err != nil {
 		return
@@ -221,7 +221,7 @@ func (m *{{Mapper .Name}}) Rows(cond db.Cond) (rows *xorm.Rows, err error) {
 	return dao.Rows(m, cond)
 }
 
-func (m *{{Mapper .Name}}) Iterate(cond db.Cond, f xorm.IterFunc) (err error) {
+func (m *{{TableMapper .Name}}) Iterate(cond db.Cond, f xorm.IterFunc) (err error) {
 	dao, err := m.GetDao()
 	if err != nil {
 		return
@@ -229,7 +229,7 @@ func (m *{{Mapper .Name}}) Iterate(cond db.Cond, f xorm.IterFunc) (err error) {
 	return dao.Iterate(m, cond, f)
 }
 
-func (m *{{Mapper .Name}}) Count(cond db.Cond) (total int64, err error) {
+func (m *{{TableMapper .Name}}) Count(cond db.Cond) (total int64, err error) {
 	dao, err := m.GetDao()
 	if err != nil {
 		return
@@ -237,7 +237,7 @@ func (m *{{Mapper .Name}}) Count(cond db.Cond) (total int64, err error) {
 	return dao.Count(m, cond)
 }
 
-func (m *{{Mapper .Name}}) GetMulti(ids ...interface{}) (t []*{{Mapper .Name}}, err error) {
+func (m *{{TableMapper .Name}}) GetMulti(ids ...interface{}) (t []*{{TableMapper .Name}}, err error) {
 	dao, err := m.GetDao()
 	if err != nil {
 		return
@@ -246,11 +246,11 @@ func (m *{{Mapper .Name}}) GetMulti(ids ...interface{}) (t []*{{Mapper .Name}}, 
 	return
 }
 
-func (m *{{Mapper .Name}}) GetByIds(ids ...interface{}) (t []*{{Mapper .Name}}, err error) {
+func (m *{{TableMapper .Name}}) GetByIds(ids ...interface{}) (t []*{{TableMapper .Name}}, err error) {
 	return m.GetMulti(ids...)
 }
 
-func (m *{{Mapper .Name}}) GetById(id interface{}) (t *{{Mapper .Name}}, err error) {
+func (m *{{TableMapper .Name}}) GetById(id interface{}) (t *{{TableMapper .Name}}, err error) {
 	rs, err := m.GetMulti(id)
 	if err != nil {
         return
@@ -261,7 +261,7 @@ func (m *{{Mapper .Name}}) GetById(id interface{}) (t *{{Mapper .Name}}, err err
 	return
 }
 
-func (m *{{Mapper .Name}}) Replace(cond db.Cond) (i int64, err error) {
+func (m *{{TableMapper .Name}}) Replace(cond db.Cond) (i int64, err error) {
 	dao, err := m.GetDao()
 	if err != nil {
 		return
@@ -270,7 +270,7 @@ func (m *{{Mapper .Name}}) Replace(cond db.Cond) (i int64, err error) {
 	return dao.Replace(fmt.Sprintf("REPLACE `%s` SET ", m.TableName()), cond)
 }
 
-func (m *{{Mapper .Name}}) Exec(sqlState string, args ...interface{}) (rs sql.Result, err error) {
+func (m *{{TableMapper .Name}}) Exec(sqlState string, args ...interface{}) (rs sql.Result, err error) {
 	dao, err := m.GetDao()
 	if err != nil {
 		return
@@ -279,7 +279,7 @@ func (m *{{Mapper .Name}}) Exec(sqlState string, args ...interface{}) (rs sql.Re
 	return dao.Exec(sqlState, args...)
 }
 
-func (m *{{Mapper .Name}}) Query(args ...interface{}) (rs []map[string][]byte, err error) {
+func (m *{{TableMapper .Name}}) Query(args ...interface{}) (rs []map[string][]byte, err error) {
 	dao, err := m.GetDao()
 	if err != nil {
 		return
@@ -287,7 +287,7 @@ func (m *{{Mapper .Name}}) Query(args ...interface{}) (rs []map[string][]byte, e
 	return dao.Query(args...)
 }
 
-func (m *{{Mapper .Name}}) QueryString(args ...interface{}) (rs []map[string]string, err error) {
+func (m *{{TableMapper .Name}}) QueryString(args ...interface{}) (rs []map[string]string, err error) {
 	dao, err := m.GetDao()
 	if err != nil {
 		return
@@ -295,7 +295,7 @@ func (m *{{Mapper .Name}}) QueryString(args ...interface{}) (rs []map[string]str
 	return dao.QueryString(args...)
 }
 
-func (m *{{Mapper .Name}}) QueryInterface(args ...interface{}) (rs []map[string]interface{}, err error) {
+func (m *{{TableMapper .Name}}) QueryInterface(args ...interface{}) (rs []map[string]interface{}, err error) {
 	dao, err := m.GetDao()
 	if err != nil {
 		return
@@ -304,7 +304,7 @@ func (m *{{Mapper .Name}}) QueryInterface(args ...interface{}) (rs []map[string]
 }
 
 //ids可以是数字，也可以是数字切片         
-func (m *{{Mapper .Name}}) DeleteByIds(ids interface{}) (i int64, err error) { 
+func (m *{{TableMapper .Name}}) DeleteByIds(ids interface{}) (i int64, err error) { 
 	dao, err := m.GetDao()
 	if err != nil {
 		return
@@ -312,7 +312,7 @@ func (m *{{Mapper .Name}}) DeleteByIds(ids interface{}) (i int64, err error) {
 	return dao.DeleteByIds(m, ids)
 }
 
-func (m *{{Mapper .Name}}) Delete(where db.Cond) (i int64, err error) {
+func (m *{{TableMapper .Name}}) Delete(where db.Cond) (i int64, err error) {
 	dao, err := m.GetDao()
 	if err != nil {
 		return
@@ -326,17 +326,17 @@ func (m *{{Mapper .Name}}) Delete(where db.Cond) (i int64, err error) {
 //  configs.DbConfig    重新生成dao
 //  *db.XormDao         使用现有的dao
 //  空                  使用默认的数据库配置
-func New{{Mapper .Name}}IgnoreErr(c ...interface{}) (m *{{Mapper .Name}}) {
+func New{{TableMapper .Name}}IgnoreErr(c ...interface{}) (m *{{TableMapper .Name}}) {
     var err error
-    m, err = New{{Mapper .Name}}(c...)
+    m, err = New{{TableMapper .Name}}(c...)
     if err != nil {
         panic(err)
     }
     return
 }
 
-func New{{Mapper .Name}}(c ...interface{}) (m *{{Mapper .Name}}, err error) {
-	m = &{{Mapper .Name}}{}
+func New{{TableMapper .Name}}(c ...interface{}) (m *{{TableMapper .Name}}, err error) {
+	m = &{{TableMapper .Name}}{}
 	if len(c) == 0 {
 		c = append(c, hfw.Config.Db)
 	}
@@ -349,7 +349,7 @@ func New{{Mapper .Name}}(c ...interface{}) (m *{{Mapper .Name}}, err error) {
 	return
 }
 
-func (m *{{Mapper .Name}}) Close() {
+func (m *{{TableMapper .Name}}) Close() {
 	dao, err := m.GetDao()
 	if err != nil {
 		return
@@ -357,7 +357,7 @@ func (m *{{Mapper .Name}}) Close() {
     dao.Close()
 }
 
-func (m *{{Mapper .Name}}) Begin() (err error) {
+func (m *{{TableMapper .Name}}) Begin() (err error) {
 	dao, err := m.GetDao()
 	if err != nil {
 		return
@@ -365,7 +365,7 @@ func (m *{{Mapper .Name}}) Begin() (err error) {
     return dao.Begin()
 }
 
-func (m *{{Mapper .Name}}) Rollback() (err error) {
+func (m *{{TableMapper .Name}}) Rollback() (err error) {
 	dao, err := m.GetDao()
 	if err != nil {
 		return
@@ -373,7 +373,7 @@ func (m *{{Mapper .Name}}) Rollback() (err error) {
     return dao.Rollback()
 }
 
-func (m *{{Mapper .Name}}) Commit() (err error) {
+func (m *{{TableMapper .Name}}) Commit() (err error) {
 	dao, err := m.GetDao()
 	if err != nil {
 		return
