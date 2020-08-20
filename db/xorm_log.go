@@ -2,7 +2,7 @@ package db
 
 import (
 	"github.com/hsyan2008/go-logger"
-	"xorm.io/core"
+	"xorm.io/xorm/log"
 )
 
 type xormLog struct {
@@ -16,12 +16,12 @@ func newXormLog() *xormLog {
 	}
 }
 
-func (this *xormLog) Level() core.LogLevel {
-	return core.LogLevel(logger.Level())
+func (this *xormLog) Level() log.LogLevel {
+	return log.LogLevel(logger.Level())
 }
 
-func (this *xormLog) SetLevel(l core.LogLevel) {
-	logger.SetLevel(logger.LEVEL(l))
+func (this *xormLog) SetLevel(l log.LogLevel) {
+	// logger.SetLevel(logger.LEVEL(l))
 }
 
 func (this *xormLog) ShowSQL(show ...bool) {

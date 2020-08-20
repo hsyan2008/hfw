@@ -47,8 +47,9 @@ func InitDb(config configs.AllConfig, dbConfig configs.DbConfig) (engine xorm.En
 		}
 	}
 
-	engine.SetLogger(newXormLog())
-	engine.ShowSQL(true)
+	xormLog := newXormLog()
+	xormLog.ShowSQL(true)
+	engine.SetLogger(xormLog)
 
 	if isNew {
 		err = engine.Ping()
