@@ -8,13 +8,14 @@ import (
 	"time"
 
 	"github.com/go-xorm/cachestore"
-	"github.com/go-xorm/xorm"
 	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/configs"
 	"github.com/hsyan2008/hfw/db/cache"
 	"github.com/hsyan2008/hfw/encoding"
 	"github.com/hsyan2008/hfw/signal"
+	"xorm.io/xorm"
+	"xorm.io/xorm/caches"
 )
 
 var engineMap = new(sync.Map)
@@ -48,7 +49,6 @@ func InitDb(config configs.AllConfig, dbConfig configs.DbConfig) (engine xorm.En
 
 	engine.SetLogger(newXormLog())
 	engine.ShowSQL(true)
-	engine.ShowExecTime(true)
 
 	if isNew {
 		err = engine.Ping()
@@ -111,7 +111,7 @@ func getDbDsn(dbConfig configs.DbStdConfig) string {
 
 var cacherMap = new(sync.Map)
 
-func GetCacher(config configs.AllConfig, dbConfig configs.DbConfig) (cacher *xorm.LRUCacher, err error) {
+func GetCacher(config configs.AllConfig, dbConfig configs.DbConfig) (cacher *caches.LRUCacher, err error) {
 	if dbConfig.CacheMaxSize == 0 {
 		dbConfig.CacheMaxSize = 999999999
 	}
@@ -138,24 +138,24 @@ func GetCacher(config configs.AllConfig, dbConfig configs.DbConfig) (cacher *xor
 	}
 
 	if c, ok := cacherMap.Load(key); ok {
-		return c.(*xorm.LRUCacher), nil
+		return c.(*caches.LRUCacher), nil
 	}
 
 	//开启缓存
 	switch dbConfig.CacheType {
 	case "memory":
-		cacher = xorm.NewLRUCacher(xorm.NewMemoryStore(), dbConfig.CacheMaxSize)
+		cacher = caches.NewLRUCacher(caches.NewMemoryStore(), dbConfig.CacheMaxSize)
 	case "memcache":
 		if len(config.Cache.Servers) == 0 {
 			return nil, fmt.Errorf("nil memcache servers")
 		}
-		cacher = xorm.NewLRUCacher(cachestore.NewMemCache(config.Cache.Servers), dbConfig.CacheMaxSize)
+		cacher = caches.NewLRUCacher(cachestore.NewMemCache(config.Cache.Servers), dbConfig.CacheMaxSize)
 	case "redis":
 		cacheStore, err := cache.NewRedisCache(config.Redis)
 		if err != nil {
 			return nil, fmt.Errorf("NewRedisCache redisConfig: %v failed: %v", config.Redis, err)
 		}
-		cacher = xorm.NewLRUCacher(cacheStore, dbConfig.CacheMaxSize)
+		cacher = caches.NewLRUCacher(cacheStore, dbConfig.CacheMaxSize)
 	}
 	if cacher != nil {
 		cacherMap.Store(key, cacher)

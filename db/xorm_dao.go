@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/go-xorm/xorm"
 	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/configs"
+	"xorm.io/xorm"
+	"xorm.io/xorm/caches"
 )
 
 var _ Dao = &XormDao{}
@@ -39,7 +40,7 @@ func NewXormDao(config configs.AllConfig, dbConfig configs.DbConfig) (instance *
 type XormDao struct {
 	engine  xorm.EngineInterface
 	isCache bool
-	cacher  *xorm.LRUCacher
+	cacher  *caches.LRUCacher
 	sess    *xorm.Session
 }
 
@@ -54,7 +55,7 @@ func (d *XormDao) UpdateById(m, t Model) (affected int64, err error) {
 		defer sess.Close()
 	}
 
-	affected, err = sess.Table(m).Id(t.AutoIncrColValue()).AllCols().Update(t)
+	affected, err = sess.Table(m).ID(t.AutoIncrColValue()).AllCols().Update(t)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
 		logger.Error(err, lastSQL, lastSQLArgs)
