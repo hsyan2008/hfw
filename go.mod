@@ -19,7 +19,7 @@ require (
 	github.com/mediocregopher/radix.v2 v0.0.0-20181115013041-b67df6e626f9
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/shirou/gopsutil v2.20.7+incompatible
-	google.golang.org/grpc v1.31.0
+	google.golang.org/grpc v1.26.0
 	xorm.io/core v0.7.3
 	xorm.io/xorm v1.0.3
 )
