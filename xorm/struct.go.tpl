@@ -7,7 +7,7 @@ import (
     "database/sql"
 {{$ilen := len .Imports}}{{if gt $ilen 0}}{{range .Imports}}"{{.}}"{{end}}{{end}}
 
-    "github.com/go-xorm/xorm"
+    "xorm.io/xorm"
     "github.com/hsyan2008/hfw"
     "github.com/hsyan2008/hfw/configs"
     "github.com/hsyan2008/hfw/db"
