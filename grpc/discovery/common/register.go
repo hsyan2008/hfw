@@ -5,6 +5,7 @@ type RegisterInfo struct {
 	Port           int
 	ServerName     string
 	UpdateInterval int64
+	Tags           []string
 }
 
 type Register interface {

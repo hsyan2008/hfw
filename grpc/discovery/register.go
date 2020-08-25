@@ -33,6 +33,7 @@ func RegisterServer(cc configs.ServerConfig, address string) (r dc.Register, err
 		Port:           port,
 		ServerName:     cc.ServerName,
 		UpdateInterval: cc.UpdateInterval,
+		Tags:           cc.Tags,
 	})
 	return r, err
 }

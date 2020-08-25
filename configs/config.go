@@ -71,6 +71,7 @@ type ServerConfig struct {
 	UpdateInterval int64
 	//指定注册的网卡地址，或者在上方的Address里指定ip
 	Interface string
+	Tags      []string
 }
 
 //LoggerConfig ..

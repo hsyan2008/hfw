@@ -61,7 +61,7 @@ func (cr *ConsulRegister) Register(info common.RegisterInfo) (err error) {
 	reg := &consulapi.AgentServiceRegistration{
 		ID:      cr.serviceID,
 		Name:    info.ServerName,
-		Tags:    []string{info.ServerName},
+		Tags:    info.Tags,
 		Port:    info.Port,
 		Address: info.Host,
 	}
