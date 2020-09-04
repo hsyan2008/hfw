@@ -168,6 +168,9 @@ func (d *XormDao) buildCond(t Model, sess *xorm.Session, cond Cond, isOrder, isP
 		where    string
 		args     []interface{}
 	)
+	if isOrder && t.AutoIncrColName() != "" {
+		orderby = fmt.Sprintf("%s desc", t.AutoIncrColName())
+	}
 	sess = sess.Table(t)
 FOR:
 	for k, v := range cond {
@@ -181,6 +184,8 @@ FOR:
 			if isOrder {
 				if s, ok := v.(string); ok && len(s) > 0 {
 					orderby = s
+				} else {
+					orderby = ""
 				}
 			}
 			continue FOR
@@ -270,13 +275,8 @@ FOR:
 	}
 
 	sess.Where(where, args...)
-	if isOrder {
-		if orderby == "" && t.AutoIncrColName() != "" {
-			orderby = fmt.Sprintf("%s desc", t.AutoIncrColName())
-		}
-		if orderby != "" {
-			sess.OrderBy(orderby)
-		}
+	if orderby != "" {
+		sess.OrderBy(orderby)
 	}
 	if isPaging {
 		sess.Limit(pageSize, (page-1)*pageSize)
