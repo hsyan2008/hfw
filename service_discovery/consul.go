@@ -24,6 +24,7 @@ type ConsulResolver struct {
 	client      *consulapi.Client
 	serviceName string
 	addresses   []string
+	tag         string
 
 	httpCtx *hfw.HTTPContext
 
@@ -62,6 +63,7 @@ func NewConsulResolver(serviceName, address string, policy balancePolicy, tag st
 	cr := &ConsulResolver{
 		client:      client,
 		serviceName: serviceName,
+		tag:         tag,
 		wg:          new(sync.WaitGroup),
 		httpCtx:     httpCtx,
 		policy:      policy,
@@ -80,7 +82,7 @@ func NewConsulResolver(serviceName, address string, policy balancePolicy, tag st
 	return cr, nil
 }
 func (consulResolver *ConsulResolver) resolve() (err error) {
-	serviceEntries, metaInfo, err := consulResolver.client.Health().Service(consulResolver.serviceName, "", true, &consulapi.QueryOptions{
+	serviceEntries, metaInfo, err := consulResolver.client.Health().Service(consulResolver.serviceName, consulResolver.tag, true, &consulapi.QueryOptions{
 		WaitIndex: consulResolver.lastIndex,
 	})
 	if err != nil {
