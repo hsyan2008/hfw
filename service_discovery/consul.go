@@ -23,8 +23,10 @@ const (
 type ConsulResolver struct {
 	client      *consulapi.Client
 	serviceName string
-	addresses   []string
 	tag         string
+
+	addresses []string
+	tags      []string
 
 	httpCtx *hfw.HTTPContext
 
@@ -95,6 +97,7 @@ func (consulResolver *ConsulResolver) resolve() (err error) {
 	for _, serviceEntry := range serviceEntries {
 		address := fmt.Sprintf("%s:%d", serviceEntry.Service.Address, serviceEntry.Service.Port)
 		adds = append(adds, address)
+		consulResolver.tags = serviceEntry.Service.Tags
 	}
 
 	consulResolver.addresses = adds
@@ -154,4 +157,13 @@ func (consulResolver *ConsulResolver) GetAddress() (address string, err error) {
 		atomic.AddUint64(&consulResolver.lbIndex, 1)
 	}
 	return
+}
+
+func (consulResolver *ConsulResolver) HasTag(tag string) bool {
+	for _, v := range consulResolver.tags {
+		if v == tag {
+			return true
+		}
+	}
+	return false
 }
