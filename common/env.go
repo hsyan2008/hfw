@@ -66,7 +66,7 @@ func GetAppPath() string {
 func getAppPath() (appPath string) {
 	var err error
 	pwd, _ := filepath.Abs(os.Args[0])
-	if strings.Contains(pwd, "go-build") {
+	if strings.Contains(pwd, "go-build") || strings.Contains(pwd, "go_build") {
 		pwd = stripSuffix(pwd)
 		if strings.HasSuffix(pwd, ".test") {
 			isGoTest = true
