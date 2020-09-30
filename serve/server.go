@@ -18,6 +18,10 @@ var listener net.Listener
 var s *gracehttp.Server
 var lock = new(sync.Mutex)
 
+func GetListener() net.Listener {
+	return listener
+}
+
 func GetAddr(config configs.ServerConfig) (string, error) {
 
 	err := newServer(config)
