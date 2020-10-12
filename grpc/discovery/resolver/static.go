@@ -21,7 +21,7 @@ func NewStaticBuilder(scheme, serviceName string, addrs []string) *staticBuilder
 	}
 }
 
-func (builder *staticBuilder) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOption) (resolver.Resolver, error) {
+func (builder *staticBuilder) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
 	r := &staticResolver{
 		target: target,
 		cc:     cc,
@@ -50,8 +50,8 @@ func (r *staticResolver) start() {
 	}
 	r.cc.UpdateState(resolver.State{Addresses: addrs})
 }
-func (*staticResolver) ResolveNow(o resolver.ResolveNowOption) {}
-func (*staticResolver) Close()                                 {}
+func (*staticResolver) ResolveNow(o resolver.ResolveNowOptions) {}
+func (*staticResolver) Close()                                  {}
 
 func init() {
 	common.ResolverFuncMap[common.StaticResolver] = GenerateAndRegisterStaticResolver

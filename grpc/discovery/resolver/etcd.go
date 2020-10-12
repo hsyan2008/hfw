@@ -32,7 +32,7 @@ func NewEtcdBuilder(schema string, etcdAddrs []string) resolver.Builder {
 	return &etcdBuilder{rawAddr: etcdAddrs, schema: schema, ctx: signal.GetSignalContext().Ctx}
 }
 
-func (r *etcdBuilder) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOption) (resolver.Resolver, error) {
+func (r *etcdBuilder) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
 	var err error
 
 	if r.cli == nil {
@@ -56,7 +56,7 @@ func (r etcdBuilder) Scheme() string {
 	return r.schema
 }
 
-func (r etcdBuilder) ResolveNow(rn resolver.ResolveNowOption) {
+func (r etcdBuilder) ResolveNow(rn resolver.ResolveNowOptions) {
 	// log.Println("ResolveNow") // TODO check
 }
 

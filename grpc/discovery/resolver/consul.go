@@ -33,7 +33,7 @@ func NewConsulBuilder(scheme, address string) resolver.Builder {
 	return &consulBuilder{scheme: scheme, address: address, client: client}
 }
 
-func (cb *consulBuilder) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOption) (resolver.Resolver, error) {
+func (cb *consulBuilder) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
 	cb.serviceName = target.Endpoint
 
 	adds, serviceConfig, err := cb.resolve()
@@ -84,7 +84,7 @@ type consulResolver struct {
 	disableServiceConfig bool
 }
 
-func NewConsulResolver(cc *resolver.ClientConn, cb *consulBuilder, opts resolver.BuildOption) *consulResolver {
+func NewConsulResolver(cc *resolver.ClientConn, cb *consulBuilder, opts resolver.BuildOptions) *consulResolver {
 	ctx, cancel := context.WithCancel(signal.GetSignalContext().Ctx)
 	return &consulResolver{
 		clientConn:    cc,
@@ -119,7 +119,7 @@ func (cr *consulResolver) Scheme() string {
 	return cr.consulBuilder.Scheme()
 }
 
-func (cr *consulResolver) ResolveNow(rno resolver.ResolveNowOption) {
+func (cr *consulResolver) ResolveNow(rno resolver.ResolveNowOptions) {
 	select {
 	case cr.rn <- struct{}{}:
 	default:
