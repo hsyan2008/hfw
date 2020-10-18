@@ -10,15 +10,14 @@ var ErrDaoNotInited = errors.New("dao not inited")
 
 type Dao interface {
 	IsTableExist(interface{}) (bool, error)
-	UpdateById(Model, Model) (int64, error)
-	UpdateByIds(Model, Cond, []interface{}) (int64, error)
+	UpdateByIds(Model, interface{}, []interface{}, ...string) (int64, error)
 	UpdateByWhere(Model, Cond, Cond) (int64, error)
 	Insert(Model, Model) (int64, error)
 	InsertMulti(Model, interface{}) (int64, error)
 	SearchOne(Model, Cond) (bool, error)
 	Search(Model, interface{}, Cond) error
 	SearchAndCount(Model, interface{}, Cond) (int64, error)
-	GetMulti(Model, interface{}, ...interface{}) error
+	GetByIds(Model, interface{}, []interface{}, ...string) error
 	Count(Model, Cond) (int64, error)
 
 	DeleteByIds(Model, interface{}) (int64, error)

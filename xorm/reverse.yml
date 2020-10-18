@@ -1,0 +1,18 @@
+kind: reverse
+name: project_name
+source:
+  database: mysql
+  conn_str: user:passwd@tcp(ip:3306)/dbname?charset=utf8mb4
+targets:
+- type: codes
+  language: golang
+  include_tables: # tables included, you can use **
+    - include_table_name
+  exclude_tables: # tables excluded, you can use **
+    - exclude_table_name
+  table_mapper: snake # how table name map to class or struct name
+  column_mapper: snake # how column name map to class or struct field name
+  table_prefix: "" # table prefix
+  multiple_files: true # generate multiple files or one
+  template_path: ./struct.go.tpl
+  output_dir: ./models # code output directory

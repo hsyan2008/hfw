@@ -120,25 +120,15 @@ func (m *{{TableMapper .Name}}) IsTableExist(tableName string) (isExist bool, er
     return dao.IsTableExist(tableName)
 }
 
-func (m *{{TableMapper .Name}}) Save(t ...*{{TableMapper .Name}}) (affected int64, err error) {
+func (m *{{TableMapper .Name}}) Save(t *{{TableMapper .Name}}, cols ...string) (affected int64, err error) {
 	dao, err := m.GetDao()
 	if err != nil {
 		return
 	}
-    if len(t) > 1 {
-        return dao.InsertMulti(m, t)
+    if t.AutoIncrColValue() > 0 {
+        return dao.UpdateByIds(m, t, []interface{}{t.AutoIncrColValue()}, cols...)
     } else {
-        var i *{{TableMapper .Name}}
-        if len(t) == 0 {
-            i = m
-        } else if len(t) == 1 {
-            i = t[0]
-        }
-	    if i.AutoIncrColValue() > 0 {
-		    return dao.UpdateById(m, i)
-    	} else {
-            return dao.Insert(m, i)
-    	}
+        return dao.Insert(m, t)
     }
 }
 
@@ -175,6 +165,16 @@ func (m *{{TableMapper .Name}}) Update(params db.Cond,
 		return
 	}
 	return dao.UpdateByWhere(m, params, where)
+}
+
+//paramskey是Cond，也可以是Model
+func (m *{{TableMapper .Name}}) UpdateByIds(params interface{},
+	ids []interface{}, cols ...string) (affected int64, err error) {
+	dao, err := m.GetDao()
+	if err != nil {
+		return
+	}
+	return dao.UpdateByIds(m, params, ids, cols...)
 }
 
 func (m *{{TableMapper .Name}}) SearchOne(cond db.Cond) (t *{{TableMapper .Name}}, err error) {
@@ -237,21 +237,17 @@ func (m *{{TableMapper .Name}}) Count(cond db.Cond) (total int64, err error) {
 	return dao.Count(m, cond)
 }
 
-func (m *{{TableMapper .Name}}) GetMulti(ids ...interface{}) (t []*{{TableMapper .Name}}, err error) {
+func (m *{{TableMapper .Name}}) GetByIds(ids []interface{}, cols ...string) (t []*{{TableMapper .Name}}, err error) {
 	dao, err := m.GetDao()
 	if err != nil {
 		return
 	}
-	err = dao.GetMulti(m, &t, ids...)
+	err = dao.GetByIds(m, &t, ids, cols...)
 	return
 }
 
-func (m *{{TableMapper .Name}}) GetByIds(ids ...interface{}) (t []*{{TableMapper .Name}}, err error) {
-	return m.GetMulti(ids...)
-}
-
-func (m *{{TableMapper .Name}}) GetById(id interface{}) (t *{{TableMapper .Name}}, err error) {
-	rs, err := m.GetMulti(id)
+func (m *{{TableMapper .Name}}) GetById(id interface{}, cols ...string) (t *{{TableMapper .Name}}, err error) {
+	rs, err := m.GetByIds([]interface{}{id}, cols...)
 	if err != nil {
         return
     }

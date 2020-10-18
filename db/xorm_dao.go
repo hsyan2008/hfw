@@ -48,24 +48,9 @@ func (d *XormDao) IsTableExist(beanOrTableName interface{}) (bool, error) {
 	return d.engine.IsTableExist(beanOrTableName)
 }
 
-func (d *XormDao) UpdateById(m, t Model) (affected int64, err error) {
-	sess := d.sess
-	if sess == nil {
-		sess = d.engine.NewSession()
-		defer sess.Close()
-	}
-
-	affected, err = sess.Table(m).ID(t.AutoIncrColValue()).AllCols().Update(t)
-	if err != nil {
-		lastSQL, lastSQLArgs := sess.LastSQL()
-		logger.Error(err, lastSQL, lastSQLArgs)
-	}
-
-	return
-}
-
-func (d *XormDao) UpdateByIds(t Model, params Cond,
-	ids []interface{}) (affected int64, err error) {
+//paramskey是Cond，也可以是Model
+func (d *XormDao) UpdateByIds(t Model, params interface{},
+	ids []interface{}, cols ...string) (affected int64, err error) {
 
 	if len(ids) == 0 {
 		return 0, errors.New("ids parameters error")
@@ -76,7 +61,13 @@ func (d *XormDao) UpdateByIds(t Model, params Cond,
 		sess = d.engine.NewSession()
 		defer sess.Close()
 	}
-
+	if len(cols) > 0 {
+		sess = sess.Cols(cols...)
+	} else {
+		if _, ok := params.(Model); ok {
+			sess = sess.AllCols()
+		}
+	}
 	affected, err = sess.Table(t).In(t.AutoIncrColName(), ids).Update(params)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
@@ -159,6 +150,7 @@ func (d *XormDao) SearchOne(t Model, cond Cond) (has bool, err error) {
 	return
 }
 
+//TODO
 func (d *XormDao) buildCond(t Model, sess *xorm.Session, cond Cond, isOrder, isPaging bool) (session *xorm.Session, err error) {
 	var (
 		str      []string
@@ -232,6 +224,24 @@ FOR:
 			continue FOR
 		case "forupdate":
 			sess.ForUpdate()
+			continue FOR
+		case "cols":
+			if s, ok := v.([]string); ok {
+				sess.Cols(s...)
+			}
+			continue FOR
+		case "mustcols":
+			if s, ok := v.([]string); ok {
+				sess.MustCols(s...)
+			}
+			continue FOR
+		case "omit":
+			if s, ok := v.([]string); ok {
+				sess.Omit(s...)
+			}
+			continue FOR
+		case "allcols":
+			sess.AllCols()
 			continue FOR
 		}
 
@@ -365,14 +375,17 @@ func (d *XormDao) Iterate(t Model, cond Cond, f xorm.IterFunc) (err error) {
 	return
 }
 
-func (d *XormDao) GetMulti(t Model, ts interface{}, ids ...interface{}) (err error) {
+func (d *XormDao) GetByIds(t Model, ts interface{}, ids []interface{}, cols ...string) (err error) {
 	sess := d.sess
 	if sess == nil {
 		sess = d.engine.NewSession()
 		defer sess.Close()
 	}
+	if len(cols) > 0 {
+		sess = sess.Cols(cols...)
+	}
 
-	err = sess.Table(t).In(t.AutoIncrColName(), ids...).Find(ts)
+	err = sess.Table(t).In(t.AutoIncrColName(), ids).Find(ts)
 	if err != nil {
 		lastSQL, lastSQLArgs := sess.LastSQL()
 		logger.Error(err, lastSQL, lastSQLArgs)
