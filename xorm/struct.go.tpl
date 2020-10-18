@@ -167,7 +167,7 @@ func (m *{{TableMapper .Name}}) Update(params db.Cond,
 	return dao.UpdateByWhere(m, params, where)
 }
 
-//paramskey是Cond，也可以是Model
+//params可以是Cond，也可以是Model，是Model的时候cols才有效
 func (m *{{TableMapper .Name}}) UpdateByIds(params interface{},
 	ids []interface{}, cols ...string) (affected int64, err error) {
 	dao, err := m.GetDao()
