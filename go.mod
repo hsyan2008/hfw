@@ -20,6 +20,6 @@ require (
 	github.com/mkevac/debugcharts v0.0.0-20191222103121-ae1c48aa8615 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/shirou/gopsutil v2.20.9+incompatible
-	google.golang.org/grpc v1.33.0
+	google.golang.org/grpc v1.32.0
 	xorm.io/xorm v1.0.5
 )
