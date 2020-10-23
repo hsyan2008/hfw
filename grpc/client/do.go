@@ -52,7 +52,9 @@ FOR:
 			return nil, common.NewRespErr(500, ctx.Err())
 		default:
 			if c.IsAuth {
-				conn, err = GetConnWithAuth(signal.GetSignalContext().Ctx, c, "")
+				conn, err = GetConnWithAuth(signal.GetSignalContext().Ctx, c, "",
+					grpc.WithUnaryInterceptor(UnaryClientInterceptor),
+					grpc.WithStreamInterceptor(StreamClientInterceptor))
 			} else {
 				conn, err = GetConnWithDefaultInterceptor(signal.GetSignalContext().Ctx, c)
 			}

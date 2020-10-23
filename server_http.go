@@ -1,6 +1,6 @@
 //kill -INT pid 终止
 //kill -TERM pid 重启
-package serve
+package hfw
 
 import (
 	"net"
@@ -18,13 +18,13 @@ var listener net.Listener
 var s *gracehttp.Server
 var lock = new(sync.Mutex)
 
-func GetListener() net.Listener {
+func GetHTTPListener() net.Listener {
 	return listener
 }
 
-func GetAddr(config configs.ServerConfig) (string, error) {
+func GetHTTPAddr(config configs.ServerConfig) (string, error) {
 
-	err := newServer(config)
+	err := newHTTPServer(config)
 	if err != nil {
 		return "", err
 	}
@@ -32,7 +32,7 @@ func GetAddr(config configs.ServerConfig) (string, error) {
 	return listener.Addr().String(), nil
 }
 
-func newServer(config configs.ServerConfig) (err error) {
+func newHTTPServer(config configs.ServerConfig) (err error) {
 	if s == nil || listener == nil {
 		lock.Lock()
 		defer lock.Unlock()
@@ -56,9 +56,9 @@ func newServer(config configs.ServerConfig) (err error) {
 	return
 }
 
-func Start(config configs.ServerConfig) (err error) {
+func StartHTTP(config configs.ServerConfig) (err error) {
 
-	err = newServer(config)
+	err = newHTTPServer(config)
 	if err != nil {
 		return
 	}

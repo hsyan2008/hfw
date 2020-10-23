@@ -7,7 +7,6 @@ import (
 	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/deploy"
-	"github.com/hsyan2008/hfw/serve"
 	"github.com/hsyan2008/hfw/signal"
 )
 
@@ -46,7 +45,7 @@ func Run() (err error) {
 	//启动http
 	signalContext.IsHTTP = true
 
-	err = serve.Start(Config.Server)
+	err = StartHTTP(Config.Server)
 
 	//如果未启动服务，就触发退出
 	if err != nil && err != http.ErrServerClosed {

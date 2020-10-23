@@ -14,7 +14,6 @@ import (
 	"github.com/hsyan2008/hfw/grpc/auth"
 	"github.com/hsyan2008/hfw/grpc/discovery"
 	dc "github.com/hsyan2008/hfw/grpc/discovery/common"
-	"github.com/hsyan2008/hfw/grpc/interceptor"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
 	"google.golang.org/grpc/codes"
@@ -31,11 +30,12 @@ var connInstanceMap = make(map[string]*connInstance)
 var lock = new(sync.Mutex)
 
 func GetConn(ctx context.Context, c configs.GrpcConfig, opt ...grpc.DialOption) (conn *grpc.ClientConn, err error) {
-	return GetConnWithAuth(ctx, c, "", opt...)
+	return GetConnWithDefaultInterceptor(ctx, c, opt...)
 }
 
 func GetConnWithDefaultInterceptor(ctx context.Context, c configs.GrpcConfig, opt ...grpc.DialOption) (conn *grpc.ClientConn, err error) {
-	opt = append(opt, grpc.WithUnaryInterceptor(interceptor.UnaryClientInterceptor), grpc.WithStreamInterceptor(interceptor.StreamClientInterceptor))
+	opt = append(opt, grpc.WithUnaryInterceptor(UnaryClientInterceptor),
+		grpc.WithStreamInterceptor(StreamClientInterceptor))
 	return GetConnWithAuth(ctx, c, "", opt...)
 }
 

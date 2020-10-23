@@ -30,7 +30,7 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	httpCtx := new(HTTPContext)
 	//初始化httpCtx
 	httpCtx.init(w, r)
-	httpCtx.Ctx, httpCtx.Cancel = context.WithCancel(signal.GetSignalContext().Ctx)
+	httpCtx.Ctx, httpCtx.cancel = context.WithCancel(signal.GetSignalContext().Ctx)
 	defer httpCtx.Cancel()
 
 	//如果用户关闭连接

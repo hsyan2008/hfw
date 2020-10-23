@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/common"
-	"github.com/hsyan2008/hfw/grpc/interceptor"
 	"github.com/hsyan2008/hfw/session"
 	"github.com/hsyan2008/hfw/signal"
 )
@@ -22,7 +22,7 @@ import (
 //Layout的功能未实现 TODO
 type HTTPContext struct {
 	Ctx    context.Context    `json:"-"`
-	Cancel context.CancelFunc `json:"-"`
+	cancel context.CancelFunc `json:"-"`
 
 	HTTPStatus int `json:"-"`
 
@@ -64,7 +64,7 @@ type HTTPContext struct {
 
 func NewHTTPContext() *HTTPContext {
 	httpCtx := &HTTPContext{}
-	httpCtx.Ctx, httpCtx.Cancel = context.WithCancel(signal.GetSignalContext().Ctx)
+	httpCtx.Ctx, httpCtx.cancel = context.WithCancel(signal.GetSignalContext().Ctx)
 	httpCtx.Logger = logger.NewLogger()
 	httpCtx.Logger.SetTraceID(uuid.New().String())
 
@@ -73,24 +73,56 @@ func NewHTTPContext() *HTTPContext {
 
 func NewHTTPContextWithCtx(ctx *HTTPContext) *HTTPContext {
 	httpCtx := &HTTPContext{}
-	httpCtx.Ctx, httpCtx.Cancel = context.WithCancel(ctx.Ctx)
+	httpCtx.Ctx, httpCtx.cancel = context.WithCancel(ctx.Ctx)
 	httpCtx.Logger = logger.NewLogger()
 	httpCtx.Logger.SetTraceID(fmt.Sprintf("%s_%s", ctx.GetTraceID(), uuid.New().String()))
 
 	return httpCtx
 }
 
-func NewHTTPContextWithGrpcCtx(ctx context.Context) *HTTPContext {
-	httpCtx := &HTTPContext{}
-	httpCtx.Ctx, httpCtx.Cancel = context.WithCancel(ctx)
-	httpCtx.Logger = logger.NewLogger()
-	traceID := interceptor.GetTraceIDFromIncomingContext(ctx)
-	if traceID == "" {
-		traceID = uuid.New().String()
+func NewHTTPContextWithGrpcIncomingCtx(ctx context.Context) *HTTPContext {
+	if h, ok := ctx.(*HTTPContext); ok {
+		return h
 	}
+	httpCtx := &HTTPContext{}
+	httpCtx.Ctx, httpCtx.cancel = context.WithCancel(ctx)
+	httpCtx.Logger = logger.NewLogger()
+	traceID := common.GetTraceIDFromIncomingContext(ctx)
 	httpCtx.Logger.SetTraceID(traceID)
 
 	return httpCtx
+}
+
+func NewHTTPContextWithGrpcOutgoingCtx(ctx context.Context) *HTTPContext {
+	if h, ok := ctx.(*HTTPContext); ok {
+		return h
+	}
+	httpCtx := &HTTPContext{}
+	httpCtx.Ctx, httpCtx.cancel = context.WithCancel(ctx)
+	httpCtx.Logger = logger.NewLogger()
+	traceID := common.GetTraceIDFromOutgoingContext(ctx)
+	httpCtx.Logger.SetTraceID(traceID)
+
+	return httpCtx
+}
+
+//因为历史原因，不能去掉Ctx，故手动实现context.Context
+func (httpCtx *HTTPContext) Deadline() (deadline time.Time, ok bool) {
+	return httpCtx.Ctx.Deadline()
+}
+func (httpCtx *HTTPContext) Done() <-chan struct{} {
+	return httpCtx.Ctx.Done()
+}
+func (httpCtx *HTTPContext) Err() error {
+	return httpCtx.Ctx.Err()
+}
+func (httpCtx *HTTPContext) Value(key interface{}) interface{} {
+	return httpCtx.Ctx.Value(key)
+}
+func (httpCtx *HTTPContext) Cancel() {
+	httpCtx.cancel()
+	//不能赋值nil，否则导致打印log报错
+	// httpCtx.Logger = nil
 }
 
 func (httpCtx *HTTPContext) init(w http.ResponseWriter, r *http.Request) {
