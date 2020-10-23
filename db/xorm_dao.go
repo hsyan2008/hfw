@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	logger "github.com/hsyan2008/go-logger"
@@ -193,12 +194,33 @@ FOR:
 			continue FOR
 		case "page":
 			if isPaging {
-				page = common.Max(common.ConvertToInt(v), page)
+				var pp int
+				switch vv := v.(type) {
+				case float64:
+					pp = int(vv)
+				case float32:
+					pp = int(vv)
+				case string:
+					pp, _ = strconv.Atoi(vv)
+				default:
+					pp = common.ConvertToInt(v)
+				}
+				page = common.Max(pp, page)
 			}
 			continue FOR
 		case "pagesize":
 			if isPaging {
-				ps := common.ConvertToInt(v)
+				var ps int
+				switch vv := v.(type) {
+				case float64:
+					ps = int(vv)
+				case float32:
+					ps = int(vv)
+				case string:
+					ps, _ = strconv.Atoi(vv)
+				default:
+					ps = common.ConvertToInt(v)
+				}
 				if ps > 0 {
 					pageSize = ps
 				}
