@@ -7,8 +7,7 @@ import (
 	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw"
 	"github.com/hsyan2008/hfw/common"
-	"github.com/hsyan2008/hfw/serve"
-	"github.com/zserge/webview"
+	"github.com/webview/webview"
 )
 
 //在本机启动内部服务
@@ -18,16 +17,18 @@ func Run(uri, title string, width, height int, resize bool) {
 		logger.SetConsole(false)
 	}
 
-	addr, err := serve.GetAddr(hfw.Config.Server)
+	addr, err := hfw.GetHTTPAddr(hfw.Config.Server)
 	if err != nil {
 		panic(err)
 	}
 
 	logger.Info("Listen:", addr)
 
-	err = webview.Open(common.ToOsCode(title),
-		"http://"+addr+uri, width, height, resize)
-	if err != nil {
-		panic(err)
-	}
+	w := webview.New(logger.Level() == logger.DEBUG)
+	defer w.Destroy()
+
+	w.SetTitle(common.ToOsCode(title))
+	w.SetSize(width, height, webview.HintNone)
+	w.Navigate("http://" + addr + uri)
+	w.Run()
 }
