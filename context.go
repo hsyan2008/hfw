@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/session"
@@ -147,7 +146,7 @@ func (httpCtx *HTTPContext) init(w http.ResponseWriter, r *http.Request) {
 		httpCtx.Logger.SetTraceID(r.URL.Query().Get("trace_id"))
 	}
 	if httpCtx.Logger.GetTraceID() == "" {
-		httpCtx.Logger.SetTraceID(uuid.New().String())
+		httpCtx.Logger.SetTraceID(common.GetPureUUID())
 	}
 }
 

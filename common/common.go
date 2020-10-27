@@ -81,11 +81,7 @@ func ToOsCode(text string) string {
 }
 
 func Uuid() string {
-	if id, err := uuid.NewRandom(); err == nil {
-		return id.String()
-	}
-
-	return ""
+	return GetPureUUID()
 }
 
 //获取客户端ip
