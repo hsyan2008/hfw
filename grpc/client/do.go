@@ -29,13 +29,6 @@ func Do(httpCtx *hfw.HTTPContext, c configs.GrpcConfig,
 		return nil, common.NewRespErr(500, "nil httpCtx")
 	}
 
-	ctx, cancel := context.WithTimeout(httpCtx.Ctx, timeout)
-	defer cancel()
-
-	ctx = metadata.NewOutgoingContext(ctx, metadata.MD{
-		"trace_id": []string{httpCtx.GetTraceID()},
-	})
-
 	var conn *grpc.ClientConn
 	var retryNum int
 	if len(c.Addresses) > 0 {
@@ -45,12 +38,18 @@ func Do(httpCtx *hfw.HTTPContext, c configs.GrpcConfig,
 		retryNum = retry
 	}
 
+	ctx, cancel := context.WithTimeout(httpCtx.Ctx, timeout)
+	defer cancel()
+
 FOR:
 	for i := 0; i < retryNum; i++ {
 		select {
 		case <-ctx.Done():
 			return nil, common.NewRespErr(500, ctx.Err())
 		default:
+			newCtx := metadata.NewOutgoingContext(ctx, metadata.MD{
+				common.GrpcTraceIDKey: []string{common.GetPureUUID(httpCtx.GetTraceID())},
+			})
 			if c.IsAuth {
 				conn, err = GetConnWithAuth(signal.GetSignalContext().Ctx, c, "",
 					grpc.WithUnaryInterceptor(UnaryClientInterceptor),
@@ -66,7 +65,7 @@ FOR:
 					httpCtx.Infof("Call Grpc ServerName: %s CostTime: %s",
 						c.ServerName, time.Since(t))
 				}(time.Now())
-				resp, err = call(ctx, conn)
+				resp, err = call(newCtx, conn)
 			}()
 			if err == nil {
 				return

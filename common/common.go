@@ -161,3 +161,13 @@ func GetStack() []byte {
 
 	return buf[:num]
 }
+
+func GetPureUUID(oldS ...string) (s string) {
+
+	s = uuid.New().String()
+	if len(oldS) > 0 && oldS[0] != "" {
+		s = fmt.Sprintf("%s_%s", oldS[0], s)
+	}
+
+	return strings.ReplaceAll(s, "-", "")
+}

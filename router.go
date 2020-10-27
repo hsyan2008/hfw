@@ -59,7 +59,7 @@ func Router(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		//防止出现并没有Trace_id的情况
-		r.Header.Set("Trace_id", httpCtx.GetTraceID())
+		r.Header.Set(common.GrpcHTTPTraceIDKey, httpCtx.GetTraceID())
 		server.GetServer().ServeHTTP(w, r) // gRPC Server
 		return
 	}
