@@ -151,7 +151,6 @@ func (d *XormDao) SearchOne(t Model, cond Cond) (has bool, err error) {
 	return
 }
 
-//TODO
 func (d *XormDao) buildCond(t Model, sess *xorm.Session, cond Cond, isOrder, isPaging bool) (session *xorm.Session, err error) {
 	var (
 		str      []string
