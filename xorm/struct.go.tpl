@@ -204,11 +204,32 @@ func (m *{{TableMapper .Name}}) Search(cond db.Cond) (t []*{{TableMapper .Name}}
 	return
 }
 
+func (m *{{TableMapper .Name}}) SearchMap(cond db.Cond) (t map[int64]*{{TableMapper .Name}}, err error) {
+	dao, err := m.GetDao()
+	if err != nil {
+		return
+	}
+    t = make(map[int64]*{{TableMapper .Name}})
+	err = dao.Search(m, &t, cond)
+	return
+}
+
+
 func (m *{{TableMapper .Name}}) SearchAndCount(cond db.Cond) (t []*{{TableMapper .Name}}, total int64, err error) {
 	dao, err := m.GetDao()
 	if err != nil {
 		return
 	}
+	total, err = dao.SearchAndCount(m, &t, cond)
+	return
+}
+
+func (m *{{TableMapper .Name}}) SearchMapAndCount(cond db.Cond) (t map[int64]*{{TableMapper .Name}}, total int64, err error) {
+	dao, err := m.GetDao()
+	if err != nil {
+		return
+	}
+    t = make(map[int64]*{{TableMapper .Name}})
 	total, err = dao.SearchAndCount(m, &t, cond)
 	return
 }
@@ -242,6 +263,16 @@ func (m *{{TableMapper .Name}}) GetByIds(ids []interface{}, cols ...string) (t [
 	if err != nil {
 		return
 	}
+	err = dao.GetByIds(m, &t, ids, cols...)
+	return
+}
+
+func (m *{{TableMapper .Name}}) GetMapByIds(ids []interface{}, cols ...string) (t map[int64]*{{TableMapper .Name}}, err error) {
+	dao, err := m.GetDao()
+	if err != nil {
+		return
+	}
+    t = make(map[int64]*{{TableMapper .Name}})
 	err = dao.GetByIds(m, &t, ids, cols...)
 	return
 }
