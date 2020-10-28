@@ -14,6 +14,11 @@ func UnaryClientInterceptor(ctx context.Context, method string, req, reply inter
 	httpCtx := hfw.NewHTTPContextWithGrpcOutgoingCtx(ctx)
 	httpCtx.AppendPrefix("Method:" + method)
 
+	httpCtx.Debug("req:", req)
+	defer func() {
+		httpCtx.Debug("error:", err, "reply:", reply)
+	}()
+
 	defer func() {
 		if e := recover(); e != nil {
 			httpCtx.Fatal(e, string(common.GetStack()))

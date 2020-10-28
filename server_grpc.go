@@ -22,6 +22,11 @@ func UnaryServerInterceptor(
 	httpCtx := NewHTTPContextWithGrpcIncomingCtx(ctx)
 	httpCtx.AppendPrefix("Method:" + info.FullMethod)
 
+	httpCtx.Debug("req:", req)
+	defer func() {
+		httpCtx.Debug("error:", err, "resp:", resp)
+	}()
+
 	defer func() {
 		if e := recover(); e != nil {
 			httpCtx.Fatal(e, string(common.GetStack()))
