@@ -589,7 +589,9 @@ func (d *XormDao) ClearCache(t Model) {
 //然后Begin，如果不Commit，会自动在Close里Rollback掉
 //Notice: 注意并发不安全，请勿在全局上使用
 func (d *XormDao) NewSession() {
-	d.sess = d.engine.NewSession()
+	if d.sess == nil {
+		d.sess = d.engine.NewSession()
+	}
 }
 
 func (d *XormDao) Close() {
