@@ -65,7 +65,7 @@ func NewHTTPContext() *HTTPContext {
 	httpCtx := &HTTPContext{}
 	httpCtx.Ctx, httpCtx.cancel = context.WithCancel(signal.GetSignalContext().Ctx)
 	httpCtx.Logger = logger.NewLogger()
-	httpCtx.Logger.SetTraceID(common.GetPureUUID())
+	httpCtx.SetTraceID(common.GetPureUUID())
 
 	return httpCtx
 }
@@ -74,7 +74,8 @@ func NewHTTPContextWithCtx(ctx *HTTPContext) *HTTPContext {
 	httpCtx := &HTTPContext{}
 	httpCtx.Ctx, httpCtx.cancel = context.WithCancel(ctx.Ctx)
 	httpCtx.Logger = logger.NewLogger()
-	httpCtx.Logger.SetTraceID(common.GetPureUUID(ctx.GetTraceID()))
+	httpCtx.SetTraceID(common.GetPureUUID(ctx.GetTraceID()))
+	httpCtx.AppendPrefix(httpCtx.GetPrefix())
 
 	return httpCtx
 }
@@ -87,7 +88,7 @@ func NewHTTPContextWithGrpcIncomingCtx(ctx context.Context) *HTTPContext {
 	httpCtx.Ctx, httpCtx.cancel = context.WithCancel(ctx)
 	httpCtx.Logger = logger.NewLogger()
 	traceID := common.GetTraceIDFromIncomingContext(ctx)
-	httpCtx.Logger.SetTraceID(traceID)
+	httpCtx.SetTraceID(traceID)
 
 	return httpCtx
 }
@@ -100,7 +101,7 @@ func NewHTTPContextWithGrpcOutgoingCtx(ctx context.Context) *HTTPContext {
 	httpCtx.Ctx, httpCtx.cancel = context.WithCancel(ctx)
 	httpCtx.Logger = logger.NewLogger()
 	traceID := common.GetTraceIDFromOutgoingContext(ctx)
-	httpCtx.Logger.SetTraceID(traceID)
+	httpCtx.SetTraceID(traceID)
 
 	return httpCtx
 }

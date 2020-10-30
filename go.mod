@@ -13,7 +13,7 @@ require (
 	github.com/google/uuid v1.1.2
 	github.com/gorilla/websocket v1.4.2
 	github.com/hashicorp/consul/api v1.7.0
-	github.com/hsyan2008/go-logger v0.0.0-20191219103606-5634a077f1a0
+	github.com/hsyan2008/go-logger v0.0.0-20201030135914-f6dbda938bed
 	github.com/hsyan2008/gracehttp v0.0.0-20191130080041-8a1dc4ac8e6c
 	github.com/json-iterator/go v1.1.10
 	github.com/mediocregopher/radix.v2 v0.0.0-20181115013041-b67df6e626f9
