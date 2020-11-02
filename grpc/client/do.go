@@ -47,9 +47,9 @@ FOR:
 		case <-ctx.Done():
 			return nil, common.NewRespErr(500, ctx.Err())
 		default:
-			newCtx := metadata.NewOutgoingContext(ctx, metadata.MD{
-				common.GrpcTraceIDKey: []string{common.GetPureUUID(httpCtx.GetTraceID())},
-			})
+			newCtx := metadata.NewOutgoingContext(ctx, metadata.Pairs(
+				common.GrpcTraceIDKey, common.GetPureUUID(httpCtx.GetTraceID()),
+			))
 			if c.IsAuth {
 				conn, err = GetConnWithAuth(signal.GetSignalContext().Ctx, c, "",
 					grpc.WithUnaryInterceptor(UnaryClientInterceptor),

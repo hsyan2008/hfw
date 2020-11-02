@@ -137,17 +137,17 @@ func (httpCtx *HTTPContext) init(w http.ResponseWriter, r *http.Request) {
 
 	httpCtx.Logger = logger.NewLogger()
 	//grpc
-	httpCtx.SetTraceID(r.Header.Get("Trace_id"))
+	httpCtx.SetTraceID(r.Header.Get(common.GrpcHTTPTraceIDKey))
 	//header
-	if httpCtx.Logger.GetTraceID() == "" {
-		httpCtx.Logger.SetTraceID(r.Header.Get("Trace-Id"))
+	if httpCtx.GetTraceID() == "" {
+		httpCtx.SetTraceID(r.Header.Get("Trace-Id"))
 	}
 	//path
-	if httpCtx.Logger.GetTraceID() == "" {
-		httpCtx.Logger.SetTraceID(r.URL.Query().Get("trace_id"))
+	if httpCtx.GetTraceID() == "" {
+		httpCtx.SetTraceID(r.URL.Query().Get("trace_id"))
 	}
-	if httpCtx.Logger.GetTraceID() == "" {
-		httpCtx.Logger.SetTraceID(common.GetPureUUID())
+	if httpCtx.GetTraceID() == "" {
+		httpCtx.SetTraceID(common.GetPureUUID())
 	}
 }
 
