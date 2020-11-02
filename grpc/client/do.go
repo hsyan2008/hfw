@@ -30,7 +30,7 @@ func Do(httpCtx *hfw.HTTPContext, c configs.GrpcConfig,
 	}
 
 	defer func(t time.Time) {
-		httpCtx.Infof("Call Grpc ServerName:%s CostTime:%s",
+		httpCtx.Infof("Call Grpc:%s CostTime:%s",
 			c.ServerName, time.Since(t))
 	}(time.Now())
 
@@ -66,7 +66,7 @@ FOR:
 			err = func(httpCtx2 *hfw.HTTPContext) (err error) {
 				httpCtx := hfw.NewHTTPContextWithCtx(httpCtx2)
 				defer func(t time.Time) {
-					httpCtx.Infof("Call Grpc ServerName:%s try_time:%d CostTime:%s",
+					httpCtx.Infof("Call Grpc:%s TryTime:%d CostTime:%s",
 						c.ServerName, i, time.Since(t))
 					httpCtx.Cancel()
 				}(time.Now())
@@ -77,7 +77,7 @@ FOR:
 				if err == nil {
 					return
 				}
-				httpCtx.Warnf("Call Grpc ServerName:%s try_time:%d err:%v", c.ServerName, i, err)
+				httpCtx.Warnf("Call Grpc:%s TryTime:%d Err:%v", c.ServerName, i, err)
 				// removeClientConn(c, err)
 				if err == context.Canceled || err == context.DeadlineExceeded {
 					return
