@@ -29,13 +29,29 @@ func Do(httpCtx *hfw.HTTPContext, c configs.GrpcConfig,
 		return nil, common.NewRespErr(500, "nil httpCtx")
 	}
 
-	var conn *grpc.ClientConn
+	defer func(t time.Time) {
+		httpCtx.Infof("Call Grpc ServerName:%s CostTime:%s",
+			c.ServerName, time.Since(t))
+	}(time.Now())
+
 	var retryNum int
 	if len(c.Addresses) > 0 {
 		retryNum = common.Min(retry, len(c.Addresses)+1)
 	} else {
 		//服务发现下，len是0
 		retryNum = retry
+	}
+
+	var conn *grpc.ClientConn
+	if c.IsAuth {
+		conn, err = GetConnWithAuth(signal.GetSignalContext().Ctx, c, "",
+			grpc.WithUnaryInterceptor(UnaryClientInterceptor),
+			grpc.WithStreamInterceptor(StreamClientInterceptor))
+	} else {
+		conn, err = GetConnWithDefaultInterceptor(signal.GetSignalContext().Ctx, c)
+	}
+	if err != nil {
+		return
 	}
 
 	ctx, cancel := context.WithTimeout(httpCtx.Ctx, timeout)
@@ -47,36 +63,32 @@ FOR:
 		case <-ctx.Done():
 			return nil, common.NewRespErr(500, ctx.Err())
 		default:
-			newCtx := metadata.NewOutgoingContext(ctx, metadata.Pairs(
-				common.GrpcTraceIDKey, common.GetPureUUID(httpCtx.GetTraceID()),
-			))
-			if c.IsAuth {
-				conn, err = GetConnWithAuth(signal.GetSignalContext().Ctx, c, "",
-					grpc.WithUnaryInterceptor(UnaryClientInterceptor),
-					grpc.WithStreamInterceptor(StreamClientInterceptor))
-			} else {
-				conn, err = GetConnWithDefaultInterceptor(signal.GetSignalContext().Ctx, c)
-			}
-			if err != nil {
-				continue FOR
-			}
-			func() {
+			err = func(httpCtx2 *hfw.HTTPContext) (err error) {
+				httpCtx := hfw.NewHTTPContextWithCtx(httpCtx2)
 				defer func(t time.Time) {
-					httpCtx.Infof("Call Grpc ServerName: %s CostTime: %s",
-						c.ServerName, time.Since(t))
+					httpCtx.Infof("Call Grpc ServerName:%s try_time:%d CostTime:%s",
+						c.ServerName, i, time.Since(t))
+					httpCtx.Cancel()
 				}(time.Now())
+				newCtx := metadata.NewOutgoingContext(ctx, metadata.Pairs(
+					common.GrpcTraceIDKey, httpCtx.GetTraceID(),
+				))
 				resp, err = call(newCtx, conn)
-			}()
+				if err == nil {
+					return
+				}
+				httpCtx.Warnf("Call Grpc ServerName:%s try_time:%d err:%v", c.ServerName, i, err)
+				// removeClientConn(c, err)
+				if err == context.Canceled || err == context.DeadlineExceeded {
+					return
+				}
+				if _, ok := err.(*common.RespErr); ok {
+					return
+				}
+				return
+			}(httpCtx)
 			if err == nil {
-				return
-			}
-			httpCtx.Warnf("Call Grpc ServerName: %s %v", c.ServerName, err)
-			// removeClientConn(c, err)
-			if err == context.Canceled || err == context.DeadlineExceeded {
-				return
-			}
-			if _, ok := err.(*common.RespErr); ok {
-				return
+				break FOR
 			}
 		}
 	}

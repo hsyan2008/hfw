@@ -12,11 +12,16 @@ func UnaryClientInterceptor(ctx context.Context, method string, req, reply inter
 	cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) (err error) {
 
 	httpCtx := hfw.NewHTTPContextWithGrpcOutgoingCtx(ctx)
+	defer httpCtx.Cancel()
 	httpCtx.AppendPrefix("Method:" + method)
 
-	httpCtx.Debug("req:", req)
+	httpCtx.Debug("Req:", req)
 	defer func() {
-		httpCtx.Debug("error:", err, "reply:", reply)
+		if err == nil {
+			httpCtx.Debug("Res:", reply)
+		} else {
+			httpCtx.Warn("Req:", req, "Err:", err)
+		}
 	}()
 
 	defer func() {
@@ -32,6 +37,7 @@ func StreamClientInterceptor(ctx context.Context, desc *grpc.StreamDesc, cc *grp
 	streamer grpc.Streamer, opts ...grpc.CallOption) (cs grpc.ClientStream, err error) {
 
 	httpCtx := hfw.NewHTTPContextWithGrpcOutgoingCtx(ctx)
+	defer httpCtx.Cancel()
 	httpCtx.AppendPrefix("Method:" + method)
 
 	defer func() {

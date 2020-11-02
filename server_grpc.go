@@ -20,11 +20,16 @@ func UnaryServerInterceptor(
 ) (resp interface{}, err error) {
 
 	httpCtx := NewHTTPContextWithGrpcIncomingCtx(ctx)
+	defer httpCtx.Cancel()
 	httpCtx.AppendPrefix("Method:" + info.FullMethod)
 
-	httpCtx.Debug("req:", req)
+	httpCtx.Debug("Req:", req)
 	defer func() {
-		httpCtx.Debug("error:", err, "resp:", resp)
+		if err == nil {
+			httpCtx.Debug("Res:", resp)
+		} else {
+			httpCtx.Warn("Req:", req, "Err:", err)
+		}
 	}()
 
 	defer func() {
@@ -42,6 +47,7 @@ func StreamServerInterceptor(
 ) (err error) {
 
 	httpCtx := NewHTTPContextWithGrpcIncomingCtx(ss.Context())
+	defer httpCtx.Cancel()
 	httpCtx.AppendPrefix("Method:" + info.FullMethod)
 
 	defer func() {
