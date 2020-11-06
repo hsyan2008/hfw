@@ -28,18 +28,20 @@ type Response struct {
 }
 
 func (response *Response) wrap(curls *Curl) (err error) {
+	response.cancel = curls.cancel
 	response.Body, err = response.getReader()
 	if err != nil {
-		io.Copy(ioutil.Discard, response.Response.Body)
-		response.Response.Body.Close()
+		response.Close()
+		return
 	}
-
-	response.cancel = curls.cancel
 
 	return
 }
 
 func (response *Response) getReader() (r io.ReadCloser, err error) {
+	if response.Response == nil || response.Response.Body == nil {
+		return r, errors.New("nil response or body")
+	}
 	if strings.Contains(response.Response.Header.Get("Content-Encoding"), "gzip") {
 		return gzip.NewReader(response.Response.Body)
 	} else if strings.Contains(response.Response.Header.Get("Content-Encoding"), "deflate") {
@@ -57,7 +59,7 @@ func (response *Response) Close() {
 	}
 }
 
-var ErrStopRedirect = errors.New("no redirects allowed")
+var ErrStopRedirect = errors.New("not allowed auto redirect")
 var ErrRequestTimeout = errors.New("do request time out")
 
 type Curl struct {
@@ -194,7 +196,10 @@ func (curls *Curl) Request() (rs *Response, err error) {
 	if curls.timeout <= 0 {
 		curls.SetTimeout(5)
 	}
-	rs = new(Response)
+
+	rs = &Response{
+		// cancel: curls.cancel,
+	}
 
 	httpRequest, err := curls.CreateRequest()
 	if err != nil {
@@ -229,13 +234,12 @@ func (curls *Curl) Request() (rs *Response, err error) {
 
 	if nil != err {
 		//不是重定向里抛出的错误
-		urlError, ok := err.(*neturl.Error)
-		if !ok || urlError.Err != ErrStopRedirect {
-			curls.cancel()
-			return nil, err
-		} else if urlError.Err == ErrStopRedirect {
+		if urlError, ok := err.(*neturl.Error); ok && urlError.Err == ErrStopRedirect {
 			err = rs.wrap(curls)
 			return rs, err
+		} else {
+			curls.cancel()
+			return nil, err
 		}
 	} else {
 		err = rs.wrap(curls)
@@ -348,13 +352,21 @@ func (curls *Curl) getHttpClient() (hc *http.Client, err error) {
 		Transport: &http.Transport{
 			Proxy: proxy,
 			Dial: (&net.Dialer{
-				Timeout:   10 * time.Second,
-				KeepAlive: 3600 * time.Second,
+				Timeout:   3 * time.Second,
+				KeepAlive: 30 * time.Second,
 			}).Dial,
 			TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
 			DisableKeepAlives:     curls.keepAlive == false,
 			TLSHandshakeTimeout:   10 * time.Second,
-			ResponseHeaderTimeout: 10 * time.Second,
+			ResponseHeaderTimeout: 1 * time.Second,
+
+			ForceAttemptHTTP2: true,
+
+			MaxIdleConns:        100,
+			MaxIdleConnsPerHost: 8,
+			IdleConnTimeout:     120 * time.Second,
+
+			ExpectContinueTimeout: 1 * time.Second,
 		},
 		CheckRedirect: func(_ *http.Request, via []*http.Request) error {
 			if curls.autoRedirect {
