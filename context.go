@@ -74,8 +74,12 @@ func NewHTTPContextWithCtx(ctx *HTTPContext) *HTTPContext {
 	httpCtx := &HTTPContext{}
 	httpCtx.Ctx, httpCtx.cancel = context.WithCancel(ctx.Ctx)
 	httpCtx.Logger = logger.NewLogger()
-	httpCtx.SetTraceID(common.GetPureUUID(ctx.GetTraceID()))
-	httpCtx.AppendPrefix(httpCtx.GetPrefix())
+	if ctx == nil || ctx.Logger == nil {
+		httpCtx.SetTraceID(common.GetPureUUID())
+	} else {
+		httpCtx.SetTraceID(common.GetPureUUID(ctx.GetTraceID()))
+		httpCtx.AppendPrefix(httpCtx.GetPrefix())
+	}
 
 	return httpCtx
 }
