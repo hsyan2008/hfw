@@ -355,10 +355,10 @@ func (curls *Curl) getHttpClient() (hc *http.Client, err error) {
 				Timeout:   3 * time.Second,
 				KeepAlive: 30 * time.Second,
 			}).Dial,
-			TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
-			DisableKeepAlives:     curls.keepAlive == false,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ResponseHeaderTimeout: 1 * time.Second,
+			TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
+			DisableKeepAlives:   curls.keepAlive == false,
+			TLSHandshakeTimeout: 10 * time.Second,
+			// ResponseHeaderTimeout: 1 * time.Second,
 
 			ForceAttemptHTTP2: true,
 
