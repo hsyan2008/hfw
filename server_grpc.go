@@ -7,6 +7,8 @@ import (
 	"github.com/hsyan2008/hfw/configs"
 	"github.com/hsyan2008/hfw/grpc/server"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func StartGrpcServer(config configs.AllConfig) (s *grpc.Server, err error) {
@@ -27,6 +29,8 @@ func UnaryServerInterceptor(
 	defer func() {
 		if err == nil {
 			httpCtx.Debug("Res:", resp)
+		} else if status.Code(err) == codes.Canceled {
+			httpCtx.Warn("Err:", err)
 		} else {
 			httpCtx.Warn("Req:", req, "Err:", err)
 		}

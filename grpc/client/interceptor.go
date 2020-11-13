@@ -6,6 +6,8 @@ import (
 	"github.com/hsyan2008/hfw"
 	"github.com/hsyan2008/hfw/common"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func UnaryClientInterceptor(ctx context.Context, method string, req, reply interface{},
@@ -19,6 +21,8 @@ func UnaryClientInterceptor(ctx context.Context, method string, req, reply inter
 	defer func() {
 		if err == nil {
 			httpCtx.Debug("Res:", reply)
+		} else if status.Code(err) == codes.Canceled {
+			httpCtx.Warn("Err:", err)
 		} else {
 			httpCtx.Warn("Req:", req, "Err:", err)
 		}
