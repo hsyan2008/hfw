@@ -435,11 +435,12 @@ func (d *XormDao) Count(t Model, cond Cond) (total int64, err error) {
 	return
 }
 
-func (d *XormDao) Replace(sql string, cond Cond) (id int64, err error) {
+func (d *XormDao) Replace(t Model, cond Cond) (id int64, err error) {
 	var (
 		str  []string
 		args []interface{}
 	)
+	sql := fmt.Sprintf("REPLACE `%s` SET ", t.TableName())
 	for k, v := range cond {
 		k = strings.ToLower(k)
 		if k == "orderby" || k == "page" || k == "pagesize" || k == "where" {
@@ -475,11 +476,22 @@ func (d *XormDao) Exec(sqlStr string, args ...interface{}) (rs sql.Result, err e
 	return
 }
 
-func (d *XormDao) Query(args ...interface{}) (rs []map[string][]byte, err error) {
+func (d *XormDao) Query(t Model, args ...interface{}) (rs []map[string][]byte, err error) {
 	sess := d.sess
 	if sess == nil {
 		sess = d.engine.NewSession()
 		defer sess.Close()
+	}
+	if len(args) > 0 {
+		if cond, ok := args[0].(Cond); ok {
+			sess, err = d.buildCond(t, sess, cond, true, true)
+			if err != nil {
+				return
+			}
+			args = args[1:]
+		}
+	} else {
+		sess.Table(t)
 	}
 	rs, err = sess.Query(args...)
 	if err != nil {
@@ -490,11 +502,22 @@ func (d *XormDao) Query(args ...interface{}) (rs []map[string][]byte, err error)
 	return
 }
 
-func (d *XormDao) QueryString(args ...interface{}) (rs []map[string]string, err error) {
+func (d *XormDao) QueryString(t Model, args ...interface{}) (rs []map[string]string, err error) {
 	sess := d.sess
 	if sess == nil {
 		sess = d.engine.NewSession()
 		defer sess.Close()
+	}
+	if len(args) > 0 {
+		if cond, ok := args[0].(Cond); ok {
+			sess, err = d.buildCond(t, sess, cond, true, true)
+			if err != nil {
+				return
+			}
+			args = args[1:]
+		}
+	} else {
+		sess.Table(t)
 	}
 	rs, err = sess.QueryString(args...)
 	if err != nil {
@@ -505,11 +528,22 @@ func (d *XormDao) QueryString(args ...interface{}) (rs []map[string]string, err 
 	return
 }
 
-func (d *XormDao) QueryInterface(args ...interface{}) (rs []map[string]interface{}, err error) {
+func (d *XormDao) QueryInterface(t Model, args ...interface{}) (rs []map[string]interface{}, err error) {
 	sess := d.sess
 	if sess == nil {
 		sess = d.engine.NewSession()
 		defer sess.Close()
+	}
+	if len(args) > 0 {
+		if cond, ok := args[0].(Cond); ok {
+			sess, err = d.buildCond(t, sess, cond, true, true)
+			if err != nil {
+				return
+			}
+			args = args[1:]
+		}
+	} else {
+		sess.Table(t)
 	}
 	rs, err = sess.QueryInterface(args...)
 	if err != nil {

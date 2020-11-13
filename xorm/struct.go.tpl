@@ -3,7 +3,6 @@ package {{.Models}}
 import (
     "encoding/gob"
     "errors"
-    "fmt"
     "database/sql"
 {{$ilen := len .Imports}}{{if gt $ilen 0}}{{range .Imports}}"{{.}}"{{end}}{{end}}
 
@@ -294,7 +293,7 @@ func (m *{{TableMapper .Name}}) Replace(cond db.Cond) (i int64, err error) {
 		return
 	}
 	defer dao.ClearCache(m)
-	return dao.Replace(fmt.Sprintf("REPLACE `%s` SET ", m.TableName()), cond)
+	return dao.Replace(m, cond)
 }
 
 func (m *{{TableMapper .Name}}) Exec(sqlState string, args ...interface{}) (rs sql.Result, err error) {
@@ -311,7 +310,7 @@ func (m *{{TableMapper .Name}}) Query(args ...interface{}) (rs []map[string][]by
 	if err != nil {
 		return
 	}
-	return dao.Query(args...)
+	return dao.Query(m, args...)
 }
 
 func (m *{{TableMapper .Name}}) QueryString(args ...interface{}) (rs []map[string]string, err error) {
@@ -319,7 +318,7 @@ func (m *{{TableMapper .Name}}) QueryString(args ...interface{}) (rs []map[strin
 	if err != nil {
 		return
 	}
-	return dao.QueryString(args...)
+	return dao.QueryString(m, args...)
 }
 
 func (m *{{TableMapper .Name}}) QueryInterface(args ...interface{}) (rs []map[string]interface{}, err error) {
@@ -327,7 +326,7 @@ func (m *{{TableMapper .Name}}) QueryInterface(args ...interface{}) (rs []map[st
 	if err != nil {
 		return
 	}
-	return dao.QueryInterface(args...)
+	return dao.QueryInterface(m, args...)
 }
 
 //ids可以是数字，也可以是数字切片         
