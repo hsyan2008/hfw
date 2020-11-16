@@ -24,7 +24,17 @@ func StopCron() {
 }
 
 func AddWrapCron(spec string, cmd func(httpCtx *HTTPContext) error) (cron.EntryID, error) {
-	return AddCron(spec, func() {
+	return AddCron(spec, WrapCron(cmd))
+}
+
+func DoWrapCron(spec string, cmd func(httpCtx *HTTPContext) error) (cron.EntryID, error) {
+	f := WrapCron(cmd)
+	go f()
+	return AddCron(spec, f)
+}
+
+func WrapCron(cmd func(httpCtx *HTTPContext) error) func() {
+	return func() {
 		httpCtx := NewHTTPContext()
 		defer httpCtx.Cancel()
 		signal.GetSignalContext().WgAdd()
@@ -42,5 +52,5 @@ func AddWrapCron(spec string, cmd func(httpCtx *HTTPContext) error) (cron.EntryI
 		if err != nil {
 			httpCtx.Warn(err)
 		}
-	})
+	}
 }
