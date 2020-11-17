@@ -77,16 +77,8 @@ func (ctl *Controller) After(httpCtx *HTTPContext) {
 
 //Finish 请不要实现Finish方法
 func (ctl *Controller) Finish(httpCtx *HTTPContext) {
-	if websocket.IsWebSocketUpgrade(httpCtx.Request) || httpCtx.IsCloseRender {
+	if websocket.IsWebSocketUpgrade(httpCtx.Request) {
 		return
-	}
-
-	if httpCtx.Logger.GetTraceID() != "" {
-		httpCtx.ResponseWriter.Header().Set("Trace-Id", httpCtx.Logger.GetTraceID())
-	}
-
-	if configs.Config.EnableSession && httpCtx.Session != nil {
-		httpCtx.Session.Close(httpCtx.Request, httpCtx.ResponseWriter)
 	}
 
 	httpCtx.RenderResponse()

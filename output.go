@@ -9,13 +9,25 @@ import (
 	"sync"
 
 	"github.com/hsyan2008/hfw/common"
+	"github.com/hsyan2008/hfw/configs"
 	"github.com/hsyan2008/hfw/encoding"
 )
 
 //RenderResponse ..
 func (httpCtx *HTTPContext) RenderResponse() {
 	// httpCtx.Debug("RenderResponse")
+	httpCtx.ResponseWriter.Header().Set("Trace-Id", httpCtx.GetTraceID())
+
+	if configs.Config.EnableSession && httpCtx.Session != nil {
+		httpCtx.Session.Close(httpCtx.Request, httpCtx.ResponseWriter)
+	}
+
 	if httpCtx.ResponseWriter.Header().Get("Location") != "" {
+		return
+	}
+
+	if httpCtx.IsCloseRender {
+		httpCtx.ResponseWriter.WriteHeader(httpCtx.HTTPStatus)
 		return
 	}
 
@@ -196,31 +208,27 @@ func (httpCtx *HTTPContext) ReturnJSON() {
 	}
 
 	var err error
-	httpCtx.Debugf("Response json: %s", func() string {
+	var results interface{}
+	if httpCtx.IsOnlyResults {
+		//results
+		results = httpCtx.Results
+	} else if httpCtx.HasHeader {
+		//header + response(err_no + err_msg + results)
+		results = httpCtx
+	} else {
+		//response(err_no + err_msg + results)
+		results = httpCtx.Response
+	}
+	httpCtx.Debugf("Response: %s", func() string {
 		var b []byte
-		if httpCtx.IsOnlyResults {
-			b, err = encoding.JSON.Marshal(httpCtx.Results)
-		} else if httpCtx.HasHeader {
-			b, err = encoding.JSON.Marshal(httpCtx)
-		} else {
-			b, err = encoding.JSON.Marshal(httpCtx.Response)
-		}
+		b, err = encoding.JSON.Marshal(results)
 		if err != nil {
 			return err.Error()
 		}
 		return string(b)
 	}())
 	httpCtx.ResponseWriter.WriteHeader(httpCtx.HTTPStatus)
-	if httpCtx.IsOnlyResults {
-		//results
-		err = encoding.JSONIO.Marshal(w, httpCtx.Results)
-	} else if httpCtx.HasHeader {
-		//header + response(err_no + err_msg + results)
-		err = encoding.JSONIO.Marshal(w, httpCtx)
-	} else {
-		//response(err_no + err_msg + results)
-		err = encoding.JSONIO.Marshal(w, httpCtx.Response)
-	}
+	err = encoding.JSONIO.Marshal(w, results)
 	// httpCtx.ThrowCheck(500, err)
 	if err != nil {
 		httpCtx.Warn(err)
