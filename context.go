@@ -1,9 +1,11 @@
 package hfw
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -57,6 +59,8 @@ type HTTPContext struct {
 
 	//如果是下载文件，不执行After和Finish
 	IsCloseRender bool `json:"-"`
+
+	hijacked bool
 
 	*logger.Logger
 }
@@ -262,4 +266,24 @@ func (httpCtx *HTTPContext) SetCookie(key, value string) {
 		Secure:   httpCtx.Request.URL.Scheme == "https",
 	}
 	http.SetCookie(httpCtx.ResponseWriter, cookie)
+}
+
+func (httpCtx *HTTPContext) Hijack() (conn net.Conn, bufrw *bufio.ReadWriter, err error) {
+	hj, ok := httpCtx.ResponseWriter.(http.Hijacker)
+	if !ok {
+		httpCtx.Warn("webserver doesn't support hijacking")
+		httpCtx.HTTPStatus = http.StatusInternalServerError
+		return
+	}
+
+	conn, bufrw, err = hj.Hijack()
+	if err != nil {
+		httpCtx.Warn("Hijack:", err)
+		httpCtx.HTTPStatus = http.StatusInternalServerError
+		return
+	}
+
+	httpCtx.hijacked = true
+
+	return
 }

@@ -16,6 +16,9 @@ import (
 //RenderResponse ..
 func (httpCtx *HTTPContext) RenderResponse() {
 	// httpCtx.Debug("RenderResponse")
+	if httpCtx.hijacked {
+		return
+	}
 	httpCtx.ResponseWriter.Header().Set("Trace-Id", httpCtx.GetTraceID())
 
 	if configs.Config.EnableSession && httpCtx.Session != nil {
