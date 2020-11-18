@@ -10,12 +10,11 @@ package register
 import (
 	"context"
 	"fmt"
-	"math"
-	"math/rand"
 	"time"
 
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/hsyan2008/go-logger"
+	utils "github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/grpc/discovery/common"
 	"github.com/hsyan2008/hfw/signal"
 )
@@ -128,5 +127,5 @@ func (cr *ConsulRegister) UnRegister() (err error) {
 
 func generateServiceId(name, host string, port int) string {
 	//docker里，多个服务映射到同个ip和端口
-	return fmt.Sprintf("%s-%s-%d-%d", name, host, port, rand.New(rand.NewSource(time.Now().UnixNano())).Int63n(math.MaxInt64))
+	return fmt.Sprintf("%s-%d-%s", host, port, utils.GetHostName())
 }
