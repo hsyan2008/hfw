@@ -1,6 +1,10 @@
 package db
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/hsyan2008/hfw/configs"
+)
 
 const DefaultPageSize = 1000
 
@@ -9,6 +13,8 @@ var DefaultDao Dao
 var ErrDaoNotInited = errors.New("dao not inited")
 
 type Dao interface {
+	GetConf() configs.DbConfig
+
 	IsTableExist(interface{}) (bool, error)
 	UpdateByIds(Model, interface{}, []interface{}, ...string) (int64, error)
 	UpdateByWhere(Model, Cond, Cond) (int64, error)

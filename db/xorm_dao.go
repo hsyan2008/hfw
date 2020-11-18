@@ -35,14 +35,22 @@ func NewXormDao(config configs.AllConfig, dbConfig configs.DbConfig) (instance *
 		instance.cacher, err = GetCacher(config, dbConfig)
 	}
 
+	instance.config = dbConfig
+
 	return instance, err
 }
 
 type XormDao struct {
+	config configs.DbConfig
+
 	engine  xorm.EngineInterface
 	isCache bool
 	cacher  *caches.LRUCacher
 	sess    *xorm.Session
+}
+
+func (d *XormDao) GetConf() configs.DbConfig {
+	return d.config
 }
 
 func (d *XormDao) IsTableExist(beanOrTableName interface{}) (bool, error) {
