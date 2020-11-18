@@ -80,7 +80,10 @@ func getEngine(config configs.DbStdConfig) (engine *xorm.Engine, isNew bool, err
 	}
 
 	driver := config.Driver
-	dbDsn := getDbDsn(config)
+	dbDsn, err := getDbDsn(config)
+	if err != nil {
+		return
+	}
 
 	if e, ok := engineMap.Load(common.Md5(dbDsn)); ok {
 		return e.(*xorm.Engine), isNew, nil
@@ -101,12 +104,12 @@ func getEngine(config configs.DbStdConfig) (engine *xorm.Engine, isNew bool, err
 
 var dnsFuncMap = make(map[string]func(configs.DbStdConfig) string)
 
-func getDbDsn(dbConfig configs.DbStdConfig) string {
+func getDbDsn(dbConfig configs.DbStdConfig) (string, error) {
 	dbConfig.Driver = strings.ToLower(dbConfig.Driver)
 	if f, ok := dnsFuncMap[dbConfig.Driver]; ok {
-		return f(dbConfig)
+		return f(dbConfig), nil
 	} else {
-		panic("error db driver")
+		return "", fmt.Errorf("error db driver: %s", dbConfig.Driver)
 	}
 }
 
