@@ -54,14 +54,18 @@ func (respErr *RespErr) String() string {
 	if respErr == nil {
 		return ""
 	}
-	return fmt.Sprintf("[RespErr] File:%s Line:%d No:%d Msg:%s",
+	return fmt.Sprintf("[RespErr %s:%d N:%d M:%s]",
 		respErr.file, respErr.line, respErr.errNo, respErr.errMsg)
 }
 
-//记录调用的地方，请直接在需要的地方调用，不要间接调用
+//记录调用本函数的位置
 func NewRespErr(errNo int64, i interface{}) (respErr *RespErr) {
 	if errNo == 0 || i == nil {
 		return nil
+	}
+	if r, ok := i.(*RespErr); ok && r != nil {
+		r.errNo = errNo
+		return r
 	}
 	respErr = &RespErr{
 		errNo:  errNo,
