@@ -9,7 +9,7 @@ import (
 )
 
 type sessionStoreInterface interface {
-	Put(string, string, interface{}) error
+	Set(string, string, interface{}) error
 	Get(string, string) (interface{}, error)
 	IsExist(string, string) (bool, error)
 	Del(string, string) error
@@ -88,7 +88,7 @@ func (s *Session) IsExist(k string) bool {
 }
 
 func (s *Session) Set(k string, v interface{}) {
-	_ = s.store.Put(s.id, k, v)
+	_ = s.store.Set(s.id, k, v)
 }
 
 func (s *Session) Get(k string) interface{} {

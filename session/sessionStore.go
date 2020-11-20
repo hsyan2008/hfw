@@ -40,7 +40,7 @@ func (s *sessRedisStore) IsExist(sessid, key string) (value bool, err error) {
 	return s.redisIns.HExists(s.prefix+sessid, key)
 }
 
-func (s *sessRedisStore) Put(sessid, key string, value interface{}) (err error) {
+func (s *sessRedisStore) Set(sessid, key string, value interface{}) (err error) {
 
 	return s.redisIns.HSet(s.prefix+sessid, key, value)
 }
