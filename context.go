@@ -82,7 +82,7 @@ func NewHTTPContextWithCtx(ctx *HTTPContext) *HTTPContext {
 		httpCtx.SetTraceID(common.GetPureUUID())
 	} else {
 		httpCtx.SetTraceID(common.GetPureUUID(ctx.GetTraceID()))
-		httpCtx.AppendPrefix(httpCtx.GetPrefix())
+		httpCtx.SetPrefix(httpCtx.GetPrefix())
 	}
 
 	return httpCtx
