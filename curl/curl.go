@@ -53,9 +53,13 @@ func (response *Response) getReader() (r io.ReadCloser, err error) {
 
 func (response *Response) Close() {
 	response.cancel()
-	if response.Body != nil {
+	if response.Body != nil && response.Response.Body != nil {
 		io.Copy(ioutil.Discard, response.Body)
 		response.Body.Close()
+	}
+	if response.Response.Body != nil {
+		io.Copy(ioutil.Discard, response.Response.Body)
+		response.Response.Body.Close()
 	}
 }
 
