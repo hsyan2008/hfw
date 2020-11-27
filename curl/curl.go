@@ -31,6 +31,7 @@ func (response *Response) wrap(curls *Curl) (err error) {
 	response.cancel = curls.cancel
 	response.Body, err = response.getReader()
 	if err != nil {
+		response.Body = nil
 		response.Close()
 		return
 	}
