@@ -38,11 +38,11 @@ func Router(w http.ResponseWriter, r *http.Request) {
 
 	startTime := time.Now()
 	defer func() {
-		httpCtx.Mixf("Path: %s Method: %s CostTime: %s", r.URL.String(), r.Method, time.Since(startTime))
+		httpCtx.Mixf("Path:%s Method:%s CostTime:%s", r.URL.String(), r.Method, time.Since(startTime))
 	}()
 
 	onlineNum := atomic.AddUint32(&online, 1)
-	httpCtx.Mix(r.URL.String(), "online:", onlineNum)
+	httpCtx.Mixf("From:%s Path:%s Online:%d", common.GetClientIP(r), r.URL.String(), onlineNum)
 	defer func() {
 		atomic.AddUint32(&online, ^uint32(0))
 	}()
@@ -75,7 +75,7 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	}
 
 	instance, methodName := findInstanceByPath(httpCtx)
-	httpCtx.Debugf("Query Path: %s -> Call: %s/%s", httpCtx.Request.URL.String(), httpCtx.Controller, httpCtx.Action)
+	httpCtx.Debugf("Path:%s -> Call:%s/%s", httpCtx.Request.URL.String(), httpCtx.Controller, httpCtx.Action)
 	reflectVal := instance.reflectVal
 
 	//注意方法必须是大写开头，否则无法调用
