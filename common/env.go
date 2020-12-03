@@ -68,7 +68,7 @@ func getAppPath() (appPath string) {
 	pwd, _ := filepath.Abs(os.Args[0])
 	if strings.Contains(pwd, "go-build") || strings.Contains(pwd, "go_build") || strings.Contains(pwd, "___") {
 		pwd = stripSuffix(pwd)
-		if strings.HasSuffix(pwd, ".test") || strings.Contains(pwd, "___Test") {
+		if strings.HasSuffix(pwd, ".test") || strings.Contains(pwd, "Test") {
 			isGoTest = true
 		} else {
 			isGoRun = true
