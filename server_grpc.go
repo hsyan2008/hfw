@@ -32,7 +32,7 @@ func UnaryServerInterceptor(
 		} else if status.Code(err) == codes.Canceled {
 			httpCtx.Warn("Err:", err)
 		} else {
-			httpCtx.Warn("Req:", req, "Err:", err)
+			httpCtx.Warn("Req:", req, "Method:", info.FullMethod, "Err:", err)
 		}
 	}()
 
