@@ -1,6 +1,7 @@
 package common
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
 	"strings"
@@ -26,10 +27,10 @@ func GetErrorMap(errNo int64) string {
 }
 
 type RespErr struct {
-	file   string
-	line   int
-	errNo  int64
-	errMsg string
+	file  string
+	line  int
+	errNo int64
+	err   error
 }
 
 func (respErr *RespErr) ErrNo() int64 {
@@ -43,7 +44,14 @@ func (respErr *RespErr) ErrMsg() string {
 	if respErr == nil {
 		return ""
 	}
-	return respErr.errMsg
+	return respErr.err.Error()
+}
+
+func (respErr *RespErr) Err() error {
+	if respErr == nil {
+		return nil
+	}
+	return respErr.err
 }
 
 func (respErr *RespErr) Error() string {
@@ -55,7 +63,7 @@ func (respErr *RespErr) String() string {
 		return ""
 	}
 	return fmt.Sprintf("[RespErr %s:%d N:%d M:%s]",
-		respErr.file, respErr.line, respErr.errNo, respErr.errMsg)
+		respErr.file, respErr.line, respErr.ErrNo(), respErr.ErrMsg())
 }
 
 //记录调用本函数的位置
@@ -67,10 +75,20 @@ func NewRespErr(errNo int64, i interface{}) (respErr *RespErr) {
 		r.errNo = errNo
 		return r
 	}
+
 	respErr = &RespErr{
-		errNo:  errNo,
-		errMsg: fmt.Sprintf("%v", i),
+		errNo: errNo,
 	}
+
+	switch e := i.(type) {
+	case error:
+		respErr.err = e
+	case string:
+		respErr.err = errors.New(e)
+	default:
+		respErr.err = errors.New(fmt.Sprintf("%v", i))
+	}
+
 	_, respErr.file, respErr.line, _ = runtime.Caller(1)
 	if GOPATH != "" {
 		respErr.file = strings.Replace(respErr.file, GOPATH, "", 1)
