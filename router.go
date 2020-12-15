@@ -42,7 +42,7 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	onlineNum := atomic.AddUint32(&online, 1)
-	httpCtx.Mixf("From:%s Path:%s Online:%d", common.GetClientIP(r), r.URL.String(), onlineNum)
+	httpCtx.Mixf("From:%s Path:%s Online:%d", r.RemoteAddr, r.URL.String(), onlineNum)
 	defer func() {
 		atomic.AddUint32(&online, ^uint32(0))
 	}()
