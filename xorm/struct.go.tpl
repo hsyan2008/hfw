@@ -213,6 +213,21 @@ func (m *{{TableMapper .Name}}) SearchMap(cond db.Cond) (t map[int64]*{{TableMap
 	return
 }
 
+func (m *{{TableMapper .Name}}) SearchAll(cond db.Cond) (t []*{{TableMapper .Name}}, err error) {
+    if len(cond) == 0 {
+        cond = db.Cond{}
+    }
+    cond["nolimit"] = true
+	return m.Search(cond)
+}
+
+func (m *{{TableMapper .Name}}) SearchAllMap(cond db.Cond) (t map[int64]*{{TableMapper .Name}}, err error) {
+    if len(cond) == 0 {
+        cond = db.Cond{}
+    }
+    cond["nolimit"] = true
+	return m.SearchMap(cond)
+}
 
 func (m *{{TableMapper .Name}}) SearchAndCount(cond db.Cond) (t []*{{TableMapper .Name}}, total int64, err error) {
 	dao, err := m.GetDao()
