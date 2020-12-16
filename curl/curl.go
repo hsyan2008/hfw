@@ -333,6 +333,11 @@ func (curls *Curl) createPostRequest() (httpRequest *http.Request, err error) {
 }
 
 var clientMap = new(sync.Map)
+var tlsConfig = &tls.Config{InsecureSkipVerify: true}
+var dialer = &net.Dialer{
+	Timeout:   3 * time.Second,
+	KeepAlive: 30 * time.Second,
+}
 
 func (curls *Curl) getHttpClient() (hc *http.Client, err error) {
 
@@ -355,12 +360,9 @@ func (curls *Curl) getHttpClient() (hc *http.Client, err error) {
 
 	hc = &http.Client{
 		Transport: &http.Transport{
-			Proxy: proxy,
-			Dial: (&net.Dialer{
-				Timeout:   3 * time.Second,
-				KeepAlive: 30 * time.Second,
-			}).Dial,
-			TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
+			Proxy:               proxy,
+			Dial:                dialer.Dial,
+			TLSClientConfig:     tlsConfig,
 			DisableKeepAlives:   curls.keepAlive == false,
 			TLSHandshakeTimeout: 10 * time.Second,
 			// ResponseHeaderTimeout: 1 * time.Second,
