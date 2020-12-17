@@ -341,21 +341,24 @@ var dialer = &net.Dialer{
 
 func (curls *Curl) getHttpClient() (hc *http.Client, err error) {
 
-	key := fmt.Sprintf("%s||%t", curls.proxyURL, curls.autoRedirect)
-
-	if i, ok := clientMap.Load(key); ok {
-		hc = i.(*http.Client)
-		// hc.CloseIdleConnections()
-		return
-	}
-
 	proxy := http.ProxyFromEnvironment
-	urlParse, err := neturl.Parse(curls.proxyURL)
-	if err != nil {
-		return nil, err
-	}
-	if urlParse != nil && urlParse.Host != "" {
-		proxy = http.ProxyURL(urlParse)
+	var key string
+	if curls.proxyURL == "" {
+		key = fmt.Sprintf("%t||%t", curls.keepAlive, curls.autoRedirect)
+		if i, ok := clientMap.Load(key); ok {
+			hc = i.(*http.Client)
+			// hc.CloseIdleConnections()
+			return
+		}
+		defer clientMap.Store(key, hc)
+	} else {
+		urlParse, err := neturl.Parse(curls.proxyURL)
+		if err != nil {
+			return nil, err
+		}
+		if urlParse != nil && urlParse.Host != "" {
+			proxy = http.ProxyURL(urlParse)
+		}
 	}
 
 	hc = &http.Client{
@@ -384,8 +387,6 @@ func (curls *Curl) getHttpClient() (hc *http.Client, err error) {
 		Jar:     nil,
 		Timeout: 0,
 	}
-
-	clientMap.Store(key, hc)
 
 	return hc, nil
 }
