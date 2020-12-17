@@ -350,7 +350,9 @@ func (curls *Curl) getHttpClient() (hc *http.Client, err error) {
 			// hc.CloseIdleConnections()
 			return
 		}
-		defer clientMap.Store(key, hc)
+		defer func() {
+			clientMap.Store(key, hc)
+		}()
 	} else {
 		urlParse, err := neturl.Parse(curls.proxyURL)
 		if err != nil {
