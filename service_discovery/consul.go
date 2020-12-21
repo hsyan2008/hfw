@@ -42,8 +42,8 @@ var consulResolverMap = make(map[string]*ConsulResolver)
 var consulRwLock = new(sync.RWMutex)
 
 func NewConsulResolver(serviceName, address string, policy balancePolicy, tag string) (*ConsulResolver, error) {
-	consulRwLock.RLock()
 	key := fmt.Sprintf("%s_%s_%d_%s", serviceName, address, policy, tag)
+	consulRwLock.RLock()
 	if cr, ok := consulResolverMap[key]; ok {
 		consulRwLock.RUnlock()
 		return cr, nil
@@ -52,6 +52,10 @@ func NewConsulResolver(serviceName, address string, policy balancePolicy, tag st
 
 	consulRwLock.Lock()
 	defer consulRwLock.Unlock()
+
+	if cr, ok := consulResolverMap[key]; ok {
+		return cr, nil
+	}
 
 	httpCtx := hfw.NewHTTPContext()
 	config := consulapi.DefaultConfig()
