@@ -57,7 +57,6 @@ func Do(httpCtx *hfw.HTTPContext, c configs.GrpcConfig,
 	ctx, cancel := context.WithTimeout(httpCtx.Ctx, timeout)
 	defer cancel()
 
-FOR:
 	for i := 0; i < retryNum; i++ {
 		select {
 		case <-ctx.Done():
@@ -82,10 +81,10 @@ FOR:
 				return
 			}(httpCtx)
 			if err == nil || err == context.Canceled || err == context.DeadlineExceeded {
-				break FOR
+				return
 			}
 			if _, ok := err.(*common.RespErr); ok {
-				break FOR
+				return
 			}
 		}
 	}
