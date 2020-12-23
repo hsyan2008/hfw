@@ -51,7 +51,7 @@ func Do(httpCtx *hfw.HTTPContext, c configs.GrpcConfig,
 		conn, err = GetConnWithDefaultInterceptor(signal.GetSignalContext().Ctx, c)
 	}
 	if err != nil {
-		return
+		return nil, common.NewRespErr(500, err)
 	}
 
 	ctx, cancel := context.WithTimeout(httpCtx.Ctx, timeout)
@@ -79,18 +79,18 @@ FOR:
 				}
 				httpCtx.Warnf("Call Grpc:%s TryTime:%d Err:%v", c.ServerName, i, err)
 				// removeClientConn(c, err)
-				if err == context.Canceled || err == context.DeadlineExceeded {
-					return
-				}
-				if _, ok := err.(*common.RespErr); ok {
-					return
-				}
 				return
 			}(httpCtx)
-			if err == nil {
+			if err == nil || err == context.Canceled || err == context.DeadlineExceeded {
+				break FOR
+			}
+			if _, ok := err.(*common.RespErr); ok {
 				break FOR
 			}
 		}
+	}
+	if err != nil {
+		err = common.NewRespErr(500, err)
 	}
 
 	return
