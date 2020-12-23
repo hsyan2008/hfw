@@ -22,7 +22,7 @@ func GetHTTPListener() net.Listener {
 	return listener
 }
 
-func GetHTTPAddr(config configs.ServerConfig) (string, error) {
+func GetHTTPAddr(config configs.HTTPServerConfig) (string, error) {
 
 	err := newHTTPServer(config)
 	if err != nil {
@@ -32,7 +32,7 @@ func GetHTTPAddr(config configs.ServerConfig) (string, error) {
 	return listener.Addr().String(), nil
 }
 
-func newHTTPServer(config configs.ServerConfig) (err error) {
+func newHTTPServer(config configs.HTTPServerConfig) (err error) {
 	if s == nil || listener == nil {
 		lock.Lock()
 		defer lock.Unlock()
@@ -56,7 +56,7 @@ func newHTTPServer(config configs.ServerConfig) (err error) {
 	return
 }
 
-func StartHTTP(config configs.ServerConfig) (err error) {
+func StartHTTP(config configs.HTTPServerConfig) (err error) {
 
 	err = newHTTPServer(config)
 	if err != nil {
@@ -64,7 +64,7 @@ func StartHTTP(config configs.ServerConfig) (err error) {
 	}
 
 	//注册服务
-	r, err := discovery.RegisterServer(config, common.GetListendAddrForRegister(listener.Addr().String(), config.Address))
+	r, err := discovery.RegisterServer(config.ServerConfig, common.GetListendAddrForRegister(listener.Addr().String(), config.Address))
 	if err != nil {
 		return err
 	}

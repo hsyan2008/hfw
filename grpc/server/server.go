@@ -15,7 +15,6 @@ import (
 	"crypto/x509"
 	"errors"
 	"io/ioutil"
-	"net"
 	"time"
 
 	logger "github.com/hsyan2008/go-logger"
@@ -24,7 +23,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
-	"google.golang.org/grpc/reflection"
 )
 
 type ServerCreds struct {
@@ -83,17 +81,6 @@ func NewServer(serverConfig configs.ServerConfig, opt ...grpc.ServerOption) (*gr
 	)
 
 	return grpcServer, nil
-}
-
-func StartServer(s *grpc.Server, addr string) error {
-	lis, err := net.Listen("tcp", addr)
-	if err != nil {
-		logger.Fatal("grpc StartServer:", err)
-		return err
-	}
-	// Register reflection service on gRPC server.
-	reflection.Register(s)
-	return s.Serve(lis)
 }
 
 func (t *ServerCreds) GetCredentials() (credentials.TransportCredentials, error) {

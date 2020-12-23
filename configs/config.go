@@ -12,17 +12,18 @@ type AllConfig struct {
 	EnableSession bool
 	ErrorBase     int64
 
-	Server    ServerConfig
-	Logger    LoggerConfig
-	Db        DbConfig
-	Mongo     MongoConfig
-	Cache     CacheConfig
-	Template  TemplateConfig
-	Route     RouteConfig
-	Redis     RedisConfig
-	Session   SessionConfig
-	HotDeploy HotDeployConfig
-	Custom    map[string]string
+	Server     HTTPServerConfig
+	GrpcServer GrpcServerConfig
+	Logger     LoggerConfig
+	Db         DbConfig
+	Mongo      MongoConfig
+	Cache      CacheConfig
+	Template   TemplateConfig
+	Route      RouteConfig
+	Redis      RedisConfig
+	Session    SessionConfig
+	HotDeploy  HotDeployConfig
+	Custom     map[string]string
 }
 
 type RedisConfig struct {
@@ -45,11 +46,6 @@ type SessionConfig struct {
 //ServerConfig ..
 type ServerConfig struct {
 	Address string
-	//并发数量限制
-	Concurrence uint
-
-	ReadTimeout  time.Duration
-	WriteTimeout time.Duration
 
 	//证书
 	CertFile string
@@ -72,6 +68,21 @@ type ServerConfig struct {
 	//指定注册的网卡地址，或者在上方的Address里指定ip
 	Interface string
 	Tags      []string
+}
+
+//HTTPServerConfig ..
+type HTTPServerConfig struct {
+	ServerConfig
+	//并发数量限制
+	Concurrence uint
+
+	ReadTimeout  time.Duration
+	WriteTimeout time.Duration
+}
+
+//GrpcServerConfig ..
+type GrpcServerConfig struct {
+	ServerConfig
 }
 
 //LoggerConfig ..
@@ -157,6 +168,9 @@ type GrpcConfig struct {
 	//必填，必须保证唯一，且符合证书域名规则(如果使用证书)
 	//如果采用服务发现，则用于服务名
 	ServerName string
+
+	//指定tag
+	Tag string
 
 	//服务发现类型，目前可选static、consul，默认是static
 	ResolverType string

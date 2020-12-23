@@ -2,18 +2,58 @@ package hfw
 
 import (
 	"context"
+	"net"
 
+	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/configs"
+	"github.com/hsyan2008/hfw/grpc/discovery"
 	"github.com/hsyan2008/hfw/grpc/server"
+	"github.com/hsyan2008/hfw/signal"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 )
 
-func StartGrpcServer(config configs.AllConfig) (s *grpc.Server, err error) {
-	return server.NewServer(config.Server, grpc.UnaryInterceptor(UnaryServerInterceptor),
+//如果是https+证书grpc，请配置好Server并使用NewGrpcServer+hfw.Run
+//如果是无证书grpc，请配置好Server和GrpcServer并使用RunGrpc
+
+func NewGrpcServer(config configs.AllConfig) (s *grpc.Server, err error) {
+	return server.NewServer(config.Server.ServerConfig, grpc.UnaryInterceptor(UnaryServerInterceptor),
 		grpc.StreamInterceptor(StreamServerInterceptor))
+}
+
+func RunGrpc(s *grpc.Server, config configs.GrpcServerConfig) error {
+	lis, err := net.Listen("tcp", config.Address)
+	if err != nil {
+		logger.Fatal("grpc StartServer:", err)
+		return err
+	}
+
+	//注册服务
+	r, err := discovery.RegisterServer(config.ServerConfig, common.GetListendAddrForRegister(lis.Addr().String(), config.Address))
+	if err != nil {
+		return err
+	}
+	if r != nil {
+		defer r.UnRegister()
+	}
+
+	go func() {
+		signal.GetSignalContext().WgAdd()
+		defer signal.GetSignalContext().WgDone()
+		select {
+		case <-signal.GetSignalContext().Ctx.Done():
+			signal.GetSignalContext().Info("grpc server stoping...")
+			defer signal.GetSignalContext().Info("grpc server stoped")
+			s.GracefulStop()
+		}
+	}()
+
+	// Register reflection service on gRPC server.
+	reflection.Register(s)
+	return s.Serve(lis)
 }
 
 func UnaryServerInterceptor(
