@@ -17,7 +17,8 @@ import (
 )
 
 //如果是https+证书grpc，请配置好Server并使用NewGrpcServer+hfw.Run
-//如果是无证书grpc，请配置好Server和GrpcServer并使用RunGrpc
+//如果是grpc，请配置好Server和GrpcServer并使用NewGrpcServer+hfw.RunGrpc
+//如果是http，请配置好Server和GrpcServer并使用NewGrpcServer+hfwRun
 
 func NewGrpcServer(config configs.AllConfig) (s *grpc.Server, err error) {
 	return server.NewServer(config.Server.ServerConfig, grpc.UnaryInterceptor(UnaryServerInterceptor),
@@ -25,14 +26,14 @@ func NewGrpcServer(config configs.AllConfig) (s *grpc.Server, err error) {
 }
 
 func RunGrpc(s *grpc.Server, config configs.GrpcServerConfig) error {
-	lis, err := net.Listen("tcp", config.Address)
+	listener, err := net.Listen("tcp", config.Address)
 	if err != nil {
 		logger.Fatal("grpc StartServer:", err)
 		return err
 	}
 
 	//注册服务
-	r, err := discovery.RegisterServer(config.ServerConfig, common.GetListendAddrForRegister(lis.Addr().String(), config.Address))
+	r, err := discovery.RegisterServer(config.ServerConfig, common.GetListendAddrForRegister(listener.Addr().String(), config.Address))
 	if err != nil {
 		return err
 	}
@@ -51,9 +52,11 @@ func RunGrpc(s *grpc.Server, config configs.GrpcServerConfig) error {
 		}
 	}()
 
+	logger.Mix("Listen on grpc:", listener.Addr().String())
+
 	// Register reflection service on gRPC server.
 	reflection.Register(s)
-	return s.Serve(lis)
+	return s.Serve(listener)
 }
 
 func UnaryServerInterceptor(
