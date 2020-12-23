@@ -18,11 +18,12 @@ type consulBuilder struct {
 	address     string
 	client      *consulapi.Client
 	serviceName string
+	tag         string
 
 	lastIndex uint64
 }
 
-func NewConsulBuilder(scheme, address string) resolver.Builder {
+func NewConsulBuilder(scheme, address, tag string) resolver.Builder {
 	config := consulapi.DefaultConfig()
 	config.Address = address
 	client, err := consulapi.NewClient(config)
@@ -30,7 +31,7 @@ func NewConsulBuilder(scheme, address string) resolver.Builder {
 		logger.Fatal("create consul client error", err.Error())
 		return nil
 	}
-	return &consulBuilder{scheme: scheme, address: address, client: client}
+	return &consulBuilder{scheme: scheme, address: address, tag: tag, client: client}
 }
 
 func (cb *consulBuilder) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
@@ -52,7 +53,7 @@ func (cb *consulBuilder) Build(target resolver.Target, cc resolver.ClientConn, o
 
 func (cb *consulBuilder) resolve() ([]resolver.Address, string, error) {
 
-	serviceEntries, metainfo, err := cb.client.Health().Service(cb.serviceName, "", true, &consulapi.QueryOptions{
+	serviceEntries, metainfo, err := cb.client.Health().Service(cb.serviceName, cb.tag, true, &consulapi.QueryOptions{
 		WaitIndex: cb.lastIndex, // 同步点，这个调用将一直阻塞，直到有新的更新
 	})
 	if err != nil {
@@ -157,7 +158,7 @@ func GenerateAndRegisterConsulResolver(cc configs.GrpcConfig) (schema string, er
 	if resolver.Get(cc.ResolverScheme) != nil {
 		return cc.ResolverScheme, nil
 	}
-	builder := NewConsulBuilder(cc.ResolverScheme, cc.ResolverAddresses[0])
+	builder := NewConsulBuilder(cc.ResolverScheme, cc.ResolverAddresses[0], cc.Tag)
 	resolver.Register(builder)
 	schema = builder.Scheme()
 	return
