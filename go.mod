@@ -9,7 +9,6 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/go-xorm/cachestore v0.0.0-20170409031804-adfa3466c8e4
-	github.com/google/gops v0.3.12
 	github.com/google/uuid v1.1.2
 	github.com/gorilla/websocket v1.4.2
 	github.com/hashicorp/consul/api v1.7.0
@@ -19,7 +18,7 @@ require (
 	github.com/mediocregopher/radix.v2 v0.0.0-20181115013041-b67df6e626f9
 	github.com/mkevac/debugcharts v0.0.0-20191222103121-ae1c48aa8615
 	github.com/robfig/cron/v3 v3.0.1
-	github.com/shirou/gopsutil v2.20.9+incompatible
+	github.com/shirou/gopsutil v2.19.11+incompatible
 	google.golang.org/grpc v1.32.0
 	xorm.io/xorm v1.0.5
 )

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/configs"
 	"github.com/hsyan2008/hfw/signal"
@@ -29,20 +28,20 @@ func HotDeploy(hotDeployConfig configs.HotDeployConfig) {
 
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		logger.Fatal(err)
+		signalContext.Fatal(err)
 		return
 	}
 	defer watcher.Close()
 
 	err = addWatch(watcher, hotDeployConfig, common.GetAppPath(), 0)
 	if err != nil {
-		logger.Fatal(err)
+		signalContext.Fatal(err)
 		return
 	}
 
 	p, err := os.FindProcess(os.Getpid())
 	if err != nil {
-		logger.Warn("os FindProcess failed:", err)
+		signalContext.Warn("os FindProcess failed:", err)
 		return
 	}
 
@@ -83,7 +82,7 @@ func HotDeploy(hotDeployConfig configs.HotDeployConfig) {
 			if !ok {
 				return
 			}
-			logger.Warn("error:", err)
+			signalContext.Warn("error:", err)
 		case <-time.After(time.Second):
 			if !isToRestart {
 				continue
@@ -91,7 +90,7 @@ func HotDeploy(hotDeployConfig configs.HotDeployConfig) {
 			if common.IsGoRun() {
 				err = p.Signal(syscall.SIGINT)
 				if err != nil {
-					logger.Warn("send signal sigterm failed:", err)
+					signalContext.Warn("send signal sigterm failed:", err)
 					return
 				}
 				var cmd []string
@@ -125,7 +124,7 @@ func HotDeploy(hotDeployConfig configs.HotDeployConfig) {
 			} else {
 				err = p.Signal(syscall.SIGTERM)
 				if err != nil {
-					logger.Warn("send signal sigterm failed:", err)
+					signalContext.Warn("send signal sigterm failed:", err)
 					return
 				}
 			}
@@ -148,7 +147,7 @@ func addWatch(watcher *fsnotify.Watcher, hotDeployConfig configs.HotDeployConfig
 	if fi.IsDir() {
 		err = watcher.Add(path)
 		if err != nil {
-			logger.Fatal(err)
+			signal.GetSignalContext().Fatal(err)
 			return
 		}
 

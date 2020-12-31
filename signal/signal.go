@@ -13,7 +13,7 @@ import (
 	"syscall"
 	"time"
 
-	logger "github.com/hsyan2008/go-logger"
+	"github.com/hsyan2008/go-logger"
 )
 
 type signalContext struct {
@@ -56,17 +56,17 @@ func (ctx *signalContext) Listen() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT)
 
-	logger.Mixf("Exec `kill -INT %d` will graceful exit", os.Getpid())
-	logger.Mixf("Exec `kill -TERM %d` will graceful restart", os.Getpid())
+	ctx.Mixf("Exec `kill -INT %d` will graceful exit", os.Getpid())
+	ctx.Mixf("Exec `kill -TERM %d` will graceful restart", os.Getpid())
 
 	s := <-c
-	logger.Mix("recv signal:", s)
+	ctx.Mix("recv signal:", s)
 	go ctx.doShutdownDone()
 	if ctx.IsHTTP {
-		logger.Mix("Stopping http server")
+		ctx.Mix("Stopping http server")
 		//已有第三方处理
 	} else {
-		logger.Mix("Stopping console server")
+		ctx.Mix("Stopping console server")
 		switch s {
 		case syscall.SIGTERM:
 			execSpec := &syscall.ProcAttr{
@@ -75,7 +75,7 @@ func (ctx *signalContext) Listen() {
 			}
 			_, _, err := syscall.StartProcess(os.Args[0], os.Args, execSpec)
 			if err != nil {
-				logger.Errorf("failed to forkexec: %v", err)
+				ctx.Errorf("failed to forkexec: %v", err)
 			}
 		case syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGINT:
 		}
@@ -90,15 +90,15 @@ func (ctx *signalContext) doShutdownDone() {
 	}
 	ctx.doing = true
 
-	logger.Mix("doShutdownDone start.")
-	defer logger.Mix("doShutdownDone done.")
+	ctx.Mix("doShutdownDone start.")
+	defer ctx.Mix("doShutdownDone done.")
 
 	go ctx.waitDone()
 
 	timeout := 30
 	select {
 	case <-time.After(time.Duration(timeout) * time.Second):
-		logger.Warnf("doShutdownDone %ds timeout", timeout)
+		ctx.Warnf("doShutdownDone %ds timeout", timeout)
 		close(ctx.done)
 	case <-ctx.done:
 	}
@@ -107,13 +107,13 @@ func (ctx *signalContext) doShutdownDone() {
 //通知业务方，并等待业务方结束
 func (ctx *signalContext) waitDone() {
 	//context包来取消，以通知业务方
-	logger.Mix("signal ctx cancel")
+	ctx.Mix("signal ctx cancel")
 	ctx.Cancel()
 	//等待业务方完成退出
-	logger.Mix("signal ctx waitgroup wait done start")
+	ctx.Mix("signal ctx waitgroup wait done start")
 	ctx.WgWait()
 	//表示全部完成
-	logger.Mix("signal ctx waitgroup wait done end")
+	ctx.Mix("signal ctx waitgroup wait done end")
 	close(ctx.done)
 }
 
