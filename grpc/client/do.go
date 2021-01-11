@@ -22,7 +22,7 @@ var (
 //           和grpc.WithDefaultCallOptions(grpc.MaxCallSendMsgSize(52428800))
 func Do(httpCtx *hfw.HTTPContext, c configs.GrpcConfig,
 	call func(ctx context.Context, conn *grpc.ClientConn) (interface{}, error),
-	timeout time.Duration,
+	timeout time.Duration, opts ...grpc.DialOption,
 ) (resp interface{}, err error) {
 
 	if httpCtx == nil {
@@ -44,11 +44,13 @@ func Do(httpCtx *hfw.HTTPContext, c configs.GrpcConfig,
 
 	var conn *grpc.ClientConn
 	if c.IsAuth {
-		conn, err = GetConnWithAuth(signal.GetSignalContext().Ctx, c, "",
+		opts = append([]grpc.DialOption{
 			grpc.WithUnaryInterceptor(UnaryClientInterceptor),
-			grpc.WithStreamInterceptor(StreamClientInterceptor))
+			grpc.WithStreamInterceptor(StreamClientInterceptor),
+		}, opts...)
+		conn, err = GetConnWithAuth(signal.GetSignalContext().Ctx, c, "", opts...)
 	} else {
-		conn, err = GetConnWithDefaultInterceptor(signal.GetSignalContext().Ctx, c)
+		conn, err = GetConnWithDefaultInterceptor(signal.GetSignalContext().Ctx, c, opts...)
 	}
 	if err != nil {
 		return nil, common.NewRespErr(500, err)
