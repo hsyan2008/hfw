@@ -40,7 +40,9 @@ func NewClientConn(ctx context.Context, address string, opt ...grpc.DialOption) 
 		return nil, errors.New("nil address")
 	}
 
-	opt = append(opt, grpc.WithInsecure(), grpc.WithKeepaliveParams(kacp))
+	opt = append([]grpc.DialOption{
+		grpc.WithInsecure(), grpc.WithKeepaliveParams(kacp),
+	}, opt...)
 
 	return grpc.DialContext(ctx, address, opt...)
 }
