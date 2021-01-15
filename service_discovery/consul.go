@@ -85,6 +85,8 @@ func NewConsulResolver(serviceName, address string, policy balancePolicy, tag st
 
 	consulResolverMap[key] = cr
 
+	httpCtx.Info("NewConsulResolver:", key)
+
 	return cr, nil
 }
 func (consulResolver *ConsulResolver) resolve() (err error) {
