@@ -178,7 +178,7 @@ type GrpcConfig struct {
 	ResolverScheme string
 	//服务发现的地址，如consul、etcd地址
 	ResolverAddresses []string
-	//负载均衡策略名称，默认是round_robin
+	//负载均衡策略名称，支持round_robin、pick_first、p2c，默认是p2c
 	BalancerName string
 
 	//服务地址，如果ResolverType是static，必填

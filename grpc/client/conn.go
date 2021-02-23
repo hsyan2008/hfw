@@ -12,6 +12,7 @@ import (
 	"github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/configs"
 	"github.com/hsyan2008/hfw/grpc/auth"
+	"github.com/hsyan2008/hfw/grpc/balancer/p2c"
 	"github.com/hsyan2008/hfw/grpc/discovery"
 	dc "github.com/hsyan2008/hfw/grpc/discovery/common"
 	grpc "google.golang.org/grpc"
@@ -120,9 +121,13 @@ func removeClientConn(c configs.GrpcConfig, err error) {
 func newClientConn(ctx context.Context, address string, c configs.GrpcConfig, authValue string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 	if strings.Contains(address, ":///") {
 		// opts = append(opts, grpc.WithBalancerName("round_robin")) //grpc里默认是grpc.WithBalancerName("pick_first")
-		if c.BalancerName == "" {
-			// 现在默认是round_robin
+		switch c.BalancerName {
+		case "round_robin":
 			c.BalancerName = roundrobin.Name
+		case "pick_first":
+		default:
+			// 现在默认是p2c
+			c.BalancerName = p2c.Name
 		}
 		opts = append(opts, grpc.WithBalancerName(c.BalancerName))
 	}
