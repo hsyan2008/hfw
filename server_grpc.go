@@ -26,6 +26,16 @@ func NewGrpcServer(config configs.AllConfig) (s *grpc.Server, err error) {
 }
 
 func RunGrpc(s *grpc.Server, config configs.GrpcServerConfig) error {
+	//监听信号
+	signalContext := signal.GetSignalContext()
+	go signalContext.Listen()
+
+	signalContext.Mix("grpc server Starting ...")
+	defer signalContext.Mix("grpc server Shutdowned!")
+
+	//等待工作完成
+	defer signalContext.Shutdowned()
+
 	listener, err := net.Listen("tcp", config.Address)
 	if err != nil {
 		logger.Fatal("grpc StartServer:", err)
@@ -42,12 +52,12 @@ func RunGrpc(s *grpc.Server, config configs.GrpcServerConfig) error {
 	}
 
 	go func() {
-		signal.GetSignalContext().WgAdd()
-		defer signal.GetSignalContext().WgDone()
+		signalContext.WgAdd()
+		defer signalContext.WgDone()
 		select {
-		case <-signal.GetSignalContext().Ctx.Done():
-			signal.GetSignalContext().Info("grpc server stoping...")
-			defer signal.GetSignalContext().Info("grpc server stoped")
+		case <-signalContext.Ctx.Done():
+			signalContext.Info("grpc server stoping...")
+			defer signalContext.Info("grpc server stoped")
 			s.GracefulStop()
 		}
 	}()

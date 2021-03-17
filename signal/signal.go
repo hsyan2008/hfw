@@ -30,6 +30,8 @@ type signalContext struct {
 	Ctx    context.Context    `json:"-"`
 	Cancel context.CancelFunc `json:"-"`
 
+	isListened bool
+
 	*logger.Logger
 }
 
@@ -53,6 +55,11 @@ func GetSignalContext() *signalContext {
 
 //gracehttp外，增加两个信号支持
 func (ctx *signalContext) Listen() {
+	if ctx.isListened {
+		return
+	}
+	ctx.isListened = true
+
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT)
 
