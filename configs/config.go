@@ -28,7 +28,8 @@ type AllConfig struct {
 
 type RedisConfig struct {
 	IsCluster  bool
-	Server     string
+	Server     string //废弃
+	Addresses  []string
 	Prefix     string
 	Expiration int32
 	PoolSize   int

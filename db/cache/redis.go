@@ -11,7 +11,7 @@ type RedisCache struct {
 }
 
 func NewRedisCache(redisConfig configs.RedisConfig) (rc *RedisCache, err error) {
-	redisIns, err := redis.NewRedis(redisConfig)
+	redisIns, err := redis.New(redisConfig)
 
 	if err != nil {
 		return

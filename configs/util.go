@@ -138,5 +138,10 @@ func initDefaultConfig() error {
 		}
 	}
 
+	//redis
+	if len(Config.Redis.Addresses) == 0 && Config.Redis.Server != "" {
+		Config.Redis.Addresses = []string{Config.Redis.Server}
+	}
+
 	return nil
 }

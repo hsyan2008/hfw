@@ -52,8 +52,8 @@ func (ctl *Controller) Init(httpCtx *HTTPContext) {
 
 	//开启session，暂时只支持redis
 	if configs.Config.EnableSession {
-		if redis.DefaultRedisIns != nil {
-			store := session.NewSessRedisStore(redis.DefaultRedisIns, configs.Config.Redis)
+		if redis.DefaultIns != nil {
+			store := session.NewSessRedisStore(redis.DefaultIns, configs.Config.Redis)
 			httpCtx.Session = session.NewSession(httpCtx.Request, store, configs.Config.Session)
 		} else {
 			httpCtx.Error("session enable faild: redis instance is nil")

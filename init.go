@@ -49,9 +49,9 @@ func Init() (err error) {
 	}
 
 	//初始化redis
-	if len(Config.Redis.Server) > 0 && redis.DefaultRedisIns == nil {
-		logger.Info("begin to connect default REDIS server:", Config.Redis.Server)
-		redis.DefaultRedisIns, err = redis.NewRedis(Config.Redis)
+	if len(Config.Redis.Addresses) > 0 && redis.DefaultIns == nil {
+		logger.Info("begin to connect default REDIS server:", Config.Redis.Addresses)
+		redis.DefaultIns, err = redis.New(Config.Redis)
 		if err != nil {
 			logger.Warn("connect to default REDIS faild:", err)
 			return fmt.Errorf("connect to default redis faild: %s", err.Error())
