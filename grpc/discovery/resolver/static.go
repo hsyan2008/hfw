@@ -61,9 +61,11 @@ func GenerateAndRegisterStaticResolver(cc configs.GrpcConfig) (schema string, er
 	if len(cc.Addresses) == 0 {
 		return "", fmt.Errorf("GrpcConfig has nil Addresses")
 	}
-	if cc.ResolverScheme == "" {
-		cc.ResolverScheme = fmt.Sprintf("%s_%s", cc.ResolverType, cc.ServerName)
+	cc, err = CompleteResolverScheme(cc)
+	if err != nil {
+		return
 	}
+
 	lock.RLock()
 	if resolver.Get(cc.ResolverScheme) != nil {
 		lock.RUnlock()

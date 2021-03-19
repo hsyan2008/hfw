@@ -175,7 +175,7 @@ type GrpcConfig struct {
 
 	//服务发现类型，目前可选static、consul，默认是static
 	ResolverType string
-	//默认ResolverType+ServerName
+	//默认ResolverType+ServerName，必须保证在同个项目里所有外部服务都是唯一
 	ResolverScheme string
 	//服务发现的地址，如consul、etcd地址
 	ResolverAddresses []string

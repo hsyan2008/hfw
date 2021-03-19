@@ -141,8 +141,9 @@ func GenerateAndRegisterConsulResolver(cc configs.GrpcConfig) (schema string, er
 	if len(cc.ResolverAddresses) == 0 {
 		return "", fmt.Errorf("GrpcConfig has nil ResolverAddresses")
 	}
-	if cc.ResolverScheme == "" {
-		cc.ResolverScheme = fmt.Sprintf("%s_%s", cc.ResolverType, cc.ServerName)
+	cc, err = CompleteResolverScheme(cc)
+	if err != nil {
+		return
 	}
 
 	lock.RLock()

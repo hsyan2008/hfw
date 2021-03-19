@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
-	"sort"
 	"strings"
 	"sync"
 
@@ -14,7 +13,7 @@ import (
 	"github.com/hsyan2008/hfw/grpc/auth"
 	"github.com/hsyan2008/hfw/grpc/balancer/p2c"
 	"github.com/hsyan2008/hfw/grpc/discovery"
-	dc "github.com/hsyan2008/hfw/grpc/discovery/common"
+	"github.com/hsyan2008/hfw/grpc/discovery/resolver"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
 	"google.golang.org/grpc/codes"
@@ -47,16 +46,9 @@ func GetConnWithAuth(ctx context.Context, c configs.GrpcConfig, authValue string
 	if len(c.ServerName) == 0 {
 		return nil, errors.New("please specify grpc ServerName")
 	}
-	//static下，有可能服务名一样而地址不一样，做特殊处理
-	if c.ResolverType == dc.StaticResolver {
-		if len(c.Addresses) == 0 {
-			return nil, errors.New("please specify grpc Addresses")
-		}
-		sort.Slice(c.Addresses, func(i, j int) bool { return c.Addresses[i] < c.Addresses[j] })
-		c.ServerName = fmt.Sprintf("%s_%s", common.Md5(strings.Join(c.Addresses, "|")), c.ServerName)
-	}
-	if c.ResolverScheme == "" {
-		c.ResolverScheme = fmt.Sprintf("%s_%s", c.ResolverType, c.ServerName)
+	c, err = resolver.CompleteResolverScheme(c)
+	if err != nil {
+		return
 	}
 	var ok bool
 	var p *connInstance
@@ -102,13 +94,9 @@ func removeClientConn(c configs.GrpcConfig, err error) {
 	if code != codes.Unavailable {
 		return
 	}
-	//static下，有可能服务名一样而地址不一样，做特殊处理
-	if c.ResolverType == dc.StaticResolver {
-		sort.Slice(c.Addresses, func(i, j int) bool { return c.Addresses[i] < c.Addresses[j] })
-		c.ServerName = fmt.Sprintf("%s_%s", common.Md5(strings.Join(c.Addresses, "|")), c.ServerName)
-	}
-	if c.ResolverScheme == "" {
-		c.ResolverScheme = fmt.Sprintf("%s_%s", c.ResolverType, c.ServerName)
+	c, err = resolver.CompleteResolverScheme(c)
+	if err != nil {
+		return
 	}
 	lock.Lock()
 	if p, ok := connInstanceMap[c.ResolverScheme]; ok {
