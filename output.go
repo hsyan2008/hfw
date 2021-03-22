@@ -179,7 +179,7 @@ func (httpCtx *HTTPContext) renderFile() (t *template.Template) {
 		templateFilePath = filepath.Join(Config.Template.HTMLPath, httpCtx.TemplateFile)
 	}
 	if !common.IsExist(templateFilePath) {
-		httpCtx.ThrowCheck(500, "system error")
+		httpCtx.ThrowCheck(500, "template path not exist")
 	}
 	if len(httpCtx.FuncMap) == 0 {
 		t = template.Must(template.ParseFiles(templateFilePath))
