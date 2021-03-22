@@ -198,7 +198,8 @@ func (httpCtx *HTTPContext) ThrowCheck(errNo int64, i interface{}) {
 		httpCtx.Output(2, fmt.Sprintf("[ThrowCheck] %s", e.Error()))
 	default:
 		errMsg = fmt.Sprintf("%v", e)
-		httpCtx.Output(2, fmt.Sprintf("[ThrowCheck] No:%d Msg:%v", errNo, errMsg))
+		file, line := common.GetCaller(1)
+		httpCtx.Output(2, fmt.Sprintf("[ThrowCheck] %s:%d No:%d Msg:%v", file, line, errNo, errMsg))
 	}
 
 	httpCtx.ErrNo = errNo
@@ -227,7 +228,8 @@ func (httpCtx *HTTPContext) CheckErr(errNo int64, i interface{}) (int64, string)
 		httpCtx.Output(2, fmt.Sprintf("[CheckErr] %s", e.Error()))
 	default:
 		errMsg = fmt.Sprintf("%v", e)
-		httpCtx.Output(2, fmt.Sprintf("[CheckErr] No:%d Msg:%v", errNo, errMsg))
+		file, line := common.GetCaller(1)
+		httpCtx.Output(2, fmt.Sprintf("[CheckErr] %s:%d No:%d Msg:%v", file, line, errNo, errMsg))
 	}
 
 	httpCtx.ErrMsg = common.GetErrorMap(errNo)

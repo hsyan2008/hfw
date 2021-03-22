@@ -89,9 +89,15 @@ func NewRespErr(errNo int64, i interface{}) (respErr *RespErr) {
 		respErr.err = errors.New(fmt.Sprintf("%v", i))
 	}
 
-	_, respErr.file, respErr.line, _ = runtime.Caller(1)
+	respErr.file, respErr.line = GetCaller(1)
+
+	return
+}
+
+func GetCaller(depth int) (file string, line int) {
+	_, file, line, _ = runtime.Caller(depth + 1)
 	if GOPATH != "" {
-		respErr.file = strings.Replace(respErr.file, GOPATH, "", 1)
+		file = strings.ReplaceAll(file, GOPATH, "")
 	}
 
 	return
