@@ -26,6 +26,8 @@ import (
 )
 
 var (
+	handlerMetrics bool
+
 	rpcRequestCount = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "rpc_request_count",
@@ -67,12 +69,16 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	startTime := time.Now()
 	defer func() {
 		httpCtx.Mixf("Path:%s Method:%s CostTime:%s", r.URL.String(), r.Method, time.Since(startTime))
-		rpcRequestDuration.WithLabelValues(r.URL.String()).Observe(float64(time.Since(startTime) / time.Millisecond))
+		if handlerMetrics {
+			rpcRequestDuration.WithLabelValues(r.URL.String()).Observe(float64(time.Since(startTime) / time.Millisecond))
+		}
 	}()
 
 	onlineNum := atomic.AddUint32(&online, 1)
 	httpCtx.Mixf("From:%s Path:%s Online:%d", r.RemoteAddr, r.URL.String(), onlineNum)
-	rpcRequestCount.WithLabelValues(r.URL.String()).Inc()
+	if handlerMetrics {
+		rpcRequestCount.WithLabelValues(r.URL.String()).Inc()
+	}
 	defer func() {
 		atomic.AddUint32(&online, ^uint32(0))
 	}()
@@ -105,7 +111,7 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	}
 
 	instance, methodName := findInstanceByPath(httpCtx)
-	if methodName == NotFound {
+	if methodName == NotFound && handlerMetrics {
 		rpcRequestFailCount.WithLabelValues(httpCtx.Request.URL.Path, NotFound)
 	}
 	httpCtx.Debugf("Path:%s -> Call:%s/%s", httpCtx.Request.URL.String(), httpCtx.Controller, httpCtx.Action)
@@ -177,6 +183,7 @@ var (
 //}
 
 func HandlerMetrics() {
+	handlerMetrics = true
 	http.Handle("/metrics", promhttp.Handler())
 	once.Do(func() {
 		go func() {
@@ -262,10 +269,14 @@ func HandlerFunc(pattern string, h http.HandlerFunc) {
 		startTime := time.Now()
 		defer func() {
 			logger.Mixf("Path:%s Method:%s CostTime:%s", r.URL.String(), r.Method, time.Since(startTime))
-			rpcRequestDuration.WithLabelValues(r.URL.String()).Observe(float64(time.Since(startTime) / time.Millisecond))
+			if handlerMetrics {
+				rpcRequestDuration.WithLabelValues(r.URL.String()).Observe(float64(time.Since(startTime) / time.Millisecond))
+			}
 		}()
 
-		rpcRequestCount.WithLabelValues(r.URL.String()).Inc()
+		if handlerMetrics {
+			rpcRequestCount.WithLabelValues(r.URL.String()).Inc()
+		}
 		h(w, r)
 		return
 	})
