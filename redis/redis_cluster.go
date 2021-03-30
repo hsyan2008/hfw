@@ -23,7 +23,7 @@ func NewRedisCluster(redisConfig configs.RedisConfig) (rc *RedisCluster, err err
 		redisConfig.PoolSize = 10
 	}
 	cls, err := cluster.NewWithOpts(cluster.Opts{
-		Addr:     redisConfig.Server,
+		Addr:     redisConfig.Addresses[0],
 		PoolSize: redisConfig.PoolSize,
 		PoolOpts: []pool.Opt{
 			pool.PingInterval(time.Hour),

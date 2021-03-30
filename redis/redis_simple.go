@@ -40,7 +40,7 @@ func NewRedisSimple(redisConfig configs.RedisConfig) (rs *RedisSimple, err error
 	if redisConfig.PoolSize <= 0 {
 		redisConfig.PoolSize = 10
 	}
-	p, err := pool.NewCustom("tcp", redisConfig.Server, redisConfig.PoolSize, df, pool.PingInterval(time.Hour))
+	p, err := pool.NewCustom("tcp", redisConfig.Addresses[0], redisConfig.PoolSize, df, pool.PingInterval(time.Hour))
 
 	if err != nil {
 		return
