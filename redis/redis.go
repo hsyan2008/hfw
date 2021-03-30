@@ -7,7 +7,7 @@ import (
 )
 
 func New(redisConfig configs.RedisConfig) (i RedisInterface, err error) {
-	if len(redisConfig.Server) == 0 {
+	if len(redisConfig.Addresses) == 0 {
 		return nil, errors.New("err redis config")
 	}
 
