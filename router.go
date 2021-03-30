@@ -18,6 +18,7 @@ import (
 	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/grpc/server"
+	"github.com/hsyan2008/hfw/prometheus"
 	"github.com/hsyan2008/hfw/signal"
 )
 
@@ -37,8 +38,11 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	go closeNotify(httpCtx)
 
 	startTime := time.Now()
+	prometheus.RequestsTotal(r.URL.String(), r.Method)
 	defer func() {
-		httpCtx.Mixf("Path:%s Method:%s CostTime:%s", r.URL.String(), r.Method, time.Since(startTime))
+		costTime := time.Since(startTime)
+		httpCtx.Mixf("Path:%s Method:%s CostTime:%s", r.URL.String(), r.Method, costTime)
+		prometheus.RequestsCosttime(r.URL.String(), r.Method, costTime)
 	}()
 
 	onlineNum := atomic.AddUint32(&online, 1)
@@ -191,13 +195,49 @@ func Handler(pattern string, handler ControllerInterface) (err error) {
 	return
 }
 
-//HandlerFunc register HandleFunc
+//HandlerFunc register HandlerFunc
 func HandlerFunc(pattern string, h http.HandlerFunc) {
 	logger.Infof("HandlerFunc: %s", pattern)
 	if pattern == "/" || pattern == "/logger/adjust" {
 		panic("http: multiple registrations for " + pattern)
 	}
-	http.HandleFunc(pattern, h)
+	http.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
+		httpCtx := new(HTTPContext)
+		//初始化httpCtx
+		httpCtx.init(w, r)
+		httpCtx.Ctx, httpCtx.cancel = context.WithCancel(signal.GetSignalContext().Ctx)
+		defer httpCtx.Cancel()
+		startTime := time.Now()
+		prometheus.RequestsTotal(r.URL.String(), r.Method)
+		defer func() {
+			costTime := time.Since(startTime)
+			httpCtx.Mixf("Path:%s Method:%s CostTime:%s", r.URL.String(), r.Method, costTime)
+			prometheus.RequestsCosttime(r.URL.String(), r.Method, costTime)
+		}()
+		onlineNum := atomic.AddUint32(&online, 1)
+		httpCtx.Mixf("From:%s Path:%s Online:%d", r.RemoteAddr, r.URL.String(), onlineNum)
+		defer func() {
+			atomic.AddUint32(&online, ^uint32(0))
+			if err := recover(); err != nil {
+				if err == ErrStopRun {
+					return
+				}
+				httpCtx.Fatal(err, string(common.GetStack()))
+			}
+		}()
+		err := checkConcurrence(onlineNum)
+		if err != nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			httpCtx.Warn(err)
+			return
+		}
+		h(w, r)
+	})
+}
+
+//Handle register Handle
+func Handle(pattern string, h http.Handler) {
+	HandlerFunc(pattern, h.ServeHTTP)
 }
 
 //StaticHandler ...

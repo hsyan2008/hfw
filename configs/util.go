@@ -143,5 +143,30 @@ func initDefaultConfig() error {
 		Config.Redis.Addresses = []string{Config.Redis.Server}
 	}
 
+	//prometheus
+	if Config.Prometheus.IsEnable {
+		if Config.Prometheus.RequestsTotal == "" {
+			Config.Prometheus.RequestsTotal = "requests_total"
+		}
+		if Config.Prometheus.RequestsCosttime == "" {
+			Config.Prometheus.RequestsCosttime = "requests_costtime"
+		}
+		if Config.Prometheus.RoutePath == "" {
+			Config.Prometheus.RoutePath = "/metrics"
+		}
+		if len(Config.Prometheus.Tags) == 0 {
+			Config.Prometheus.Tags = append(Config.Prometheus.Tags, "prometheus")
+		}
+	FOR:
+		for _, val := range Config.Prometheus.Tags {
+			for _, v := range Config.Server.Tags {
+				if val == v {
+					continue FOR
+				}
+			}
+			Config.Server.Tags = append(Config.Server.Tags, val)
+		}
+	}
+
 	return nil
 }

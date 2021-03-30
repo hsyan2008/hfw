@@ -17,6 +17,7 @@ require (
 	github.com/json-iterator/go v1.1.10
 	github.com/mediocregopher/radix.v2 v0.0.0-20181115013041-b67df6e626f9
 	github.com/mkevac/debugcharts v0.0.0-20191222103121-ae1c48aa8615
+	github.com/prometheus/client_golang v1.10.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/shirou/gopsutil v3.21.1+incompatible
 	google.golang.org/grpc v1.35.0

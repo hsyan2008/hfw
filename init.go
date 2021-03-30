@@ -11,7 +11,9 @@ import (
 	"github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/configs"
 	"github.com/hsyan2008/hfw/db"
+	"github.com/hsyan2008/hfw/prometheus"
 	"github.com/hsyan2008/hfw/redis"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 var (
@@ -68,6 +70,12 @@ func Init() (err error) {
 			return fmt.Errorf("connect to default mysql faild: %s", err.Error())
 		}
 		logger.Info("connect to default MYSQL server success")
+	}
+
+	//初始化prometheus
+	if Config.Prometheus.IsEnable {
+		prometheus.Init(Config.Prometheus)
+		Handle(Config.Prometheus.RoutePath, promhttp.Handler())
 	}
 
 	return

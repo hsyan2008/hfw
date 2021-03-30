@@ -22,6 +22,7 @@ type AllConfig struct {
 	Route      RouteConfig
 	Redis      RedisConfig
 	Session    SessionConfig
+	Prometheus PrometheusConfig
 	HotDeploy  HotDeployConfig
 	Custom     map[string]string
 }
@@ -42,6 +43,14 @@ type SessionConfig struct {
 	CookieName string
 	ReName     bool
 	CacheType  string
+}
+
+type PrometheusConfig struct {
+	IsEnable         bool
+	RoutePath        string   //注册路由，供prometheus拉取数据
+	RequestsTotal    string   //默认requests_total
+	RequestsCosttime string   //默认requests_costtime
+	Tags             []string //默认prometheus
 }
 
 //ServerConfig ..
