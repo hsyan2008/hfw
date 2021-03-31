@@ -2,13 +2,17 @@ package hfw
 
 import (
 	"context"
+	"errors"
 	"net"
+	"sync/atomic"
+	"time"
 
 	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/configs"
 	"github.com/hsyan2008/hfw/grpc/discovery"
 	"github.com/hsyan2008/hfw/grpc/server"
+	"github.com/hsyan2008/hfw/prometheus"
 	"github.com/hsyan2008/hfw/signal"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -76,7 +80,7 @@ func UnaryServerInterceptor(
 
 	httpCtx := NewHTTPContextWithGrpcIncomingCtx(ctx)
 	defer httpCtx.Cancel()
-	httpCtx.AppendPrefix("Method:" + info.FullMethod)
+	httpCtx.AppendPrefix("Path:" + info.FullMethod)
 
 	httpCtx.Debug("Req:", req)
 	defer func() {
@@ -85,15 +89,35 @@ func UnaryServerInterceptor(
 		} else if status.Code(err) == codes.Canceled {
 			httpCtx.Warn("Err:", err)
 		} else {
-			httpCtx.Warn("Req:", req, "Method:", info.FullMethod, "Err:", err)
+			httpCtx.Warn("Req:", req, "Err:", err)
 		}
 	}()
 
+	startTime := time.Now()
+	prometheus.RequestsTotal(info.FullMethod, "GRPC")
 	defer func() {
+		costTime := time.Since(startTime)
+		httpCtx.Mixf("Method:%s CostTime:%s", "GRPC", costTime)
+		prometheus.RequestsCosttime(info.FullMethod, "GRPC", costTime)
+	}()
+
+	onlineNum := atomic.AddUint32(&online, 1)
+	httpCtx.Mixf("Online:%d", onlineNum)
+	defer func() {
+		atomic.AddUint32(&online, ^uint32(0))
 		if e := recover(); e != nil {
-			httpCtx.Fatal(e, string(common.GetStack()))
+			if e == ErrStopRun {
+				return
+			}
+			err = errors.New("panic")
+			httpCtx.Fatal(err, string(common.GetStack()))
 		}
 	}()
+
+	err = checkConcurrence(onlineNum)
+	if err != nil {
+		return
+	}
 
 	return handler(httpCtx, req)
 }
@@ -105,13 +129,39 @@ func StreamServerInterceptor(
 
 	httpCtx := NewHTTPContextWithGrpcIncomingCtx(ss.Context())
 	defer httpCtx.Cancel()
-	httpCtx.AppendPrefix("Method:" + info.FullMethod)
+	httpCtx.AppendPrefix("Path:" + info.FullMethod)
 
 	defer func() {
-		if e := recover(); e != nil {
-			httpCtx.Fatal(e, string(common.GetStack()))
+		if err != nil {
+			httpCtx.Warn("Err:", err)
 		}
 	}()
+
+	startTime := time.Now()
+	prometheus.RequestsTotal(info.FullMethod, "Stream")
+	defer func() {
+		costTime := time.Since(startTime)
+		httpCtx.Mixf("Method:%s CostTime:%s", "Stream", costTime)
+		prometheus.RequestsCosttime(info.FullMethod, "Stream", costTime)
+	}()
+
+	onlineNum := atomic.AddUint32(&online, 1)
+	httpCtx.Mixf("Online:%d", onlineNum)
+	defer func() {
+		atomic.AddUint32(&online, ^uint32(0))
+		if e := recover(); e != nil {
+			if e == ErrStopRun {
+				return
+			}
+			err = errors.New("panic")
+			httpCtx.Fatal(err, string(common.GetStack()))
+		}
+	}()
+
+	err = checkConcurrence(onlineNum)
+	if err != nil {
+		return
+	}
 
 	return handler(srv, WarpServerStream(ss, httpCtx))
 }

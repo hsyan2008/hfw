@@ -144,19 +144,7 @@ func (httpCtx *HTTPContext) init(w http.ResponseWriter, r *http.Request) {
 	httpCtx.FuncMap = make(map[string]interface{})
 
 	httpCtx.Logger = logger.NewLogger()
-	//grpc
-	httpCtx.SetTraceID(r.Header.Get(common.GrpcHTTPTraceIDKey))
-	//header
-	if httpCtx.GetTraceID() == "" {
-		httpCtx.SetTraceID(r.Header.Get("Trace-Id"))
-	}
-	//path
-	if httpCtx.GetTraceID() == "" {
-		httpCtx.SetTraceID(r.URL.Query().Get("trace_id"))
-	}
-	if httpCtx.GetTraceID() == "" {
-		httpCtx.SetTraceID(common.GetPureUUID())
-	}
+	httpCtx.SetTraceID(common.GetTraceIDFromRequest(r))
 }
 
 //GetForm 优先post和put,然后get

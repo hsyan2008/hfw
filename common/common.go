@@ -167,3 +167,21 @@ func GetPureUUID(oldS ...string) (s string) {
 
 	return strings.ReplaceAll(s, "-", "")
 }
+
+func GetTraceIDFromRequest(r *http.Request) (traceID string) {
+	//grpc
+	traceID = r.Header.Get(GrpcHTTPTraceIDKey)
+	//header
+	if traceID == "" {
+		traceID = r.Header.Get("Trace-Id")
+	}
+	//path
+	if traceID == "" {
+		traceID = r.URL.Query().Get("trace_id")
+	}
+	if traceID == "" {
+		traceID = GetPureUUID()
+	}
+
+	return
+}

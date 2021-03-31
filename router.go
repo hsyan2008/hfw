@@ -28,6 +28,19 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	signal.GetSignalContext().WgAdd()
 	defer signal.GetSignalContext().WgDone()
 
+	//grpc
+	if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") {
+		if server.GetServer() == nil {
+			http.Error(w, "grpc server has not init", http.StatusInternalServerError)
+			return
+		}
+		//防止出现并没有Trace_id的情况
+		r.Header.Set(common.GrpcHTTPTraceIDKey, common.GetTraceIDFromRequest(r))
+		server.GetServer().ServeHTTP(w, r) // gRPC Server
+		return
+	}
+
+	//http
 	httpCtx := new(HTTPContext)
 	//初始化httpCtx
 	httpCtx.init(w, r)
@@ -54,17 +67,6 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusServiceUnavailable)
 		httpCtx.Warn(err)
-		return
-	}
-
-	if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") {
-		if server.GetServer() == nil {
-			http.Error(w, "grpc server has not init", http.StatusInternalServerError)
-			return
-		}
-		//防止出现并没有Trace_id的情况
-		r.Header.Set(common.GrpcHTTPTraceIDKey, httpCtx.GetTraceID())
-		server.GetServer().ServeHTTP(w, r) // gRPC Server
 		return
 	}
 
