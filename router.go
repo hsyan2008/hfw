@@ -51,11 +51,11 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	go closeNotify(httpCtx)
 
 	startTime := time.Now()
-	prometheus.RequestsTotal(r.URL.String(), r.Method)
+	prometheus.RequestsTotal(r.URL.Path, r.Method)
 	defer func() {
 		costTime := time.Since(startTime)
 		httpCtx.Mixf("Path:%s Method:%s CostTime:%s", r.URL.String(), r.Method, costTime)
-		prometheus.RequestsCosttime(r.URL.String(), r.Method, costTime)
+		prometheus.RequestsCosttime(r.URL.Path, r.Method, costTime)
 	}()
 
 	onlineNum := atomic.AddUint32(&online, 1)
@@ -210,11 +210,11 @@ func HandlerFunc(pattern string, h http.HandlerFunc) {
 		httpCtx.Ctx, httpCtx.cancel = context.WithCancel(signal.GetSignalContext().Ctx)
 		defer httpCtx.Cancel()
 		startTime := time.Now()
-		prometheus.RequestsTotal(r.URL.String(), r.Method)
+		prometheus.RequestsTotal(r.URL.Path, r.Method)
 		defer func() {
 			costTime := time.Since(startTime)
 			httpCtx.Mixf("Path:%s Method:%s CostTime:%s", r.URL.String(), r.Method, costTime)
-			prometheus.RequestsCosttime(r.URL.String(), r.Method, costTime)
+			prometheus.RequestsCosttime(r.URL.Path, r.Method, costTime)
 		}()
 		onlineNum := atomic.AddUint32(&online, 1)
 		httpCtx.Mixf("From:%s Path:%s Online:%d", r.RemoteAddr, r.URL.String(), onlineNum)
