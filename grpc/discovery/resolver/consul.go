@@ -3,9 +3,10 @@ package resolver
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"sync"
 
-	consulapi "github.com/hashicorp/consul/api"
+	"github.com/hashicorp/consul/api"
 	"github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/configs"
 	"github.com/hsyan2008/hfw/grpc/discovery/common"
@@ -16,22 +17,27 @@ import (
 type consulBuilder struct {
 	scheme      string
 	address     string
-	client      *consulapi.Client
+	client      *api.Client
 	serviceName string
 	tag         string
 
-	lastIndex uint64
+	queryOptions *api.QueryOptions
 }
 
 func NewConsulBuilder(scheme, address, tag string) resolver.Builder {
-	config := consulapi.DefaultConfig()
+	config := api.DefaultConfig()
 	config.Address = address
-	client, err := consulapi.NewClient(config)
+	client, err := api.NewClient(config)
 	if err != nil {
 		logger.Fatal("create consul client error", err.Error())
 		return nil
 	}
-	return &consulBuilder{scheme: scheme, address: address, tag: tag, client: client}
+	return &consulBuilder{scheme: scheme,
+		address:      address,
+		tag:          tag,
+		client:       client,
+		queryOptions: (&api.QueryOptions{}).WithContext(signal.GetSignalContext().Ctx),
+	}
 }
 
 func (cb *consulBuilder) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
@@ -53,14 +59,12 @@ func (cb *consulBuilder) Build(target resolver.Target, cc resolver.ClientConn, o
 
 func (cb *consulBuilder) resolve() ([]resolver.Address, string, error) {
 
-	serviceEntries, metainfo, err := cb.client.Health().Service(cb.serviceName, cb.tag, true, &consulapi.QueryOptions{
-		WaitIndex: cb.lastIndex, // 同步点，这个调用将一直阻塞，直到有新的更新
-	})
+	serviceEntries, metainfo, err := cb.client.Health().Service(cb.serviceName, cb.tag, true, cb.queryOptions)
 	if err != nil {
 		return nil, "", err
 	}
 
-	cb.lastIndex = metainfo.LastIndex
+	cb.queryOptions.WaitIndex = metainfo.LastIndex
 
 	adds := make([]resolver.Address, 0)
 	for _, serviceEntry := range serviceEntries {
@@ -108,6 +112,11 @@ func (cr *consulResolver) watcher() {
 		}
 		adds, serviceConfig, err := cr.consulBuilder.resolve()
 		if err != nil {
+			if e, ok := err.(*url.Error); ok {
+				if e.Err == context.Canceled {
+					continue
+				}
+			}
 			logger.Fatal("query service entries error:", err.Error())
 			continue
 		}

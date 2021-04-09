@@ -2,7 +2,6 @@ package hfw
 
 //手动匹配路由
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -19,14 +18,10 @@ import (
 	"github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/grpc/server"
 	"github.com/hsyan2008/hfw/prometheus"
-	"github.com/hsyan2008/hfw/signal"
 )
 
 //Router 写测试用例会调用
 func Router(w http.ResponseWriter, r *http.Request) {
-
-	signal.GetSignalContext().WgAdd()
-	defer signal.GetSignalContext().WgDone()
 
 	//grpc
 	if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") {
@@ -40,23 +35,19 @@ func Router(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//http
-	httpCtx := new(HTTPContext)
 	//初始化httpCtx
-	httpCtx.init(w, r)
-	httpCtx.Ctx, httpCtx.cancel = context.WithCancel(signal.GetSignalContext().Ctx)
+	httpCtx := initCtx(w, r)
 	defer httpCtx.Cancel()
 
 	//如果用户关闭连接
 	go closeNotify(httpCtx)
 
-	startTime := time.Now()
 	prometheus.RequestsTotal(r.URL.Path, r.Method)
-	defer func() {
+	defer func(path, method string, startTime time.Time) {
 		costTime := time.Since(startTime)
-		httpCtx.Mixf("Path:%s Method:%s CostTime:%s", r.URL.String(), r.Method, costTime)
-		prometheus.RequestsCosttime(r.URL.Path, r.Method, costTime)
-	}()
+		httpCtx.Mixf("Path:%s Method:%s CostTime:%s", path, method, costTime)
+		prometheus.RequestsCosttime(path, method, costTime)
+	}(r.URL.Path, r.Method, time.Now())
 
 	onlineNum := atomic.AddUint32(&online, 1)
 	httpCtx.Mixf("From:%s Path:%s Online:%d", r.RemoteAddr, r.URL.String(), onlineNum)
@@ -81,7 +72,7 @@ func Router(w http.ResponseWriter, r *http.Request) {
 	}
 
 	instance, methodName := findInstanceByPath(httpCtx)
-	httpCtx.Debugf("Path:%s -> Call:%s/%s", httpCtx.Request.URL.String(), httpCtx.Controller, httpCtx.Action)
+	httpCtx.Debugf("Path:%s -> Call:%s/%s", httpCtx.Request.URL.Path, httpCtx.Controller, httpCtx.Action)
 	reflectVal := instance.reflectVal
 
 	//注意方法必须是大写开头，否则无法调用
@@ -204,18 +195,16 @@ func HandlerFunc(pattern string, h http.HandlerFunc) {
 		panic("http: multiple registrations for " + pattern)
 	}
 	http.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
-		httpCtx := new(HTTPContext)
-		//初始化httpCtx
-		httpCtx.init(w, r)
-		httpCtx.Ctx, httpCtx.cancel = context.WithCancel(signal.GetSignalContext().Ctx)
+		httpCtx := initCtx(w, r)
 		defer httpCtx.Cancel()
-		startTime := time.Now()
+
 		prometheus.RequestsTotal(r.URL.Path, r.Method)
-		defer func() {
+		defer func(path, method string, startTime time.Time) {
 			costTime := time.Since(startTime)
-			httpCtx.Mixf("Path:%s Method:%s CostTime:%s", r.URL.String(), r.Method, costTime)
-			prometheus.RequestsCosttime(r.URL.Path, r.Method, costTime)
-		}()
+			httpCtx.Mixf("Path:%s Method:%s CostTime:%s", path, method, costTime)
+			prometheus.RequestsCosttime(path, method, costTime)
+		}(r.URL.Path, r.Method, time.Now())
+
 		onlineNum := atomic.AddUint32(&online, 1)
 		httpCtx.Mixf("From:%s Path:%s Online:%d", r.RemoteAddr, r.URL.String(), onlineNum)
 		defer func() {

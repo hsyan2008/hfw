@@ -1,14 +1,16 @@
 package serviceDiscovery
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math/rand"
+	"net/url"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	consulapi "github.com/hashicorp/consul/api"
+	"github.com/hashicorp/consul/api"
 	"github.com/hsyan2008/hfw"
 )
 
@@ -21,7 +23,7 @@ const (
 )
 
 type ConsulResolver struct {
-	client      *consulapi.Client
+	client      *api.Client
 	serviceName string
 	tag         string
 
@@ -32,7 +34,7 @@ type ConsulResolver struct {
 
 	wg *sync.WaitGroup
 
-	lastIndex uint64
+	queryOptions *api.QueryOptions
 
 	policy  balancePolicy
 	lbIndex uint64
@@ -58,21 +60,22 @@ func NewConsulResolver(serviceName, address string, policy balancePolicy, tag st
 	}
 
 	httpCtx := hfw.NewHTTPContext()
-	config := consulapi.DefaultConfig()
+	config := api.DefaultConfig()
 	config.Address = address
-	client, err := consulapi.NewClient(config)
+	client, err := api.NewClient(config)
 	if err != nil {
 		httpCtx.Fatal("create consul client error", err.Error())
 		httpCtx.Cancel()
 		return nil, err
 	}
 	cr := &ConsulResolver{
-		client:      client,
-		serviceName: serviceName,
-		tag:         tag,
-		wg:          new(sync.WaitGroup),
-		httpCtx:     httpCtx,
-		policy:      policy,
+		client:       client,
+		serviceName:  serviceName,
+		tag:          tag,
+		wg:           new(sync.WaitGroup),
+		httpCtx:      httpCtx,
+		policy:       policy,
+		queryOptions: (&api.QueryOptions{}).WithContext(httpCtx.Ctx),
 	}
 
 	err = cr.resolve()
@@ -90,14 +93,17 @@ func NewConsulResolver(serviceName, address string, policy balancePolicy, tag st
 	return cr, nil
 }
 func (consulResolver *ConsulResolver) resolve() (err error) {
-	serviceEntries, metaInfo, err := consulResolver.client.Health().Service(consulResolver.serviceName, consulResolver.tag, true, &consulapi.QueryOptions{
-		WaitIndex: consulResolver.lastIndex,
-	})
+	serviceEntries, metaInfo, err := consulResolver.client.Health().Service(consulResolver.serviceName, consulResolver.tag, true, consulResolver.queryOptions)
 	if err != nil {
+		if e, ok := err.(*url.Error); ok {
+			if e.Err == context.Canceled {
+				return nil
+			}
+		}
 		return
 	}
 
-	consulResolver.lastIndex = metaInfo.LastIndex
+	consulResolver.queryOptions.WaitIndex = metaInfo.LastIndex
 
 	var adds []string
 	for _, serviceEntry := range serviceEntries {
@@ -122,6 +128,7 @@ func (consulResolver *ConsulResolver) watch() {
 
 		select {
 		case <-consulResolver.httpCtx.Ctx.Done():
+			consulResolver.httpCtx.Cancel()
 			return
 		default:
 		}

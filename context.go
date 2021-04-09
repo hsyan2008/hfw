@@ -22,8 +22,9 @@ import (
 //Json里的数据放Response
 //Layout的功能未实现 TODO
 type HTTPContext struct {
-	Ctx    context.Context    `json:"-"`
-	cancel context.CancelFunc `json:"-"`
+	Ctx        context.Context    `json:"-"`
+	cancel     context.CancelFunc `json:"-"`
+	isCanceled bool               `json:"-"`
 
 	HTTPStatus int `json:"-"`
 
@@ -65,7 +66,27 @@ type HTTPContext struct {
 	*logger.Logger
 }
 
+func initCtx(w http.ResponseWriter, r *http.Request) *HTTPContext {
+	signal.GetSignalContext().WgAdd()
+	httpCtx := &HTTPContext{}
+	httpCtx.Ctx, httpCtx.cancel = context.WithCancel(signal.GetSignalContext().Ctx)
+
+	httpCtx.HTTPStatus = http.StatusOK
+
+	httpCtx.ResponseWriter = w
+	httpCtx.Request = r
+
+	httpCtx.Data = make(map[string]interface{})
+	httpCtx.FuncMap = make(map[string]interface{})
+
+	httpCtx.Logger = logger.NewLogger()
+	httpCtx.SetTraceID(common.GetTraceIDFromRequest(r))
+
+	return httpCtx
+}
+
 func NewHTTPContext() *HTTPContext {
+	signal.GetSignalContext().WgAdd()
 	httpCtx := &HTTPContext{}
 	httpCtx.Ctx, httpCtx.cancel = context.WithCancel(signal.GetSignalContext().Ctx)
 	httpCtx.Logger = logger.NewLogger()
@@ -75,6 +96,7 @@ func NewHTTPContext() *HTTPContext {
 }
 
 func NewHTTPContextWithCtx(ctx *HTTPContext) *HTTPContext {
+	signal.GetSignalContext().WgAdd()
 	httpCtx := &HTTPContext{}
 	httpCtx.Ctx, httpCtx.cancel = context.WithCancel(ctx.Ctx)
 	httpCtx.Logger = logger.NewLogger()
@@ -92,6 +114,7 @@ func NewHTTPContextWithGrpcIncomingCtx(ctx context.Context) *HTTPContext {
 	if h, ok := ctx.(*HTTPContext); ok {
 		return h
 	}
+	signal.GetSignalContext().WgAdd()
 	httpCtx := &HTTPContext{}
 	httpCtx.Ctx, httpCtx.cancel = context.WithCancel(ctx)
 	httpCtx.Logger = logger.NewLogger()
@@ -105,6 +128,7 @@ func NewHTTPContextWithGrpcOutgoingCtx(ctx context.Context) *HTTPContext {
 	if h, ok := ctx.(*HTTPContext); ok {
 		return h
 	}
+	signal.GetSignalContext().WgAdd()
 	httpCtx := &HTTPContext{}
 	httpCtx.Ctx, httpCtx.cancel = context.WithCancel(ctx)
 	httpCtx.Logger = logger.NewLogger()
@@ -128,23 +152,14 @@ func (httpCtx *HTTPContext) Value(key interface{}) interface{} {
 	return httpCtx.Ctx.Value(key)
 }
 func (httpCtx *HTTPContext) Cancel() {
+	if httpCtx.isCanceled {
+		return
+	}
+	httpCtx.isCanceled = true
+	signal.GetSignalContext().WgDone()
 	httpCtx.cancel()
 	//不能赋值nil，否则导致打印log报错
 	// httpCtx.Logger = nil
-}
-
-func (httpCtx *HTTPContext) init(w http.ResponseWriter, r *http.Request) {
-
-	httpCtx.HTTPStatus = http.StatusOK
-
-	httpCtx.ResponseWriter = w
-	httpCtx.Request = r
-
-	httpCtx.Data = make(map[string]interface{})
-	httpCtx.FuncMap = make(map[string]interface{})
-
-	httpCtx.Logger = logger.NewLogger()
-	httpCtx.SetTraceID(common.GetTraceIDFromRequest(r))
 }
 
 //GetForm 优先post和put,然后get
