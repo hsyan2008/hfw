@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/hsyan2008/hfw/common"
-	"github.com/hsyan2008/hfw/signal"
 	cron "github.com/robfig/cron/v3"
 )
 
@@ -37,14 +36,12 @@ func WrapCron(cmd func(httpCtx *HTTPContext) error) func() {
 	return func() {
 		httpCtx := NewHTTPContext()
 		defer httpCtx.Cancel()
-		signal.GetSignalContext().WgAdd()
 		defer func(now time.Time) {
 			if err := recover(); err != nil {
 				if err != ErrStopRun {
 					httpCtx.Warn(err, string(common.GetStack()))
 				}
 			}
-			signal.GetSignalContext().WgDone()
 			httpCtx.Infof("CostTime: %s", time.Since(now))
 		}(time.Now())
 
