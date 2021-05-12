@@ -21,7 +21,7 @@ func (httpCtx *HTTPContext) RenderResponse() {
 	}
 	httpCtx.ResponseWriter.Header().Set("Trace-Id", httpCtx.GetTraceID())
 
-	if configs.Config.EnableSession && httpCtx.Session != nil {
+	if (configs.Config.EnableSession || configs.Config.Session.IsEnable) && httpCtx.Session != nil {
 		httpCtx.Session.Close(httpCtx.Request, httpCtx.ResponseWriter)
 	}
 

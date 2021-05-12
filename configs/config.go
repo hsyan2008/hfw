@@ -9,7 +9,7 @@ var Config AllConfig
 //Config 项目配置
 type AllConfig struct {
 	AppID         int64
-	EnableSession bool
+	EnableSession bool //废弃
 	ErrorBase     int64
 
 	Server     HTTPServerConfig
@@ -32,7 +32,7 @@ type RedisConfig struct {
 	Server     string //废弃
 	Addresses  []string
 	Prefix     string
-	Expiration int32
+	Expiration int64
 	PoolSize   int
 	//以下两个在集群下无效
 	Db       int
@@ -40,9 +40,11 @@ type RedisConfig struct {
 }
 
 type SessionConfig struct {
+	IsEnable   bool
 	CookieName string
 	ReName     bool
 	CacheType  string
+	Expiration int64
 }
 
 type PrometheusConfig struct {
@@ -164,7 +166,7 @@ type RouteConfig struct {
 
 type HotDeployConfig struct {
 	//是否开启监听执行初始命令的目录
-	Enable bool
+	IsEnable bool
 	//指定热部署的命令
 	Cmd string
 	//指定监听的文件名或者后缀(不带.)

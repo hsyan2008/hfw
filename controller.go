@@ -51,7 +51,7 @@ func (ctl *Controller) Init(httpCtx *HTTPContext) {
 	// _ = httpCtx.Request.ParseMultipartForm(2 * 1024 * 1024)
 
 	//开启session，暂时只支持redis
-	if configs.Config.EnableSession {
+	if configs.Config.EnableSession || configs.Config.Session.IsEnable {
 		if redis.DefaultIns != nil {
 			store := session.NewSessRedisStore(redis.DefaultIns, configs.Config.Redis)
 			httpCtx.Session = session.NewSession(httpCtx.Request, store, configs.Config.Session)

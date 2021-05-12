@@ -25,7 +25,7 @@ func Run() (err error) {
 	//等待工作完成
 	defer signalContext.Shutdowned()
 
-	if Config.HotDeploy.Enable {
+	if Config.HotDeploy.IsEnable {
 		go deploy.HotDeploy(Config.HotDeploy)
 	}
 

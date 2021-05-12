@@ -6,7 +6,7 @@ import (
 )
 
 type RedisCache struct {
-	redisIns redis.RedisInterface
+	redisIns *redis.Client
 	key      string
 }
 
@@ -27,7 +27,9 @@ func (rc *RedisCache) Get(key string) (value interface{}, err error) {
 	if rc == nil {
 		return
 	}
-	return rc.redisIns.HGet(rc.key, key)
+	err = rc.redisIns.HGet(&value, rc.key, key)
+
+	return
 }
 
 func (rc *RedisCache) Put(key string, value interface{}) (err error) {
@@ -43,7 +45,9 @@ func (rc *RedisCache) Del(key string) (err error) {
 		return
 	}
 
-	return rc.redisIns.HDel(rc.key, key)
+	_, err = rc.redisIns.HDel(rc.key, key)
+
+	return
 }
 
 func (rc *RedisCache) IsExist(key string) (isExist bool) {
