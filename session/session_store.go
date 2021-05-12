@@ -49,7 +49,7 @@ func (s *sessRedisStore) Put(sessid, key string, value interface{}) (err error) 
 
 func (s *sessRedisStore) Get(value interface{}, sessid, key string) (err error) {
 
-	err = s.redisIns.HGet(&value, s.prefix+sessid, key)
+	_, err = s.redisIns.HGet(&value, s.prefix+sessid, key)
 
 	return
 }

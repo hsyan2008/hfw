@@ -27,7 +27,7 @@ func (rc *RedisCache) Get(key string) (value interface{}, err error) {
 	if rc == nil {
 		return
 	}
-	err = rc.redisIns.HGet(&value, rc.key, key)
+	_, err = rc.redisIns.HGet(&value, rc.key, key)
 
 	return
 }
