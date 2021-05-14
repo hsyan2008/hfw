@@ -60,6 +60,7 @@ func New(redisConfig configs.RedisConfig) (c *Client, err error) {
 		c.client, err = radix.NewPool("tcp", redisConfig.Addresses[0], redisConfig.PoolSize, radix.PoolConnFunc(customConnFunc))
 	}
 	if err != nil {
+		c.client = nil
 		return
 	}
 

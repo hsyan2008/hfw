@@ -57,7 +57,7 @@ func (c *Client) Set(key string, args ...interface{}) (b bool, err error) {
 func (c *Client) Get(recv interface{}, key string) (b bool, err error) {
 	var data []byte
 	mn := radix.MaybeNil{Rcv: &data}
-	err = Do(radix.Cmd(&mn, "GET", c.addPrefix(key)))
+	err = c.Do(radix.Cmd(&mn, "GET", c.addPrefix(key)))
 	if err != nil {
 		return
 	}
@@ -65,7 +65,7 @@ func (c *Client) Get(recv interface{}, key string) (b bool, err error) {
 		return
 	}
 	if len(data) > 0 {
-		err = Unmarshal(data, &recv)
+		err = c.Unmarshal(data, &recv)
 	}
 
 	return true, err
@@ -200,7 +200,7 @@ func (c *Client) HSet(key, field string, value interface{}) (err error) {
 func (c *Client) HGet(recv interface{}, key, field string) (b bool, err error) {
 	var data []byte
 	mn := radix.MaybeNil{Rcv: &data}
-	err = Do(radix.Cmd(&mn, "HGET", c.addPrefix(key), field))
+	err = c.Do(radix.Cmd(&mn, "HGET", c.addPrefix(key), field))
 	if err != nil {
 		return
 	}
@@ -209,7 +209,7 @@ func (c *Client) HGet(recv interface{}, key, field string) (b bool, err error) {
 	}
 
 	if len(data) > 0 {
-		err = Unmarshal(data, &recv)
+		err = c.Unmarshal(data, &recv)
 	}
 
 	return true, err
@@ -400,4 +400,58 @@ func (c *Client) GeoRadiusByMember(key string, args ...interface{}) (values [][]
 	err = c.Do(radix.FlatCmd(&values, "GEORADIUSBYMEMBER", c.addPrefix(key), args...))
 
 	return
+}
+
+func (c *Client) LPush(key string, values ...interface{}) (num int64, err error) {
+	if len(values) == 0 {
+		return 0, ErrParmasNotEnough
+	}
+	for k, v := range values {
+		values[k], err = c.Marshal(v)
+		if err != nil {
+			return
+		}
+	}
+	err = c.Do(radix.FlatCmd(&num, "LPUSH", c.addPrefix(key), values...))
+	return
+}
+
+func (c *Client) LPop(recv interface{}, key string) (b bool, err error) {
+	var data []byte
+	mn := radix.MaybeNil{Rcv: &data}
+	err = c.Do(radix.Cmd(&mn, "LPOP", c.addPrefix(key)))
+	if mn.Nil {
+		return
+	}
+	if len(data) > 0 {
+		err = c.Unmarshal(data, &recv)
+	}
+	return true, err
+}
+
+func (c *Client) RPush(key string, values ...interface{}) (num int64, err error) {
+	if len(values) == 0 {
+		return 0, ErrParmasNotEnough
+	}
+	for k, v := range values {
+		values[k], err = c.Marshal(v)
+		if err != nil {
+			return
+		}
+	}
+	err = c.Do(radix.FlatCmd(&num, "RPUSH", c.addPrefix(key), values...))
+	return
+}
+
+func (c *Client) RPop(recv interface{}, key string) (b bool, err error) {
+	var data []byte
+	mn := radix.MaybeNil{Rcv: &data}
+	err = c.Do(radix.Cmd(&mn, "RPOP", c.addPrefix(key)))
+	if mn.Nil {
+		return
+	}
+	if len(data) > 0 {
+		err = c.Unmarshal(data, &recv)
+	}
+	return true, err
 }

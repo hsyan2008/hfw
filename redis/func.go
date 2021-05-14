@@ -174,3 +174,19 @@ func GeoRadius(key string, args ...interface{}) (values [][]interface{}, err err
 func GeoRadiusByMember(key string, args ...interface{}) (values [][]interface{}, err error) {
 	return DefaultIns.GeoRadiusByMember(key, args...)
 }
+
+func LPush(key string, values ...interface{}) (num int64, err error) {
+	return DefaultIns.LPush(key, values...)
+}
+
+func LPop(recv interface{}, key string) (b bool, err error) {
+	return DefaultIns.LPop(recv, key)
+}
+
+func RPush(key string, values ...interface{}) (num int64, err error) {
+	return DefaultIns.RPush(key, values...)
+}
+
+func RPop(recv interface{}, key string) (b bool, err error) {
+	return DefaultIns.RPop(recv, key)
+}

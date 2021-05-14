@@ -562,3 +562,57 @@ func TestGeoRadiusByMember(t *testing.T) {
 		assert.Greater(len(i), 0)
 	}
 }
+
+func TestLPush(t *testing.T) {
+	assert := assert.New(t)
+
+	num, err := LPush("lists", 1, 3, 4)
+	if assert.Nil(err) {
+		assert.GreaterOrEqual(num, int64(3))
+	}
+}
+
+func TestLPop(t *testing.T) {
+	assert := assert.New(t)
+	Del("lists")
+	var i int
+	b, err := LPop(&i, "lists")
+	if assert.Nil(err) {
+		assert.False(b)
+		assert.EqualValues(0, i)
+	}
+
+	TestLPush(t)
+	b, err = LPop(&i, "lists")
+	if assert.Nil(err) {
+		assert.True(b)
+		assert.Greater(i, 0)
+	}
+}
+
+func TestRPush(t *testing.T) {
+	assert := assert.New(t)
+
+	num, err := RPush("lists", 1, 3, 4)
+	if assert.Nil(err) {
+		assert.GreaterOrEqual(num, int64(3))
+	}
+}
+
+func TestRPop(t *testing.T) {
+	assert := assert.New(t)
+	Del("lists")
+	var i int
+	b, err := RPop(&i, "lists")
+	if assert.Nil(err) {
+		assert.False(b)
+		assert.EqualValues(0, i)
+	}
+
+	TestLPush(t)
+	b, err = RPop(&i, "lists")
+	if assert.Nil(err) {
+		assert.True(b)
+		assert.Greater(i, 0)
+	}
+}

@@ -25,6 +25,7 @@ require (
 	github.com/prometheus/client_golang v1.10.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/shirou/gopsutil v3.21.4+incompatible
+	github.com/stretchr/testify v1.5.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.5 // indirect
 	golang.org/x/net v0.0.0-20210510120150-4163338589ed // indirect
 	google.golang.org/grpc v1.37.1
