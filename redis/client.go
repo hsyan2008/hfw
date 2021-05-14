@@ -32,7 +32,7 @@ func (c *Client) Close() error {
 	return c.client.Close()
 }
 
-func (c *Client) addPrefix(s string) string {
+func (c *Client) AddPrefix(s string) string {
 	return c.prefix + s
 }
 
@@ -50,14 +50,14 @@ func (c *Client) Set(key string, args ...interface{}) (b bool, err error) {
 		return
 	}
 	var s string
-	err = c.Do(radix.FlatCmd(&s, "SET", c.addPrefix(key), args...))
+	err = c.Do(radix.FlatCmd(&s, "SET", c.AddPrefix(key), args...))
 	return isOk(s), err
 }
 
 func (c *Client) Get(recv interface{}, key string) (b bool, err error) {
 	var data []byte
 	mn := radix.MaybeNil{Rcv: &data}
-	err = c.Do(radix.Cmd(&mn, "GET", c.addPrefix(key)))
+	err = c.Do(radix.Cmd(&mn, "GET", c.AddPrefix(key)))
 	if err != nil {
 		return
 	}
@@ -85,7 +85,7 @@ func (c *Client) MSet(items ...interface{}) (err error) {
 		}
 	} else {
 		for i := 0; i < len(items); i += 2 {
-			items[i] = c.addPrefix(items[i].(string))
+			items[i] = c.AddPrefix(items[i].(string))
 			items[i+1], err = c.Marshal(items[i+1])
 			if err != nil {
 				return
@@ -103,7 +103,7 @@ func (c *Client) MGet(keys ...string) (recv [][]byte, err error) {
 		recv = make([][]byte, len(keys))
 		var data []byte
 		for k, v := range keys {
-			err = c.Do(radix.Cmd(&data, "GET", c.addPrefix(v)))
+			err = c.Do(radix.Cmd(&data, "GET", c.AddPrefix(v)))
 			if err != nil {
 				return
 			}
@@ -112,7 +112,7 @@ func (c *Client) MGet(keys ...string) (recv [][]byte, err error) {
 	} else {
 		newKeys := make([]string, len(keys))
 		for k, v := range keys {
-			newKeys[k] = c.addPrefix(v)
+			newKeys[k] = c.AddPrefix(v)
 		}
 
 		err = c.Do(radix.Cmd(&recv, "MGET", newKeys...))
@@ -122,30 +122,30 @@ func (c *Client) MGet(keys ...string) (recv [][]byte, err error) {
 }
 
 func (c *Client) IsExist(key string) (isExist bool, err error) {
-	err = c.Do(radix.Cmd(&isExist, "EXISTS", c.addPrefix(key)))
+	err = c.Do(radix.Cmd(&isExist, "EXISTS", c.AddPrefix(key)))
 	return
 }
 
 func (c *Client) Incr(key string) (value int64, err error) {
-	err = c.Do(radix.Cmd(&value, "INCR", c.addPrefix(key)))
+	err = c.Do(radix.Cmd(&value, "INCR", c.AddPrefix(key)))
 
 	return
 }
 
 func (c *Client) Decr(key string) (value int64, err error) {
-	err = c.Do(radix.Cmd(&value, "DECR", c.addPrefix(key)))
+	err = c.Do(radix.Cmd(&value, "DECR", c.AddPrefix(key)))
 
 	return
 }
 
 func (c *Client) IncrBy(key string, delta int64) (value int64, err error) {
-	err = c.Do(radix.FlatCmd(&value, "INCRBY", c.addPrefix(key), delta))
+	err = c.Do(radix.FlatCmd(&value, "INCRBY", c.AddPrefix(key), delta))
 
 	return
 }
 
 func (c *Client) DecrBy(key string, delta int64) (value int64, err error) {
-	err = c.Do(radix.FlatCmd(&value, "DECRBY", c.addPrefix(key), delta))
+	err = c.Do(radix.FlatCmd(&value, "DECRBY", c.AddPrefix(key), delta))
 
 	return
 }
@@ -154,7 +154,7 @@ func (c *Client) Del(keys ...string) (num int64, err error) {
 	if c.config.IsCluster {
 		var i int64
 		for _, v := range keys {
-			err = c.Do(radix.Cmd(&i, "DEL", c.addPrefix(v)))
+			err = c.Do(radix.Cmd(&i, "DEL", c.AddPrefix(v)))
 			if err != nil {
 				return
 			}
@@ -162,7 +162,7 @@ func (c *Client) Del(keys ...string) (num int64, err error) {
 		}
 	} else {
 		for k, v := range keys {
-			keys[k] = c.addPrefix(v)
+			keys[k] = c.AddPrefix(v)
 		}
 
 		err = c.Do(radix.Cmd(&num, "DEL", keys...))
@@ -192,7 +192,7 @@ func (c *Client) HSet(key, field string, value interface{}) (err error) {
 		return
 	}
 
-	err = c.Do(radix.FlatCmd(nil, "HSET", c.addPrefix(key), field, v))
+	err = c.Do(radix.FlatCmd(nil, "HSET", c.AddPrefix(key), field, v))
 
 	return
 }
@@ -200,7 +200,7 @@ func (c *Client) HSet(key, field string, value interface{}) (err error) {
 func (c *Client) HGet(recv interface{}, key, field string) (b bool, err error) {
 	var data []byte
 	mn := radix.MaybeNil{Rcv: &data}
-	err = c.Do(radix.Cmd(&mn, "HGET", c.addPrefix(key), field))
+	err = c.Do(radix.Cmd(&mn, "HGET", c.AddPrefix(key), field))
 	if err != nil {
 		return
 	}
@@ -216,50 +216,50 @@ func (c *Client) HGet(recv interface{}, key, field string) (b bool, err error) {
 }
 
 func (c *Client) HExists(key, field string) (b bool, err error) {
-	err = c.Do(radix.Cmd(&b, "HEXISTS", c.addPrefix(key), field))
+	err = c.Do(radix.Cmd(&b, "HEXISTS", c.AddPrefix(key), field))
 
 	return
 }
 
 func (c *Client) HIncrBy(key, field string, delta int64) (value int64, err error) {
-	err = c.Do(radix.FlatCmd(&value, "HINCRBY", c.addPrefix(key), field, delta))
+	err = c.Do(radix.FlatCmd(&value, "HINCRBY", c.AddPrefix(key), field, delta))
 
 	return
 }
 
 func (c *Client) HDel(key string, fields ...string) (num int64, err error) {
-	err = c.Do(radix.FlatCmd(&num, "HDEL", c.addPrefix(key), fields))
+	err = c.Do(radix.FlatCmd(&num, "HDEL", c.AddPrefix(key), fields))
 
 	return
 }
 
 func (c *Client) ZAdd(key string, args ...interface{}) (num int64, err error) {
-	err = c.Do(radix.FlatCmd(&num, "ZADD", c.addPrefix(key), args...))
+	err = c.Do(radix.FlatCmd(&num, "ZADD", c.AddPrefix(key), args...))
 
 	return
 }
 
 func (c *Client) ZRem(key string, members ...interface{}) (num int64, err error) {
-	err = c.Do(radix.FlatCmd(&num, "ZREM", c.addPrefix(key), members...))
+	err = c.Do(radix.FlatCmd(&num, "ZREM", c.AddPrefix(key), members...))
 
 	return
 }
 
 func (c *Client) ZIncrBy(key, member string, increment int64) (num int64, err error) {
-	err = c.Do(radix.FlatCmd(&num, "ZINCRBY", c.addPrefix(key), increment, member))
+	err = c.Do(radix.FlatCmd(&num, "ZINCRBY", c.AddPrefix(key), increment, member))
 
 	return
 }
 
 //注意，返回的map不是有序的
 func (c *Client) ZRange(key string, start, stop int64) (values map[string]int64, err error) {
-	err = c.Do(radix.FlatCmd(&values, "ZRANGE", c.addPrefix(key), start, stop, "WITHSCORES"))
+	err = c.Do(radix.FlatCmd(&values, "ZRANGE", c.AddPrefix(key), start, stop, "WITHSCORES"))
 	return
 }
 
 //注意，返回的map不是有序的，所以其实和ZRange一样
 func (c *Client) ZRevRange(key string, start, stop int64) (values map[string]int64, err error) {
-	err = c.Do(radix.FlatCmd(&values, "ZREVRANGE", c.addPrefix(key), start, stop, "WITHSCORES"))
+	err = c.Do(radix.FlatCmd(&values, "ZREVRANGE", c.AddPrefix(key), start, stop, "WITHSCORES"))
 	return
 }
 
@@ -279,13 +279,13 @@ func (c *Client) Rename(oldKey, newKey string) (err error) {
 		}
 
 		var data []byte
-		err = c.Do(radix.Cmd(&data, "GET", c.addPrefix(oldKey)))
+		err = c.Do(radix.Cmd(&data, "GET", c.AddPrefix(oldKey)))
 		if err != nil {
 			return
 		}
-		err = c.Do(radix.FlatCmd(nil, "SET", c.addPrefix(newKey), data))
+		err = c.Do(radix.FlatCmd(nil, "SET", c.AddPrefix(newKey), data))
 	} else {
-		err = c.Do(radix.Cmd(nil, "RENAME", c.addPrefix(oldKey), c.addPrefix(newKey)))
+		err = c.Do(radix.Cmd(nil, "RENAME", c.AddPrefix(oldKey), c.AddPrefix(newKey)))
 	}
 
 	return
@@ -305,15 +305,15 @@ func (c *Client) RenameNx(oldKey, newKey string) (b bool, err error) {
 			return b, fmt.Errorf("key: %s not exist", oldKey)
 		}
 		var data []byte
-		err = c.Do(radix.Cmd(&data, "GET", c.addPrefix(oldKey)))
+		err = c.Do(radix.Cmd(&data, "GET", c.AddPrefix(oldKey)))
 		if err != nil {
 			return
 		}
 		var s string
-		err = c.Do(radix.FlatCmd(&s, "SET", c.addPrefix(newKey), data, "NX"))
+		err = c.Do(radix.FlatCmd(&s, "SET", c.AddPrefix(newKey), data, "NX"))
 		return isOk(s), err
 	} else {
-		err = c.Do(radix.Cmd(&b, "RENAMENX", c.addPrefix(oldKey), c.addPrefix(newKey)))
+		err = c.Do(radix.Cmd(&b, "RENAMENX", c.AddPrefix(oldKey), c.AddPrefix(newKey)))
 	}
 
 	return
@@ -321,16 +321,16 @@ func (c *Client) RenameNx(oldKey, newKey string) (b bool, err error) {
 
 func (c *Client) Expire(key string, expiration int64) (b bool, err error) {
 	if expiration > 0 {
-		err = c.Do(radix.FlatCmd(&b, "EXPIRE", c.addPrefix(key), expiration))
+		err = c.Do(radix.FlatCmd(&b, "EXPIRE", c.AddPrefix(key), expiration))
 	} else {
-		err = c.Do(radix.Cmd(&b, "PERSIST", c.addPrefix(key)))
+		err = c.Do(radix.Cmd(&b, "PERSIST", c.AddPrefix(key)))
 	}
 
 	return
 }
 
 func (c *Client) Ttl(key string) (num int64, err error) {
-	err = c.Do(radix.Cmd(&num, "TTL", c.addPrefix(key)))
+	err = c.Do(radix.Cmd(&num, "TTL", c.AddPrefix(key)))
 
 	return
 }
@@ -342,7 +342,7 @@ func (c *Client) GeoAdd(key string, members ...interface{}) (num int64, err erro
 		return 0, ErrParmasNotEnough
 	}
 
-	err = c.Do(radix.FlatCmd(&num, "GEOADD", c.addPrefix(key), members...))
+	err = c.Do(radix.FlatCmd(&num, "GEOADD", c.AddPrefix(key), members...))
 
 	return
 }
@@ -353,7 +353,7 @@ func (c *Client) GeoDist(key string, args ...interface{}) (distance float64, err
 		return distance, ErrParmasNotEnough
 	}
 
-	err = c.Do(radix.FlatCmd(&distance, "GEODIST", c.addPrefix(key), args...))
+	err = c.Do(radix.FlatCmd(&distance, "GEODIST", c.AddPrefix(key), args...))
 
 	return
 }
@@ -364,7 +364,7 @@ func (c *Client) GeoHash(key string, members ...string) (values []string, err er
 		return nil, ErrParmasNotEnough
 	}
 
-	err = c.Do(radix.Cmd(&values, "GEOHASH", append([]string{c.addPrefix(key)}, members...)...))
+	err = c.Do(radix.Cmd(&values, "GEOHASH", append([]string{c.AddPrefix(key)}, members...)...))
 
 	return
 }
@@ -375,7 +375,7 @@ func (c *Client) GeoPos(key string, members ...string) (values [][]float64, err 
 		return nil, ErrParmasNotEnough
 	}
 
-	err = c.Do(radix.Cmd(&values, "GEOPOS", append([]string{c.addPrefix(key)}, members...)...))
+	err = c.Do(radix.Cmd(&values, "GEOPOS", append([]string{c.AddPrefix(key)}, members...)...))
 
 	return
 }
@@ -386,7 +386,7 @@ func (c *Client) GeoRadius(key string, args ...interface{}) (values [][]interfac
 		return nil, ErrParmasNotEnough
 	}
 
-	err = c.Do(radix.FlatCmd(&values, "GEORADIUS", c.addPrefix(key), args...))
+	err = c.Do(radix.FlatCmd(&values, "GEORADIUS", c.AddPrefix(key), args...))
 
 	return
 }
@@ -397,7 +397,7 @@ func (c *Client) GeoRadiusByMember(key string, args ...interface{}) (values [][]
 		return nil, ErrParmasNotEnough
 	}
 
-	err = c.Do(radix.FlatCmd(&values, "GEORADIUSBYMEMBER", c.addPrefix(key), args...))
+	err = c.Do(radix.FlatCmd(&values, "GEORADIUSBYMEMBER", c.AddPrefix(key), args...))
 
 	return
 }
@@ -412,14 +412,14 @@ func (c *Client) LPush(key string, values ...interface{}) (num int64, err error)
 			return
 		}
 	}
-	err = c.Do(radix.FlatCmd(&num, "LPUSH", c.addPrefix(key), values...))
+	err = c.Do(radix.FlatCmd(&num, "LPUSH", c.AddPrefix(key), values...))
 	return
 }
 
 func (c *Client) LPop(recv interface{}, key string) (b bool, err error) {
 	var data []byte
 	mn := radix.MaybeNil{Rcv: &data}
-	err = c.Do(radix.Cmd(&mn, "LPOP", c.addPrefix(key)))
+	err = c.Do(radix.Cmd(&mn, "LPOP", c.AddPrefix(key)))
 	if mn.Nil {
 		return
 	}
@@ -439,14 +439,14 @@ func (c *Client) RPush(key string, values ...interface{}) (num int64, err error)
 			return
 		}
 	}
-	err = c.Do(radix.FlatCmd(&num, "RPUSH", c.addPrefix(key), values...))
+	err = c.Do(radix.FlatCmd(&num, "RPUSH", c.AddPrefix(key), values...))
 	return
 }
 
 func (c *Client) RPop(recv interface{}, key string) (b bool, err error) {
 	var data []byte
 	mn := radix.MaybeNil{Rcv: &data}
-	err = c.Do(radix.Cmd(&mn, "RPOP", c.addPrefix(key)))
+	err = c.Do(radix.Cmd(&mn, "RPOP", c.AddPrefix(key)))
 	if mn.Nil {
 		return
 	}

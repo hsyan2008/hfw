@@ -26,7 +26,7 @@ func Close() error {
 }
 
 func AddPrefix(s string) string {
-	return DefaultIns.prefix + s
+	return DefaultIns.AddPrefix(s)
 }
 
 //args可以是以下任意组合
