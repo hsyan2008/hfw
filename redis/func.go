@@ -25,6 +25,10 @@ func Close() error {
 	return DefaultIns.Close()
 }
 
+func AddPrefix(s string) string {
+	return DefaultIns.prefix + s
+}
+
 //args可以是以下任意组合
 // NX
 // XX
