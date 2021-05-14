@@ -9,9 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// var isCluster = true
-
-var isCluster = false
+var isCluster = true
 
 func InitCluster() {
 	var err error
@@ -54,10 +52,35 @@ func teardown() {
 }
 
 func TestMain(m *testing.M) {
+	//集群-json编码
+	isCluster = true
 	setup()
-	code := m.Run()
+	code1 := m.Run()
 	teardown()
-	os.Exit(code)
+
+	//集群-原生
+	isCluster = true
+	setup()
+	DefaultIns.Marshal = nil
+	DefaultIns.Unmarshal = nil
+	code2 := m.Run()
+	teardown()
+
+	//非集群-json编码
+	isCluster = false
+	setup()
+	code3 := m.Run()
+	teardown()
+
+	//非集群-原生
+	isCluster = false
+	setup()
+	DefaultIns.Marshal = nil
+	DefaultIns.Unmarshal = nil
+	code4 := m.Run()
+	teardown()
+
+	os.Exit(code1 + code2 + code3 + code4)
 }
 
 type s struct {
@@ -84,9 +107,11 @@ func TestSet1(t *testing.T) {
 		assert.True(ok)
 	}
 
-	ok, err = Set("strutct", s{A: "abc", B: "bbb"})
-	if assert.Nil(err) {
-		assert.True(ok)
+	if DefaultIns.Marshal != nil {
+		ok, err = Set("strutct", s{A: "abc", B: "bbb"})
+		if assert.Nil(err) {
+			assert.True(ok)
+		}
 	}
 }
 
@@ -112,15 +137,14 @@ func TestGet(t *testing.T) {
 		assert.Equal(1, i, "notkey not get")
 	}
 
-	var s struct {
-		A string
-		B string
-	}
-	b, err = Get(&s, "strutct")
-	if assert.Nil(err) {
-		assert.True(b)
-		assert.Equal("abc", s.A)
-		assert.Equal("bbb", s.B)
+	if DefaultIns.Unmarshal != nil {
+		var s s
+		b, err = Get(&s, "strutct")
+		if assert.Nil(err) {
+			assert.True(b)
+			assert.Equal("abc", s.A)
+			assert.Equal("bbb", s.B)
+		}
 	}
 }
 
@@ -130,53 +154,57 @@ func TestMSet(t *testing.T) {
 	err := MSet("msetaa", 1, "msetbb", 2)
 	assert.Nil(err)
 
-	err = MSet("msetmapa", map[string]string{"a": "a", "b": "a"}, "msetmapb", map[string]string{"a": "a", "b": "a"})
-	assert.Nil(err)
+	if DefaultIns.Marshal != nil {
+		err = MSet("msetmapa", map[string]string{"a": "a", "b": "a"}, "msetmapb", map[string]string{"a": "a", "b": "a"})
+		assert.Nil(err)
 
-	err = MSet("msetstrutct", struct {
-		A string
-		B string
-	}{A: "abc", B: "bbb"})
-	assert.Nil(err)
+		err = MSet("msetstrutct", struct {
+			A string
+			B string
+		}{A: "abc", B: "bbb"})
+		assert.Nil(err)
+	}
 }
 
 func TestMGet(t *testing.T) {
 	assert := assert.New(t)
 	TestMSet(t)
 
-	i, err := MGet("msetaa", "msetcc", "msetbb")
-	if assert.Nil(err) {
-		var j int
-		err = Unmarshal(i[0], &j)
-		assert.Nil(err)
-		assert.Equal(1, j, "msetaa is not 1")
-
-		err = Unmarshal(i[2], &j)
-		assert.Nil(err)
-		assert.Equal(2, j, "msetbb is not 2")
-
-		assert.Equal(0, len(i[1]), "msetcc is not empty")
-	}
-
-	i, err = MGet("msetmapa", "msetmapb")
-	if assert.Nil(err) {
-		var k map[string]string
-		for _, v := range i {
-			err = Unmarshal(v, &k)
+	if DefaultIns.Unmarshal != nil {
+		i, err := MGet("msetaa", "msetcc", "msetbb")
+		if assert.Nil(err) {
+			var j int
+			err = Unmarshal(i[0], &j)
 			assert.Nil(err)
-			assert.Equal("a", k["a"], "key a is not a")
-			assert.Equal("a", k["b"], "key b is not a")
+			assert.Equal(1, j, "msetaa is not 1")
+
+			err = Unmarshal(i[2], &j)
+			assert.Nil(err)
+			assert.Equal(2, j, "msetbb is not 2")
+
+			assert.Equal(0, len(i[1]), "msetcc is not empty")
 		}
-	}
 
-	i, err = MGet("msetstrutct")
-	if assert.Nil(err) {
-		var l s
-		for _, v := range i {
-			err = Unmarshal(v, &l)
-			assert.Nil(err)
-			assert.Equal("abc", l.A, "field A is not abc")
-			assert.Equal("bbb", l.B, "field B is not abc")
+		i, err = MGet("msetmapa", "msetmapb")
+		if assert.Nil(err) {
+			var k map[string]string
+			for _, v := range i {
+				err = Unmarshal(v, &k)
+				assert.Nil(err)
+				assert.Equal("a", k["a"], "key a is not a")
+				assert.Equal("a", k["b"], "key b is not a")
+			}
+		}
+
+		i, err = MGet("msetstrutct")
+		if assert.Nil(err) {
+			var l s
+			for _, v := range i {
+				err = Unmarshal(v, &l)
+				assert.Nil(err)
+				assert.Equal("abc", l.A, "field A is not abc")
+				assert.Equal("bbb", l.B, "field B is not abc")
+			}
 		}
 	}
 }

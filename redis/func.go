@@ -46,6 +46,7 @@ func MSet(items ...interface{}) (err error) {
 	return DefaultIns.MSet(items...)
 }
 
+//需要自行Unmarshal
 func MGet(keys ...string) (recv [][]byte, err error) {
 	return DefaultIns.MGet(keys...)
 }

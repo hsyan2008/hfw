@@ -13,10 +13,12 @@ import (
 var ErrNotSupportCluster = errors.New("not support cluster")
 var ErrParmasNotEnough = errors.New("params not enough")
 
-var insMap = make(map[string]*Client)
+var OK = "OK"
+
+var insMap = make(map[string]radix.Client)
 var l = new(sync.Mutex)
 
-func New(redisConfig configs.RedisConfig) (c *Client, err error) {
+func newClient(redisConfig configs.RedisConfig) (c *Client, err error) {
 	if len(redisConfig.Addresses) == 0 {
 		return c, errors.New("err redis config")
 	}
@@ -25,9 +27,19 @@ func New(redisConfig configs.RedisConfig) (c *Client, err error) {
 	if err != nil {
 		return
 	}
+
+	c = &Client{
+		config: redisConfig,
+		prefix: redisConfig.Prefix,
+
+		Marshal:   encoding.JSON.Marshal,
+		Unmarshal: encoding.JSON.Unmarshal,
+	}
+
 	l.Lock()
 	defer l.Unlock()
-	if c, ok := insMap[key]; ok {
+	if i, ok := insMap[key]; ok {
+		c.client = i
 		return c, nil
 	}
 
@@ -43,14 +55,6 @@ func New(redisConfig configs.RedisConfig) (c *Client, err error) {
 		)
 	}
 
-	c = &Client{
-		config: redisConfig,
-		prefix: redisConfig.Prefix,
-
-		Marshal:   encoding.JSON.Marshal,
-		Unmarshal: encoding.JSON.Unmarshal,
-	}
-
 	if redisConfig.IsCluster {
 		clusterFunc := func(network, addr string) (radix.Client, error) {
 			return radix.NewPool(network, addr, redisConfig.PoolSize, radix.PoolConnFunc(customConnFunc))
@@ -64,14 +68,43 @@ func New(redisConfig configs.RedisConfig) (c *Client, err error) {
 		return
 	}
 
-	insMap[key] = c
+	insMap[key] = c.client
 
 	return
 }
 
-func isOk(s string) bool {
-	if s == "OK" {
-		return true
+//不能Close，会影响之前的连接
+func Clone(src ...*Client) (dst *Client, err error) {
+	c := DefaultIns
+	if len(src) > 0 {
+		c = src[0]
 	}
-	return false
+	dst.client = c.client
+	dst.prefix = c.prefix
+	dst.Marshal = c.Marshal
+	dst.Unmarshal = c.Unmarshal
+	dst.config = c.config
+
+	return
+}
+
+func closeClient(ins *Client) (err error) {
+	if ins == nil || ins.client == nil {
+		return nil
+	}
+
+	key, err := encoding.JSON.MarshalToString(ins.config)
+	if err != nil {
+		return
+	}
+
+	_ = ins.client.Close()
+	ins.client = nil
+	ins = nil
+
+	l.Lock()
+	defer l.Unlock()
+	delete(insMap, key)
+
+	return
 }

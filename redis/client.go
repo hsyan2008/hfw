@@ -13,8 +13,14 @@ type Client struct {
 	prefix string
 	config configs.RedisConfig
 
-	Marshal   func(interface{}) ([]byte, error)
+	//如果以下属性是nil，则原生写入，只支持简单的数据类型
+	Marshal func(interface{}) ([]byte, error)
+	//不管以下属性是否nil，MGet的结果都需要自行处理
 	Unmarshal func([]byte, interface{}) error
+}
+
+func New(redisConfig configs.RedisConfig) (c *Client, err error) {
+	return newClient(redisConfig)
 }
 
 func (c *Client) Do(a radix.Action) error {
@@ -26,10 +32,7 @@ func (c *Client) Do(a radix.Action) error {
 }
 
 func (c *Client) Close() error {
-	if c == nil || c.client == nil {
-		return nil
-	}
-	return c.client.Close()
+	return closeClient(c)
 }
 
 func (c *Client) AddPrefix(s string) string {
@@ -45,18 +48,25 @@ func (c *Client) Set(key string, args ...interface{}) (b bool, err error) {
 	if len(args) == 0 {
 		return b, ErrParmasNotEnough
 	}
-	args[0], err = c.Marshal(args[0])
-	if err != nil {
-		return
+	if c.Marshal != nil {
+		args[0], err = c.Marshal(args[0])
+		if err != nil {
+			return
+		}
 	}
 	var s string
 	err = c.Do(radix.FlatCmd(&s, "SET", c.AddPrefix(key), args...))
-	return isOk(s), err
+	return s == OK, err
 }
 
 func (c *Client) Get(recv interface{}, key string) (b bool, err error) {
 	var data []byte
-	mn := radix.MaybeNil{Rcv: &data}
+	var mn radix.MaybeNil
+	if c.Unmarshal == nil {
+		mn.Rcv = recv
+	} else {
+		mn.Rcv = &data
+	}
 	err = c.Do(radix.Cmd(&mn, "GET", c.AddPrefix(key)))
 	if err != nil {
 		return
@@ -64,7 +74,7 @@ func (c *Client) Get(recv interface{}, key string) (b bool, err error) {
 	if mn.Nil {
 		return
 	}
-	if len(data) > 0 {
+	if c.Unmarshal != nil && len(data) > 0 {
 		err = c.Unmarshal(data, &recv)
 	}
 
@@ -86,9 +96,11 @@ func (c *Client) MSet(items ...interface{}) (err error) {
 	} else {
 		for i := 0; i < len(items); i += 2 {
 			items[i] = c.AddPrefix(items[i].(string))
-			items[i+1], err = c.Marshal(items[i+1])
-			if err != nil {
-				return
+			if c.Marshal != nil {
+				items[i+1], err = c.Marshal(items[i+1])
+				if err != nil {
+					return
+				}
 			}
 		}
 
@@ -98,6 +110,7 @@ func (c *Client) MSet(items ...interface{}) (err error) {
 	return
 }
 
+//需要自行Unmarshal
 func (c *Client) MGet(keys ...string) (recv [][]byte, err error) {
 	if c.config.IsCluster {
 		recv = make([][]byte, len(keys))
@@ -187,9 +200,12 @@ func (c *Client) SetNxEx(key string, value interface{}, expiration int64) (b boo
 }
 
 func (c *Client) HSet(key, field string, value interface{}) (err error) {
-	v, err := c.Marshal(&value)
-	if err != nil {
-		return
+	v := value
+	if c.Marshal != nil {
+		v, err = c.Marshal(&value)
+		if err != nil {
+			return
+		}
 	}
 
 	err = c.Do(radix.FlatCmd(nil, "HSET", c.AddPrefix(key), field, v))
@@ -199,7 +215,12 @@ func (c *Client) HSet(key, field string, value interface{}) (err error) {
 
 func (c *Client) HGet(recv interface{}, key, field string) (b bool, err error) {
 	var data []byte
-	mn := radix.MaybeNil{Rcv: &data}
+	var mn radix.MaybeNil
+	if c.Unmarshal == nil {
+		mn.Rcv = recv
+	} else {
+		mn.Rcv = &data
+	}
 	err = c.Do(radix.Cmd(&mn, "HGET", c.AddPrefix(key), field))
 	if err != nil {
 		return
@@ -208,7 +229,7 @@ func (c *Client) HGet(recv interface{}, key, field string) (b bool, err error) {
 		return
 	}
 
-	if len(data) > 0 {
+	if c.Unmarshal != nil && len(data) > 0 {
 		err = c.Unmarshal(data, &recv)
 	}
 
@@ -311,7 +332,7 @@ func (c *Client) RenameNx(oldKey, newKey string) (b bool, err error) {
 		}
 		var s string
 		err = c.Do(radix.FlatCmd(&s, "SET", c.AddPrefix(newKey), data, "NX"))
-		return isOk(s), err
+		return s == OK, err
 	} else {
 		err = c.Do(radix.Cmd(&b, "RENAMENX", c.AddPrefix(oldKey), c.AddPrefix(newKey)))
 	}
@@ -406,10 +427,12 @@ func (c *Client) LPush(key string, values ...interface{}) (num int64, err error)
 	if len(values) == 0 {
 		return 0, ErrParmasNotEnough
 	}
-	for k, v := range values {
-		values[k], err = c.Marshal(v)
-		if err != nil {
-			return
+	if c.Marshal != nil {
+		for k, v := range values {
+			values[k], err = c.Marshal(v)
+			if err != nil {
+				return
+			}
 		}
 	}
 	err = c.Do(radix.FlatCmd(&num, "LPUSH", c.AddPrefix(key), values...))
@@ -418,12 +441,17 @@ func (c *Client) LPush(key string, values ...interface{}) (num int64, err error)
 
 func (c *Client) LPop(recv interface{}, key string) (b bool, err error) {
 	var data []byte
-	mn := radix.MaybeNil{Rcv: &data}
+	var mn radix.MaybeNil
+	if c.Unmarshal == nil {
+		mn.Rcv = recv
+	} else {
+		mn.Rcv = &data
+	}
 	err = c.Do(radix.Cmd(&mn, "LPOP", c.AddPrefix(key)))
 	if mn.Nil {
 		return
 	}
-	if len(data) > 0 {
+	if c.Unmarshal != nil && len(data) > 0 {
 		err = c.Unmarshal(data, &recv)
 	}
 	return true, err
@@ -433,10 +461,12 @@ func (c *Client) RPush(key string, values ...interface{}) (num int64, err error)
 	if len(values) == 0 {
 		return 0, ErrParmasNotEnough
 	}
-	for k, v := range values {
-		values[k], err = c.Marshal(v)
-		if err != nil {
-			return
+	if c.Marshal != nil {
+		for k, v := range values {
+			values[k], err = c.Marshal(v)
+			if err != nil {
+				return
+			}
 		}
 	}
 	err = c.Do(radix.FlatCmd(&num, "RPUSH", c.AddPrefix(key), values...))
@@ -445,12 +475,17 @@ func (c *Client) RPush(key string, values ...interface{}) (num int64, err error)
 
 func (c *Client) RPop(recv interface{}, key string) (b bool, err error) {
 	var data []byte
-	mn := radix.MaybeNil{Rcv: &data}
+	var mn radix.MaybeNil
+	if c.Unmarshal == nil {
+		mn.Rcv = recv
+	} else {
+		mn.Rcv = &data
+	}
 	err = c.Do(radix.Cmd(&mn, "RPOP", c.AddPrefix(key)))
 	if mn.Nil {
 		return
 	}
-	if len(data) > 0 {
+	if c.Unmarshal != nil && len(data) > 0 {
 		err = c.Unmarshal(data, &recv)
 	}
 	return true, err
