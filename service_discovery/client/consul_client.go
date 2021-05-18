@@ -1,16 +1,15 @@
-package serviceDiscovery
+package client
 
 import (
 	"sync"
 
 	"github.com/hashicorp/consul/api"
-	"github.com/hsyan2008/hfw"
 )
 
 var consulClientMap = make(map[string]*api.Client)
 var consulClientRwLock = new(sync.RWMutex)
 
-func NewConsulClient(httpCtx *hfw.HTTPContext, address string) (*api.Client, error) {
+func NewConsulClient(address string) (*api.Client, error) {
 	key := address
 	consulClientRwLock.RLock()
 	if cr, ok := consulClientMap[key]; ok {

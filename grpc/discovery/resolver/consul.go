@@ -10,6 +10,7 @@ import (
 	"github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/configs"
 	"github.com/hsyan2008/hfw/grpc/discovery/common"
+	dc "github.com/hsyan2008/hfw/service_discovery/client"
 	"github.com/hsyan2008/hfw/signal"
 	"google.golang.org/grpc/resolver"
 )
@@ -25,9 +26,7 @@ type consulBuilder struct {
 }
 
 func NewConsulBuilder(scheme, address, tag string) resolver.Builder {
-	config := api.DefaultConfig()
-	config.Address = address
-	client, err := api.NewClient(config)
+	client, err := dc.NewConsulClient(address)
 	if err != nil {
 		logger.Fatal("create consul client error", err.Error())
 		return nil

@@ -16,6 +16,7 @@ import (
 	"github.com/hsyan2008/go-logger"
 	utils "github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/grpc/discovery/common"
+	dc "github.com/hsyan2008/hfw/service_discovery/client"
 	"github.com/hsyan2008/hfw/signal"
 )
 
@@ -47,10 +48,8 @@ func NewConsulRegister(target []string, ttl int) common.Register {
 func (cr *ConsulRegister) Register(info common.RegisterInfo) (err error) {
 	cr.ctx, cr.cancel = context.WithCancel(signal.GetSignalContext().Ctx)
 	cr.registerInfo = info
-	// initial consul client config
-	config := consulapi.DefaultConfig()
-	config.Address = cr.target
-	cr.client, err = consulapi.NewClient(config)
+
+	cr.client, err = dc.NewConsulClient(cr.target)
 	if err != nil {
 		return fmt.Errorf("create consul client error: %s", err.Error())
 	}

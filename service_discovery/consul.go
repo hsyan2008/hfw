@@ -12,6 +12,7 @@ import (
 
 	"github.com/hashicorp/consul/api"
 	"github.com/hsyan2008/hfw"
+	"github.com/hsyan2008/hfw/service_discovery/client"
 )
 
 type balancePolicy uint
@@ -60,7 +61,7 @@ func NewConsulResolver(serviceName, address string, policy balancePolicy, tag st
 	}
 
 	httpCtx := hfw.NewHTTPContext()
-	client, err := NewConsulClient(httpCtx, address)
+	client, err := client.NewConsulClient(address)
 	if err != nil {
 		httpCtx.Fatal("create consul client error", err.Error())
 		httpCtx.Cancel()
