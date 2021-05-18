@@ -4,6 +4,7 @@ package hfw
 
 import (
 	"net"
+	"net/http"
 	"sync"
 	"time"
 
@@ -17,6 +18,24 @@ import (
 var listener net.Listener
 var s *gracehttp.Server
 var lock = new(sync.Mutex)
+
+var defaultC = func(*http.Request) bool { return false }
+var defaultF func(http.ResponseWriter, *http.Request)
+
+func RegisterServeHTTPCook(c func(*http.Request) bool, f http.HandlerFunc) {
+	defaultC = c
+	defaultF = f
+}
+
+type newMux struct{}
+
+func (n *newMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if defaultC(r) {
+		defaultF(w, r)
+	} else {
+		http.DefaultServeMux.ServeHTTP(w, r)
+	}
+}
 
 func GetHTTPListener() net.Listener {
 	return listener
@@ -43,7 +62,7 @@ func newHTTPServer(config configs.HTTPServerConfig) (err error) {
 			}
 			readTimeout := config.ReadTimeout * time.Second
 			writeTimeout := config.WriteTimeout * time.Second
-			s = gracehttp.NewServer(addr, nil, readTimeout, writeTimeout)
+			s = gracehttp.NewServer(addr, new(newMux), readTimeout, writeTimeout)
 		}
 		if listener == nil {
 			listener, err = s.InitListener()
