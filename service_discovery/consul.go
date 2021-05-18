@@ -60,9 +60,7 @@ func NewConsulResolver(serviceName, address string, policy balancePolicy, tag st
 	}
 
 	httpCtx := hfw.NewHTTPContext()
-	config := api.DefaultConfig()
-	config.Address = address
-	client, err := api.NewClient(config)
+	client, err := NewConsulClient(httpCtx, address)
 	if err != nil {
 		httpCtx.Fatal("create consul client error", err.Error())
 		httpCtx.Cancel()
