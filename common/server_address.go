@@ -94,11 +94,16 @@ func getDefaultInerfaceByRoute() string {
 	}
 
 	fields := bytes.Fields(b)
-	if len(fields) < 5 {
-		return ""
+	for k, v := range fields {
+		if string(v) == "dev" {
+			if len(fields) > k+1 {
+				return string(fields[k+1])
+			}
+			break
+		}
 	}
 
-	return string(fields[4])
+	return ""
 }
 
 func getIpByInterface(ifName string) (host string) {
