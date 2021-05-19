@@ -29,7 +29,13 @@ func NewGrpcServer(config configs.AllConfig) (s *grpc.Server, err error) {
 		grpc.StreamInterceptor(StreamServerInterceptor))
 }
 
-func RunGrpc(s *grpc.Server, config configs.GrpcServerConfig) error {
+var grpcListener net.Listener
+
+func GetGrpcServerListener() net.Listener {
+	return grpcListener
+}
+
+func RunGrpc(s *grpc.Server, config configs.GrpcServerConfig) (err error) {
 	//监听信号
 	signalContext := signal.GetSignalContext()
 	go signalContext.Listen()
@@ -39,15 +45,19 @@ func RunGrpc(s *grpc.Server, config configs.GrpcServerConfig) error {
 
 	//等待工作完成
 	defer signalContext.Shutdowned()
-
-	listener, err := net.Listen("tcp", config.Address)
+	address, err := common.GetAddrForListen(config.Address)
+	if err != nil {
+		logger.Fatal("grpc StartServer:", err)
+		return err
+	}
+	grpcListener, err = net.Listen("tcp", address)
 	if err != nil {
 		logger.Fatal("grpc StartServer:", err)
 		return err
 	}
 
 	//注册服务
-	r, err := discovery.RegisterServer(config.ServerConfig, common.GetListendAddrForRegister(listener.Addr().String(), config.Address))
+	r, err := discovery.RegisterServer(config.ServerConfig, common.GetServerAddr(listener.Addr().String(), config.Address))
 	if err != nil {
 		return err
 	}

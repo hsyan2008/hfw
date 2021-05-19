@@ -37,12 +37,11 @@ func (n *newMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func GetHTTPListener() net.Listener {
+func GetHTTPServerListener() net.Listener {
 	return listener
 }
 
-func GetHTTPAddr(config configs.HTTPServerConfig) (string, error) {
-
+func GetHTTPServerAddr(config configs.HTTPServerConfig) (string, error) {
 	err := newHTTPServer(config)
 	if err != nil {
 		return "", err
@@ -76,14 +75,13 @@ func newHTTPServer(config configs.HTTPServerConfig) (err error) {
 }
 
 func StartHTTP(config configs.HTTPServerConfig) (err error) {
-
 	err = newHTTPServer(config)
 	if err != nil {
 		return
 	}
 
 	//注册服务
-	r, err := discovery.RegisterServer(config.ServerConfig, common.GetListendAddrForRegister(listener.Addr().String(), config.Address))
+	r, err := discovery.RegisterServer(config.ServerConfig, common.GetServerAddr(listener.Addr().String(), config.Address))
 	if err != nil {
 		return err
 	}

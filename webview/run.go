@@ -17,7 +17,7 @@ func Run(uri, title string, width, height int, resize bool) {
 		logger.SetConsole(false)
 	}
 
-	addr, err := hfw.GetHTTPAddr(hfw.Config.Server)
+	addr, err := hfw.GetHTTPServerAddr(hfw.Config.Server)
 	if err != nil {
 		panic(err)
 	}

@@ -3,11 +3,37 @@ package common
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"net"
 	"os/exec"
 	"strconv"
+	"strings"
 )
 
+//监听127.0.0.1用于限定内部访问，完整的返回
+//其他情况用于注册服务，只返回端口部分
+func GetAddrForListen(addr string) (string, error) {
+	if strings.HasPrefix(addr, "127.0.0.1:") {
+		return addr, nil
+	}
+	_, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf(":%s", port), nil
+}
+
+//取listend的端口，加上配置的host(可能为空)
+func GetServerAddr(listendAddr, addr string) string {
+	_, port, _ := net.SplitHostPort(listendAddr)
+	host, _, _ := net.SplitHostPort(addr)
+
+	return net.JoinHostPort(host, port)
+}
+
+//如果address是完整的ip:port，则返回
+//否则取本机的ip地址，加上address的端口
 func GetRegisterAddress(interfaceName, address string) (host string, port int, err error) {
 	var p string
 	host, p, err = net.SplitHostPort(address)
@@ -24,6 +50,13 @@ func GetRegisterAddress(interfaceName, address string) (host string, port int, e
 		return
 	}
 
+	host, err = GetHostIP(interfaceName)
+
+	return
+}
+
+//获取本机ip，可以指定网卡名字
+func GetHostIP(interfaceName string) (host string, err error) {
 	//根据网卡名字查找ip
 	if interfaceName != "" {
 		host = getIpByInterface(interfaceName)
