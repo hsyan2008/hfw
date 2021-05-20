@@ -22,7 +22,7 @@ import (
 
 //如果是https+证书grpc，请配置好Server并使用NewGrpcServer+hfw.Run
 //如果是grpc，请配置好Server和GrpcServer并使用NewGrpcServer+hfw.RunGrpc
-//如果是http，请配置好Server和GrpcServer并使用NewGrpcServer+hfwRun
+//如果是grpc+http，请配置好Server和GrpcServer并使用NewGrpcServer+hfw.RunGrpc+hfw.Run
 
 func NewGrpcServer(config configs.AllConfig) (s *grpc.Server, err error) {
 	return server.NewServer(config.Server.ServerConfig, grpc.UnaryInterceptor(UnaryServerInterceptor),
