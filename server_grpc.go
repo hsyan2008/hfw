@@ -57,7 +57,7 @@ func RunGrpc(s *grpc.Server, config configs.GrpcServerConfig) (err error) {
 	}
 
 	//注册服务
-	r, err := discovery.RegisterServer(config.ServerConfig, common.GetServerAddr(listener.Addr().String(), config.Address))
+	r, err := discovery.RegisterServer(config.ServerConfig, common.GetServerAddr(grpcListener.Addr().String(), config.Address))
 	if err != nil {
 		return err
 	}
@@ -76,11 +76,11 @@ func RunGrpc(s *grpc.Server, config configs.GrpcServerConfig) (err error) {
 		}
 	}()
 
-	logger.Mix("Listen on grpc:", listener.Addr().String())
+	logger.Mix("Listen on grpc:", grpcListener.Addr().String())
 
 	// Register reflection service on gRPC server.
 	reflection.Register(s)
-	return s.Serve(listener)
+	return s.Serve(grpcListener)
 }
 
 func UnaryServerInterceptor(
