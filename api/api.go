@@ -138,7 +138,7 @@ func Call(httpCtxIn *hfw.HTTPContext, header map[string]string, addressParams in
 		if err == nil {
 			httpCtx.Infof("Call:%s %#v CostTime:%v", uri, resp, time.Since(t))
 		} else {
-			httpCtx.Warnf("Call:%s Req:%s Err:%s CostTime:%v", string(c.PostBytes), err, uri, time.Since(t))
+			httpCtx.Warnf("Call:%s Req:%s Err:%s CostTime:%v", uri, string(c.PostBytes), err, time.Since(t))
 		}
 	}(time.Now())
 
