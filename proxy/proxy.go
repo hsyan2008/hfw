@@ -82,7 +82,7 @@ func ProxyServe(w http.ResponseWriter, r *http.Request) {
 			defer serviceConn.Close()
 
 			httpCtx.Debug("write data")
-			if httpCtx.Request.Method == "CONNECT" {
+			if httpCtx.Request.Method == http.MethodConnect {
 				_, err = io.WriteString(conn, "HTTP/1.0 200 Connection Established\r\n\r\n")
 			} else {
 				err = httpCtx.Request.Write(serviceConn)
