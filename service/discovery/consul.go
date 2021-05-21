@@ -12,6 +12,7 @@ import (
 
 	"github.com/hashicorp/consul/api"
 	"github.com/hsyan2008/hfw"
+	"github.com/hsyan2008/hfw/service/discovery/client"
 )
 
 type balancePolicy uint
@@ -65,7 +66,7 @@ func NewConsulResolver(serviceName, address string, opts ...CallOpt) (*ConsulRes
 	}
 
 	httpCtx := hfw.NewHTTPContext()
-	client, err := NewConsulClient(address)
+	client, err := client.NewConsulClient(address)
 	if err != nil {
 		httpCtx.Fatal("create consul client error", err.Error())
 		httpCtx.Cancel()
@@ -196,34 +197,4 @@ func NewBalancePolicyCallOpt(balancePolicy balancePolicy) CallOpt {
 		cr.policy = balancePolicy
 		return nil
 	}
-}
-
-var consulClientMap = make(map[string]*api.Client)
-var consulClientRwLock = new(sync.RWMutex)
-
-func NewConsulClient(address string) (*api.Client, error) {
-	key := address
-	consulClientRwLock.RLock()
-	if cr, ok := consulClientMap[key]; ok {
-		consulClientRwLock.RUnlock()
-		return cr, nil
-	}
-	consulClientRwLock.RUnlock()
-
-	consulClientRwLock.Lock()
-	defer consulClientRwLock.Unlock()
-
-	if cr, ok := consulClientMap[key]; ok {
-		return cr, nil
-	}
-
-	config := api.DefaultConfig()
-	config.Address = address
-	client, err := api.NewClient(config)
-	if err != nil {
-		return nil, err
-	}
-	consulClientMap[key] = client
-
-	return client, nil
 }

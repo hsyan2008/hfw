@@ -16,7 +16,7 @@ import (
 	"github.com/hsyan2008/hfw/configs"
 	"github.com/hsyan2008/hfw/curl"
 	"github.com/hsyan2008/hfw/encoding"
-	serviceDiscovery "github.com/hsyan2008/hfw/service_discovery"
+	"github.com/hsyan2008/hfw/service/discovery"
 )
 
 //内部第三方接口返回
@@ -61,7 +61,7 @@ func StdCallByConsul(httpCtx *hfw.HTTPContext, serviceName, uri string, p interf
 	if len(resolverAddresses) == 0 {
 		return errors.New("nil resolverAddresses")
 	}
-	cr, err := serviceDiscovery.NewConsulResolver(serviceName, resolverAddresses[0], serviceDiscovery.RobinPolicy, "")
+	cr, err := discovery.NewConsulResolver(serviceName, resolverAddresses[0], discovery.NewBalancePolicyCallOpt(discovery.RobinPolicy))
 	if err != nil {
 		return
 	}
@@ -97,11 +97,11 @@ func Call(httpCtxIn *hfw.HTTPContext, header map[string]string, addressParams in
 	defer httpCtx.Cancel()
 
 	var (
-		cr        *serviceDiscovery.ConsulResolver
+		cr        *discovery.ConsulResolver
 		addresses []string
 	)
 	switch i := addressParams.(type) {
-	case *serviceDiscovery.ConsulResolver:
+	case *discovery.ConsulResolver:
 		cr = i
 	case []string:
 		addresses = i
