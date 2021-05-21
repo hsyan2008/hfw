@@ -246,7 +246,7 @@ type TimeOutCallOption struct {
 	timeout int
 }
 
-func NewTimeOutCallOption(timeout int) TimeOutCallOption {
+func NewTimeOutCallOption(timeout int) CallOption {
 	return TimeOutCallOption{timeout}
 }
 
@@ -259,7 +259,7 @@ type AddHeadersCallOption struct {
 	headers map[string]string
 }
 
-func NewAddHeadersCallOption(headers map[string]string) AddHeadersCallOption {
+func NewAddHeadersCallOption(headers map[string]string) CallOption {
 	return AddHeadersCallOption{headers}
 }
 
@@ -274,7 +274,7 @@ type DelHeadersCallOption struct {
 	keys []string
 }
 
-func NewDelHeadersCallOption(keys ...string) DelHeadersCallOption {
+func NewDelHeadersCallOption(keys ...string) CallOption {
 	return DelHeadersCallOption{keys}
 }
 

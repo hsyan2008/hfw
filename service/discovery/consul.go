@@ -1,4 +1,4 @@
-package serviceDiscovery
+package discovery
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 
 	"github.com/hashicorp/consul/api"
 	"github.com/hsyan2008/hfw"
-	"github.com/hsyan2008/hfw/service_discovery/client"
+	"github.com/hsyan2008/hfw/service/discovery/client"
 )
 
 type balancePolicy uint
@@ -44,8 +44,13 @@ type ConsulResolver struct {
 var consulResolverMap = make(map[string]*ConsulResolver)
 var consulRwLock = new(sync.RWMutex)
 
-func NewConsulResolver(serviceName, address string, policy balancePolicy, tag string) (*ConsulResolver, error) {
-	key := fmt.Sprintf("%s_%s_%d_%s", serviceName, address, policy, tag)
+func NewConsulResolver(serviceName, address string, opts ...CallOpt) (*ConsulResolver, error) {
+	cr := &ConsulResolver{}
+	for _, f := range opts {
+		f(cr)
+	}
+
+	key := fmt.Sprintf("%s_%s_%d_%s", serviceName, address, cr.policy, cr.tag)
 	consulRwLock.RLock()
 	if cr, ok := consulResolverMap[key]; ok {
 		consulRwLock.RUnlock()
@@ -67,18 +72,16 @@ func NewConsulResolver(serviceName, address string, policy balancePolicy, tag st
 		httpCtx.Cancel()
 		return nil, err
 	}
-	cr := &ConsulResolver{
-		client:       client,
-		serviceName:  serviceName,
-		tag:          tag,
-		wg:           new(sync.WaitGroup),
-		httpCtx:      httpCtx,
-		policy:       policy,
-		queryOptions: (&api.QueryOptions{}).WithContext(httpCtx.Ctx),
-	}
+
+	cr.wg = new(sync.WaitGroup)
+	cr.httpCtx = httpCtx
+	cr.client = client
+	cr.serviceName = serviceName
+	cr.queryOptions = (&api.QueryOptions{}).WithContext(httpCtx.Ctx)
 
 	err = cr.resolve()
 	if err != nil {
+		httpCtx.Cancel()
 		return nil, err
 	}
 
@@ -178,4 +181,20 @@ func (consulResolver *ConsulResolver) HasTag(tag string) bool {
 		}
 	}
 	return false
+}
+
+type CallOpt func(*ConsulResolver) error
+
+func NewTagCallOpt(tag string) CallOpt {
+	return func(cr *ConsulResolver) error {
+		cr.tag = tag
+		return nil
+	}
+}
+
+func NewBalancePolicyCallOpt(balancePolicy balancePolicy) CallOpt {
+	return func(cr *ConsulResolver) error {
+		cr.policy = balancePolicy
+		return nil
+	}
 }
