@@ -18,16 +18,15 @@ require (
 	github.com/hsyan2008/go-logger v0.0.0-20201030135914-f6dbda938bed
 	github.com/hsyan2008/gracehttp v0.0.0-20191130080041-8a1dc4ac8e6c
 	github.com/json-iterator/go v1.1.11
-	github.com/lib/pq v1.10.1 // indirect
+	github.com/lib/pq v1.10.2 // indirect
 	github.com/mattn/go-sqlite3 v1.14.7 // indirect
 	github.com/mediocregopher/radix/v3 v3.7.0
 	github.com/mkevac/debugcharts v0.0.0-20191222103121-ae1c48aa8615
 	github.com/prometheus/client_golang v1.10.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/shirou/gopsutil v3.21.4+incompatible
-	github.com/stretchr/testify v1.5.1 // indirect
-	github.com/tklauser/go-sysconf v0.3.5 // indirect
-	golang.org/x/net v0.0.0-20210510120150-4163338589ed // indirect
-	google.golang.org/grpc v1.37.1
-	xorm.io/xorm v1.0.7
+	github.com/tklauser/go-sysconf v0.3.6 // indirect
+	golang.org/x/net v0.0.0-20210520170846-37e1c6afe023 // indirect
+	google.golang.org/grpc v1.38.0
+	xorm.io/xorm v1.1.0
 )
