@@ -59,7 +59,11 @@ func (er *EtcdRegister) Register(info common.RegisterInfo) (err error) {
 	}
 
 	er.addr = fmt.Sprintf("%s:%d", info.Host, info.Port)
-	er.key = fmt.Sprintf("/%s/%s/%s", fmt.Sprintf("%s_%s", common.EtcdResolver, info.ServerName), info.ServerName, er.addr)
+	if info.ServiceID == "" {
+		er.key = fmt.Sprintf("/%s/%s/%s", fmt.Sprintf("%s_%s", common.EtcdResolver, info.ServerName), info.ServerName, er.addr)
+	} else {
+		er.key = info.ServiceID
+	}
 
 	ticker := time.NewTicker(time.Second * time.Duration(info.UpdateInterval))
 

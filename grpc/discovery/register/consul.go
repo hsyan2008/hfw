@@ -54,7 +54,11 @@ func (cr *ConsulRegister) Register(info common.RegisterInfo) (err error) {
 		return fmt.Errorf("create consul client error: %s", err.Error())
 	}
 
-	cr.serviceID = generateServiceId(info.ServerName, info.Host, info.Port)
+	if info.ServerId == "" {
+		cr.serviceID = generateServiceId(info.ServerName, info.Host, info.Port)
+	} else {
+		cr.serviceID = info.ServerId
+	}
 
 	reg := &consulapi.AgentServiceRegistration{
 		ID:      cr.serviceID,
@@ -84,6 +88,10 @@ func (cr *ConsulRegister) Register(info common.RegisterInfo) (err error) {
 		ticker := time.NewTicker(time.Duration(info.UpdateInterval) * time.Second)
 		defer ticker.Stop()
 		for {
+			err = cr.client.Agent().UpdateTTL(cr.serviceID, "", check.Status)
+			if err != nil {
+				logger.Warn("update ttl of service error: ", err.Error())
+			}
 			select {
 			case <-signal.GetSignalContext().Ctx.Done():
 				cr.cancel()
@@ -91,10 +99,6 @@ func (cr *ConsulRegister) Register(info common.RegisterInfo) (err error) {
 			case <-cr.ctx.Done():
 				return
 			case <-ticker.C:
-				err = cr.client.Agent().UpdateTTL(cr.serviceID, "", check.Status)
-				if err != nil {
-					logger.Warn("update ttl of service error: ", err.Error())
-				}
 			}
 		}
 	}()
