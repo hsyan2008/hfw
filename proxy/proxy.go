@@ -42,7 +42,6 @@ func ProxyServe(w http.ResponseWriter, r *http.Request) {
 	httpCtx.Request.Header.Del("Proxy-Connection")
 	//否则远程连接不会关闭，导致Copy卡住
 	httpCtx.Request.Header.Set("Connection", "close")
-	httpCtx.Request.Header.Set("Connection", "close")
 	httpCtx.Request.Close = true
 
 	//获取底层连接
