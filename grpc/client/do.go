@@ -59,6 +59,11 @@ func Do(httpCtx *hfw.HTTPContext, c configs.GrpcConfig,
 	ctx, cancel := context.WithTimeout(httpCtx.Ctx, timeout)
 	defer cancel()
 
+	md, ok := metadata.FromOutgoingContext(httpCtx.Ctx)
+	if ok == false {
+		md = metadata.MD{}
+	}
+
 	for i := 0; i < retryNum; i++ {
 		select {
 		case <-ctx.Done():
@@ -71,9 +76,8 @@ func Do(httpCtx *hfw.HTTPContext, c configs.GrpcConfig,
 						c.ServerName, i, time.Since(t))
 					httpCtx.Cancel()
 				}(time.Now())
-				newCtx := metadata.NewOutgoingContext(ctx, metadata.Pairs(
-					common.GrpcTraceIDKey, httpCtx.GetTraceID(),
-				))
+				md.Set(common.GrpcTraceIDKey, httpCtx.GetTraceID())
+				newCtx := metadata.NewOutgoingContext(ctx, md)
 				resp, err = call(newCtx, conn)
 				if err == nil {
 					return
