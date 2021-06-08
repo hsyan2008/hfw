@@ -448,6 +448,9 @@ func (c *Client) LPop(recv interface{}, key string) (b bool, err error) {
 		mn.Rcv = &data
 	}
 	err = c.Do(radix.Cmd(&mn, "LPOP", c.AddPrefix(key)))
+	if err != nil {
+		return
+	}
 	if mn.Nil {
 		return
 	}
@@ -482,6 +485,9 @@ func (c *Client) RPop(recv interface{}, key string) (b bool, err error) {
 		mn.Rcv = &data
 	}
 	err = c.Do(radix.Cmd(&mn, "RPOP", c.AddPrefix(key)))
+	if err != nil {
+		return
+	}
 	if mn.Nil {
 		return
 	}
