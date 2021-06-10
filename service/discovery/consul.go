@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/url"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -26,10 +27,10 @@ const (
 type ConsulResolver struct {
 	client      *api.Client
 	serviceName string
-	tag         string
+	tags        []string
 
 	addresses []string
-	tags      []string
+	hasTags   []string
 
 	httpCtx *hfw.HTTPContext
 
@@ -50,7 +51,7 @@ func NewConsulResolver(serviceName, address string, opts ...CallOpt) (*ConsulRes
 		f(cr)
 	}
 
-	key := fmt.Sprintf("%s_%s_%d_%s", serviceName, address, cr.policy, cr.tag)
+	key := fmt.Sprintf("%s_%s_%d_%s", serviceName, address, cr.policy, strings.Join(cr.tags, ","))
 	consulRwLock.RLock()
 	if cr, ok := consulResolverMap[key]; ok {
 		consulRwLock.RUnlock()
@@ -95,7 +96,7 @@ func NewConsulResolver(serviceName, address string, opts ...CallOpt) (*ConsulRes
 	return cr, nil
 }
 func (consulResolver *ConsulResolver) resolve() (err error) {
-	serviceEntries, metaInfo, err := consulResolver.client.Health().Service(consulResolver.serviceName, consulResolver.tag, true, consulResolver.queryOptions)
+	serviceEntries, metaInfo, err := consulResolver.client.Health().ServiceMultipleTags(consulResolver.serviceName, consulResolver.tags, true, consulResolver.queryOptions)
 	if err != nil {
 		if e, ok := err.(*url.Error); ok {
 			if e.Err == context.Canceled {
@@ -111,7 +112,7 @@ func (consulResolver *ConsulResolver) resolve() (err error) {
 	for _, serviceEntry := range serviceEntries {
 		address := fmt.Sprintf("%s:%d", serviceEntry.Service.Address, serviceEntry.Service.Port)
 		adds = append(adds, address)
-		consulResolver.tags = serviceEntry.Service.Tags
+		consulResolver.hasTags = serviceEntry.Service.Tags
 	}
 
 	consulResolver.addresses = adds
@@ -175,7 +176,7 @@ func (consulResolver *ConsulResolver) GetAddress() (address string, err error) {
 }
 
 func (consulResolver *ConsulResolver) HasTag(tag string) bool {
-	for _, v := range consulResolver.tags {
+	for _, v := range consulResolver.hasTags {
 		if v == tag {
 			return true
 		}
@@ -185,16 +186,19 @@ func (consulResolver *ConsulResolver) HasTag(tag string) bool {
 
 type CallOpt func(*ConsulResolver) error
 
-func NewTagCallOpt(tag string) CallOpt {
+func TagCallOpt(tags ...string) CallOpt {
 	return func(cr *ConsulResolver) error {
-		cr.tag = tag
+		cr.tags = tags
 		return nil
 	}
 }
 
-func NewBalancePolicyCallOpt(balancePolicy balancePolicy) CallOpt {
+func BalancePolicyCallOpt(balancePolicy balancePolicy) CallOpt {
 	return func(cr *ConsulResolver) error {
 		cr.policy = balancePolicy
 		return nil
 	}
 }
+
+var NewTagCallOpt = TagCallOpt
+var NewBalancePolicyCallOpt = BalancePolicyCallOpt
