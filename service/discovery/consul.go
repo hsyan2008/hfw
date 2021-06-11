@@ -28,6 +28,7 @@ type ConsulResolver struct {
 	client      *api.Client
 	serviceName string
 	tags        []string
+	passingOnly bool
 
 	addresses []string
 	hasTags   []string
@@ -46,7 +47,10 @@ var consulResolverMap = make(map[string]*ConsulResolver)
 var consulRwLock = new(sync.RWMutex)
 
 func NewConsulResolver(serviceName, address string, opts ...CallOpt) (*ConsulResolver, error) {
-	cr := &ConsulResolver{}
+	cr := &ConsulResolver{
+		serviceName: serviceName,
+		passingOnly: true,
+	}
 	for _, f := range opts {
 		f(cr)
 	}
@@ -77,7 +81,6 @@ func NewConsulResolver(serviceName, address string, opts ...CallOpt) (*ConsulRes
 	cr.wg = new(sync.WaitGroup)
 	cr.httpCtx = httpCtx
 	cr.client = client
-	cr.serviceName = serviceName
 	cr.queryOptions = (&api.QueryOptions{}).WithContext(httpCtx.Ctx)
 
 	err = cr.resolve()
@@ -96,7 +99,11 @@ func NewConsulResolver(serviceName, address string, opts ...CallOpt) (*ConsulRes
 	return cr, nil
 }
 func (consulResolver *ConsulResolver) resolve() (err error) {
-	serviceEntries, metaInfo, err := consulResolver.client.Health().ServiceMultipleTags(consulResolver.serviceName, consulResolver.tags, true, consulResolver.queryOptions)
+	serviceEntries, metaInfo, err := consulResolver.client.Health().ServiceMultipleTags(
+		consulResolver.serviceName,
+		consulResolver.tags,
+		consulResolver.passingOnly,
+		consulResolver.queryOptions)
 	if err != nil {
 		if e, ok := err.(*url.Error); ok {
 			if e.Err == context.Canceled {
@@ -196,6 +203,13 @@ func TagCallOpt(tags ...string) CallOpt {
 func BalancePolicyCallOpt(balancePolicy balancePolicy) CallOpt {
 	return func(cr *ConsulResolver) error {
 		cr.policy = balancePolicy
+		return nil
+	}
+}
+
+func PassingOnlyCallOpt(passingOnly bool) CallOpt {
+	return func(cr *ConsulResolver) error {
+		cr.passingOnly = passingOnly
 		return nil
 	}
 }
