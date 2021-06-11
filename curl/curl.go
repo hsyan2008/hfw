@@ -131,6 +131,9 @@ func NewPost(ctx context.Context, url string) *Curl {
 }
 
 func (curls *Curl) SetContext(ctx context.Context) {
+	if curls.cancel != nil {
+		curls.cancel()
+	}
 	curls.ctx, curls.cancel = context.WithCancel(ctx)
 }
 
