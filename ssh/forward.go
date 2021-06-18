@@ -44,6 +44,7 @@ func NewRemoteForward(httpCtx *hfw.HTTPContext, sshConfig SSHConfig, fi *Forward
 func NewForward(httpCtx *hfw.HTTPContext, t ForwardType, sshConfig SSHConfig, fi *ForwardIni) (l *Forward, err error) {
 	if httpCtx == nil {
 		httpCtx = hfw.NewHTTPContext()
+		defer httpCtx.Cancel()
 	}
 	l = &Forward{
 		httpCtx: httpCtx,
@@ -92,22 +93,22 @@ func (l *Forward) Bind(fi *ForwardIni) (err error) {
 
 	return
 }
+
 func (l *Forward) Accept() {
+	go func() {
+		<-l.httpCtx.Done()
+		l.Close()
+	}()
 	for {
-		select {
-		case <-l.httpCtx.Ctx.Done():
-			return
-		default:
-			conn, err := l.lister.Accept()
-			if err != nil {
-				l.Close()
-				if err != io.EOF && !strings.Contains(err.Error(), "use of closed network connection") {
-					l.httpCtx.Error(l.t, err)
-				}
-				return
+		conn, err := l.lister.Accept()
+		if err != nil {
+			l.Close()
+			if err != io.EOF && !strings.Contains(err.Error(), "use of closed network connection") {
+				l.httpCtx.Error(l.t, err)
 			}
-			go l.Hand(conn)
+			return
 		}
+		go l.Hand(conn)
 	}
 }
 

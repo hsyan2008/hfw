@@ -50,6 +50,7 @@ func NewProxy(httpCtx *hfw.HTTPContext, sshConfig SSHConfig, pi *ProxyIni) (p *P
 	}
 	if httpCtx == nil {
 		httpCtx = hfw.NewHTTPContext()
+		defer httpCtx.Cancel()
 	}
 	p = &Proxy{
 		pi:      pi,
@@ -81,36 +82,34 @@ func (p *Proxy) Bind() (err error) {
 	p.listener, err = net.Listen("tcp", p.pi.Bind)
 	return
 }
-func (p *Proxy) Accept() {
-	for {
-		select {
-		case <-p.httpCtx.Ctx.Done():
-			return
-		default:
-			conn, err := p.listener.Accept()
-			if err != nil {
-				p.Close()
-				if err != io.EOF && !strings.Contains(err.Error(), "use of closed network connection") {
-					p.httpCtx.Error(err)
-				}
-				return
-			}
 
-			go func() {
-				if p.pi.IsHTTP {
-					_ = p.HandHTTP(conn)
-				} else {
-					_ = p.HandSocks5(conn)
-				}
-			}()
+func (p *Proxy) Accept() {
+	go func() {
+		<-p.httpCtx.Done()
+		p.Close()
+	}()
+	for {
+		conn, err := p.listener.Accept()
+		if err != nil {
+			p.Close()
+			if err != io.EOF && !strings.Contains(err.Error(), "use of closed network connection") {
+				p.httpCtx.Error(err)
+			}
+			return
 		}
+
+		go func() {
+			if p.pi.IsHTTP {
+				_ = p.HandHTTP(conn)
+			} else {
+				_ = p.HandSocks5(conn)
+			}
+		}()
 	}
 }
 
 func (p *Proxy) HandHTTP(conn net.Conn) (err error) {
-
 	r := bufio.NewReader(conn)
-
 	req, err := http.ReadRequest(r)
 	if err != nil {
 		_ = conn.Close()
