@@ -59,9 +59,13 @@ func NewForward(httpCtx *hfw.HTTPContext, t ForwardType, sshConfig SSHConfig, fi
 		err = l.Bind(fi)
 		if err != nil {
 			l.c.Close()
+			return
 		}
+		l.httpCtx.Infof("Bind %s forward to %s success, start to accept", l.lister.Addr().String(), fi.Addr)
+		l.Accept()
 	} else {
 		l.c.Close()
+		return
 	}
 
 	return
@@ -89,10 +93,6 @@ func (l *Forward) Bind(fi *ForwardIni) (err error) {
 			l.lister, err = net.Listen("tcp", l.fi.Bind)
 		} else if l.t == REMOTE {
 			l.lister, err = l.c.Listen(l.fi.Bind)
-		}
-		if err == nil {
-			l.httpCtx.Infof("Bind %s forward to %s success, start to accept", l.lister.Addr().String(), fi.Addr)
-			go l.Accept()
 		}
 	} else {
 		return errors.New("Err ForwardIni")
