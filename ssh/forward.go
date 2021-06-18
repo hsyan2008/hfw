@@ -43,8 +43,7 @@ func NewRemoteForward(httpCtx *hfw.HTTPContext, sshConfig SSHConfig, fi *Forward
 
 func NewForward(httpCtx *hfw.HTTPContext, t ForwardType, sshConfig SSHConfig, fi *ForwardIni) (l *Forward, err error) {
 	if httpCtx == nil {
-		httpCtx = hfw.NewHTTPContext()
-		defer httpCtx.Cancel()
+		return l, errors.New("nil ctx")
 	}
 	l = &Forward{
 		httpCtx: httpCtx,
@@ -53,8 +52,16 @@ func NewForward(httpCtx *hfw.HTTPContext, t ForwardType, sshConfig SSHConfig, fi
 	}
 
 	l.c, err = NewSSH(sshConfig)
-	if err == nil && fi != nil {
+	if err != nil {
+		return
+	}
+	if fi != nil {
 		err = l.Bind(fi)
+		if err != nil {
+			l.c.Close()
+		}
+	} else {
+		l.c.Close()
 	}
 
 	return

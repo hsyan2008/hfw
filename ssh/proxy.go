@@ -36,6 +36,9 @@ type Proxy struct {
 }
 
 func NewProxy(httpCtx *hfw.HTTPContext, sshConfig SSHConfig, pi *ProxyIni) (p *Proxy, err error) {
+	if httpCtx == nil {
+		return p, errors.New("nil ctx")
+	}
 	if pi == nil || pi.Bind == "" {
 		return nil, errors.New("err ini")
 	}
@@ -48,24 +51,22 @@ func NewProxy(httpCtx *hfw.HTTPContext, sshConfig SSHConfig, pi *ProxyIni) (p *P
 			return
 		}
 	}
-	if httpCtx == nil {
-		httpCtx = hfw.NewHTTPContext()
-		defer httpCtx.Cancel()
-	}
 	p = &Proxy{
 		pi:      pi,
 		httpCtx: httpCtx,
 	}
 
 	p.c, err = NewSSH(sshConfig)
-
-	if err == nil {
-		err = p.Bind()
-		if err == nil {
-			p.httpCtx.Infof("Bind %s for proxy success, start to accept", p.listener.Addr().String())
-			go p.Accept()
-		}
+	if err != nil {
+		return
 	}
+	defer p.c.Close()
+	err = p.Bind()
+	if err != nil {
+		return
+	}
+	p.httpCtx.Infof("Bind %s for proxy success, start to accept", p.listener.Addr().String())
+	p.Accept()
 
 	return
 }

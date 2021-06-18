@@ -66,8 +66,15 @@ func (ctx *signalContext) Listen() {
 	ctx.Mixf("Exec `kill -INT %d` will graceful exit", os.Getpid())
 	ctx.Mixf("Exec `kill -TERM %d` will graceful restart", os.Getpid())
 
-	s := <-c
-	ctx.Mix("recv signal:", s)
+	var s os.Signal
+	select {
+	case <-ctx.Ctx.Done():
+		s = syscall.SIGINT
+		ctx.Mix("recv cancel")
+	case s = <-c:
+		ctx.Mix("recv signal:", s)
+	}
+
 	go ctx.doShutdownDone()
 	if ctx.IsHTTP {
 		ctx.Mix("Stopping http server")
