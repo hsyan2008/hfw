@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/hsyan2008/go-logger"
+	"github.com/hsyan2008/hfw/common"
 )
 
 type signalContext struct {
@@ -70,6 +71,16 @@ func (ctx *signalContext) Listen() {
 	select {
 	case <-ctx.Ctx.Done():
 		s = syscall.SIGINT
+		p, err := os.FindProcess(common.GetPid())
+		if err != nil {
+			ctx.Warn(err)
+			return
+		}
+		err = p.Signal(s)
+		if err != nil {
+			ctx.Warn(err)
+			return
+		}
 		ctx.Mix("recv cancel")
 	case s = <-c:
 		ctx.Mix("recv signal:", s)
