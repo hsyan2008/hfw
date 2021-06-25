@@ -496,3 +496,9 @@ func (c *Client) RPop(recv interface{}, key string) (b bool, err error) {
 	}
 	return true, err
 }
+
+func (c *Client) LLen(key string) (num int64, err error) {
+	err = c.Do(radix.Cmd(&num, "LLEN", c.AddPrefix(key)))
+
+	return
+}

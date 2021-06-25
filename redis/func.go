@@ -195,3 +195,7 @@ func RPush(key string, values ...interface{}) (num int64, err error) {
 func RPop(recv interface{}, key string) (b bool, err error) {
 	return DefaultIns.RPop(recv, key)
 }
+
+func LLen(key string) (num int64, err error) {
+	return DefaultIns.LLen(key)
+}

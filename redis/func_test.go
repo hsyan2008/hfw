@@ -644,3 +644,18 @@ func TestRPop(t *testing.T) {
 		assert.Greater(i, 0)
 	}
 }
+
+func TestLLen(t *testing.T) {
+	assert := assert.New(t)
+	Del("lists")
+	b, err := LLen("lists")
+	if assert.Nil(err) {
+		assert.EqualValues(0, b)
+	}
+
+	TestLPush(t)
+	b, err = LLen("lists")
+	if assert.Nil(err) {
+		assert.Greater(b, int64(0))
+	}
+}
