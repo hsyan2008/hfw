@@ -62,7 +62,7 @@ func ProxyServe(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	err = auth(httpCtx, r.Header.Get(proxyAuthorization))
+	err = auth(httpCtx, r, r.Header.Get(proxyAuthorization))
 	if err != nil {
 		httpCtx.Warn(err)
 		if err == ErrAuth {

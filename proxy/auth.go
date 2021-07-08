@@ -3,6 +3,7 @@ package proxy
 import (
 	"encoding/base64"
 	"errors"
+	"net/http"
 	"strings"
 
 	"github.com/hsyan2008/hfw"
@@ -10,13 +11,13 @@ import (
 
 var ErrAuth = errors.New("proxy auth faild")
 
-var authFunc func(string, string) bool
+var authFunc func(*hfw.HTTPContext, *http.Request, string, string) bool
 
-func SetAuthFunc(f func(string, string) bool) {
+func SetAuthFunc(f func(*hfw.HTTPContext, *http.Request, string, string) bool) {
 	authFunc = f
 }
 
-func auth(httpCtx *hfw.HTTPContext, auth string) (err error) {
+func auth(httpCtx *hfw.HTTPContext, r *http.Request, auth string) (err error) {
 	//如果不需要验证
 	if authFunc == nil {
 		return
@@ -33,7 +34,7 @@ func auth(httpCtx *hfw.HTTPContext, auth string) (err error) {
 		}
 
 		f := strings.Split(string(b), ":")
-		if len(f) == 2 && authFunc(f[0], f[1]) {
+		if len(f) == 2 && authFunc(httpCtx, r, f[0], f[1]) {
 			return nil
 		}
 	}
