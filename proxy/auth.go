@@ -10,6 +10,7 @@ import (
 )
 
 var ErrAuth = errors.New("proxy auth faild")
+var proxyAuthType = "Basic"
 
 var authFunc func(*hfw.HTTPContext, *http.Request, string, string) bool
 
@@ -23,20 +24,23 @@ func auth(httpCtx *hfw.HTTPContext, r *http.Request, auth string) (err error) {
 		return
 	}
 
-	if auth == "" {
-		return ErrAuth
-	}
+	var username, password string
+
 	c := strings.Fields(auth)
-	if len(c) == 2 && strings.EqualFold(c[0], "Basic") {
+	if len(c) == 2 && strings.EqualFold(c[0], proxyAuthType) {
 		b, err := base64.StdEncoding.DecodeString(c[1])
 		if err != nil {
 			return ErrAuth
 		}
-
 		f := strings.Split(string(b), ":")
-		if len(f) == 2 && authFunc(httpCtx, r, f[0], f[1]) {
-			return nil
+		if len(f) == 2 {
+			username = f[0]
+			password = f[1]
 		}
+	}
+
+	if authFunc(httpCtx, r, username, password) {
+		return nil
 	}
 
 	return ErrAuth
