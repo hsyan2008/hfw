@@ -18,8 +18,11 @@ func Enable() {
 	hfw.RegisterServeHTTPCook(IsProxy, ProxyServe)
 }
 
+const proxyAuthorization = "Proxy-Authorization"
+
 func IsProxy(r *http.Request) bool {
 	return r.Header.Get("Proxy-Connection") != "" ||
+		r.Header.Get(proxyAuthorization) != "" ||
 		r.URL.Host != ""
 }
 
@@ -58,6 +61,17 @@ func ProxyServe(w http.ResponseWriter, r *http.Request) {
 			httpError(httpCtx, bufrw, http.StatusInternalServerError, "panic")
 		}
 	}()
+
+	err = auth(httpCtx, r.Header.Get(proxyAuthorization))
+	if err != nil {
+		httpCtx.Warn(err)
+		if err == ErrAuth {
+			httpError(httpCtx, bufrw,
+				http.StatusProxyAuthRequired,
+				`Proxy-Authenticate: Basic realm="auth faild"`)
+		}
+		return
+	}
 
 	//以下重试
 	i := 0
