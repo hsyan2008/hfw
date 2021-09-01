@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/hsyan2008/hfw/common"
-	"github.com/hsyan2008/hfw/deploy"
 	"github.com/hsyan2008/hfw/signal"
 )
 
@@ -24,10 +23,6 @@ func Run() (err error) {
 
 	//等待工作完成
 	defer signalContext.Shutdowned()
-
-	if Config.HotDeploy.IsEnable {
-		go deploy.HotDeploy(Config.HotDeploy)
-	}
 
 	if len(Config.Server.Address) == 0 {
 		signalContext.Fatal("server address is nil")

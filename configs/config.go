@@ -23,7 +23,6 @@ type AllConfig struct {
 	Redis      RedisConfig
 	Session    SessionConfig
 	Prometheus PrometheusConfig
-	HotDeploy  HotDeployConfig
 	Custom     map[string]string
 }
 
@@ -162,17 +161,6 @@ type TemplateConfig struct {
 type RouteConfig struct {
 	DefaultController string
 	DefaultAction     string
-}
-
-type HotDeployConfig struct {
-	//是否开启监听执行初始命令的目录
-	IsEnable bool
-	//指定热部署的命令
-	Cmd string
-	//指定监听的文件名或者后缀(不带.)
-	Exts []string
-	//指定监听的目录深度，默认最大10
-	Dep int
 }
 
 //grpc client配置
