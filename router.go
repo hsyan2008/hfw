@@ -12,8 +12,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	_ "github.com/mkevac/debugcharts"
-
 	logger "github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/common"
 	"github.com/hsyan2008/hfw/grpc/server"
