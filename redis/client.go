@@ -39,6 +39,10 @@ func (c *Client) AddPrefix(s string) string {
 	return c.prefix + s
 }
 
+func (c *Client) GetPrefix() string {
+	return c.prefix
+}
+
 //args可以是以下任意组合
 // NX
 // XX
@@ -250,6 +254,24 @@ func (c *Client) HIncrBy(key, field string, delta int64) (value int64, err error
 
 func (c *Client) HDel(key string, fields ...string) (num int64, err error) {
 	err = c.Do(radix.FlatCmd(&num, "HDEL", c.AddPrefix(key), fields))
+
+	return
+}
+
+func (c *Client) SAdd(key string, args ...interface{}) (num int64, err error) {
+	err = c.Do(radix.FlatCmd(&num, "SADD", c.AddPrefix(key), args...))
+
+	return
+}
+
+func (c *Client) SDiffStore(key string, args ...interface{}) (num int64, err error) {
+	err = c.Do(radix.FlatCmd(&num, "SDIFFSTORE", c.AddPrefix(key), args...))
+
+	return
+}
+
+func (c *Client) SCard(key string) (num int64, err error) {
+	err = c.Do(radix.Cmd(&num, "SCARD", c.AddPrefix(key)))
 
 	return
 }

@@ -29,6 +29,10 @@ func AddPrefix(s string) string {
 	return DefaultIns.AddPrefix(s)
 }
 
+func GetPrefix() string {
+	return DefaultIns.GetPrefix()
+}
+
 //args可以是以下任意组合
 // NX
 // XX
@@ -107,6 +111,18 @@ func HIncrBy(key, field string, delta int64) (value int64, err error) {
 
 func HDel(key string, fields ...string) (num int64, err error) {
 	return DefaultIns.HDel(key, fields...)
+}
+
+func SAdd(key string, args ...interface{}) (num int64, err error) {
+	return DefaultIns.SAdd(key, args...)
+}
+
+func SDiffStore(key string, args ...interface{}) (num int64, err error) {
+	return DefaultIns.SDiffStore(key, args...)
+}
+
+func SCard(key string) (num int64, err error) {
+	return DefaultIns.SCard(key)
 }
 
 func ZAdd(key string, args ...interface{}) (num int64, err error) {

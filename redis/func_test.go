@@ -659,3 +659,70 @@ func TestLLen(t *testing.T) {
 		assert.Greater(b, int64(0))
 	}
 }
+
+func TestSAdd(t *testing.T) {
+	assert := assert.New(t)
+	Del("sadd")
+
+	i, err := SAdd("sadd", 1, "one")
+	if assert.Nil(err) {
+		assert.EqualValues(2, i)
+	}
+
+	i, err = SAdd("sadd", 2, "two", 3, "three")
+	if assert.Nil(err) {
+		assert.EqualValues(4, i)
+	}
+}
+
+func TestSDiffStore(t *testing.T) {
+	assert := assert.New(t)
+
+	sAddKey1 := "sadd1"
+	sAddKey2 := "sadd2"
+	sDiffStoreKey1 := "sdiff_store"
+
+	Del(sAddKey1)
+	Del(sAddKey2)
+	Del(sDiffStoreKey1)
+
+	i, err := SAdd(sAddKey1, 1, "one")
+	if assert.Nil(err) {
+		assert.EqualValues(2, i)
+	}
+
+	i, err = SAdd(sAddKey2, 2, "one", 3, "three")
+	if assert.Nil(err) {
+		assert.EqualValues(4, i)
+	}
+
+	i, err = SDiffStore(sDiffStoreKey1, GetPrefix()+sAddKey2, GetPrefix()+sAddKey1)
+	if assert.Nil(err) {
+		assert.EqualValues(3, i)
+	}
+}
+
+func TestSCard(t *testing.T) {
+	assert := assert.New(t)
+	Del("sadd")
+
+	i, err := SAdd("sadd", 1, "one")
+	if assert.Nil(err) {
+		assert.EqualValues(2, i)
+	}
+
+	i, err = SCard("sadd")
+	if assert.Nil(err) {
+		assert.EqualValues(2, i)
+	}
+
+	i, err = SAdd("sadd", 2, "one", 3, "three")
+	if assert.Nil(err) {
+		assert.EqualValues(3, i)
+	}
+
+	i, err = SCard("sadd")
+	if assert.Nil(err) {
+		assert.EqualValues(5, i)
+	}
+}
