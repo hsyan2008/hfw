@@ -117,12 +117,18 @@ func SAdd(key string, args ...interface{}) (num int64, err error) {
 	return DefaultIns.SAdd(key, args...)
 }
 
+// SDiffStore 集群不支持SDiffStore.
+//  使用hash tag可以支持集群.
 func SDiffStore(key string, args ...interface{}) (num int64, err error) {
 	return DefaultIns.SDiffStore(key, args...)
 }
 
 func SCard(key string) (num int64, err error) {
 	return DefaultIns.SCard(key)
+}
+
+func SIsMember(key, member string) (b bool, err error) {
+	return DefaultIns.SIsMember(key, member)
 }
 
 func ZAdd(key string, args ...interface{}) (num int64, err error) {
