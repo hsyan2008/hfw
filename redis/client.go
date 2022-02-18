@@ -276,6 +276,12 @@ func (c *Client) SCard(key string) (num int64, err error) {
 	return
 }
 
+func (c *Client) SIsMember(key, member string) (b bool, err error) {
+	err = c.Do(radix.Cmd(&b, "SISMEMBER", c.AddPrefix(key), member))
+
+	return
+}
+
 func (c *Client) ZAdd(key string, args ...interface{}) (num int64, err error) {
 	err = c.Do(radix.FlatCmd(&num, "ZADD", c.AddPrefix(key), args...))
 

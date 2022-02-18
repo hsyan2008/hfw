@@ -726,3 +726,19 @@ func TestSCard(t *testing.T) {
 		assert.EqualValues(5, i)
 	}
 }
+
+func TestSIsMember(t *testing.T) {
+	assert := assert.New(t)
+
+	TestSAdd(t)
+
+	ok, err := SIsMember("sadd", "one")
+	if assert.Nil(err) {
+		assert.True(ok)
+	}
+
+	ok, err = SIsMember("sadd", "five")
+	if assert.Nil(err) {
+		assert.False(ok)
+	}
+}
