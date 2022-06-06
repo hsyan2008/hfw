@@ -1,6 +1,6 @@
 package pac
 
-import "github.com/gwuhaolin/gfwlist4go/gfwlist"
+import "github.com/hsyan2008/gfwlist4go/gfwlist"
 
 func LoadGwflist() (err error) {
 	//通过代理
