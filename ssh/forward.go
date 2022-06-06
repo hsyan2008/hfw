@@ -10,6 +10,13 @@ import (
 	"github.com/hsyan2008/hfw"
 )
 
+type ForwardConfig struct {
+	SSHConfig
+	Inner map[string]ForwardIni
+
+	Indirect map[string]ForwardConfig
+}
+
 type ForwardIni struct {
 	Addr string `toml:"addr"`
 	Bind string `toml:"bind"`
@@ -26,90 +33,78 @@ type Forward struct {
 	httpCtx *hfw.HTTPContext
 
 	t      ForwardType
-	fi     *ForwardIni
 	c      *SSH
 	c2     *SSH
-	step   uint8
 	lister net.Listener
 }
 
-func NewLocalForward(httpCtx *hfw.HTTPContext, sshConfig SSHConfig, fi *ForwardIni) (l *Forward, err error) {
-	return NewForward(httpCtx, LOCAL, sshConfig, fi)
+func NewLocalForward(httpCtx *hfw.HTTPContext, forwardConfig ForwardConfig) (l *Forward, err error) {
+	return NewForward(httpCtx, LOCAL, forwardConfig)
 }
 
-func NewRemoteForward(httpCtx *hfw.HTTPContext, sshConfig SSHConfig, fi *ForwardIni) (l *Forward, err error) {
-	return NewForward(httpCtx, REMOTE, sshConfig, fi)
+func NewRemoteForward(httpCtx *hfw.HTTPContext, forwardConfig ForwardConfig) (l *Forward, err error) {
+	return NewForward(httpCtx, REMOTE, forwardConfig)
 }
 
-func NewForward(httpCtx *hfw.HTTPContext, t ForwardType, sshConfig SSHConfig, fi *ForwardIni) (l *Forward, err error) {
+func NewForward(httpCtx *hfw.HTTPContext, t ForwardType, forwardConfig ForwardConfig) (l *Forward, err error) {
 	if httpCtx == nil {
 		return l, errors.New("nil ctx")
 	}
 	l = &Forward{
 		httpCtx: httpCtx,
-		step:    1,
 		t:       t,
 	}
 
-	l.c, err = NewSSH(sshConfig)
+	l.c, err = NewSSH(forwardConfig.SSHConfig)
 	if err != nil {
 		return
 	}
-	if fi != nil {
-		err = l.Bind(fi)
+	defer l.c.Close()
+
+	for _, fi := range forwardConfig.Inner {
+		go l.BindAndAccept(l.c, fi)
+	}
+
+	for _, indirect := range forwardConfig.Indirect {
+		c, err := l.c.DialRemote(indirect.SSHConfig)
 		if err != nil {
-			l.c.Close()
-			return
+			return nil, err
 		}
-		l.httpCtx.Infof("Bind %s forward to %s success, start to accept", l.lister.Addr().String(), fi.Addr)
-		l.Accept()
-	} else {
-		// l.c.Close()
-		return
+		for _, fi := range indirect.Inner {
+			go l.BindAndAccept(c, fi)
+		}
 	}
+
+	<-l.httpCtx.Done()
 
 	return
 }
 
-func (l *Forward) Dial(sshConfig SSHConfig, fi *ForwardIni) (err error) {
-	l.step++
-	if l.step == 2 {
-		l.c2, err = l.c.DialRemote(sshConfig)
-		if err == nil && fi != nil {
-			err = l.Bind(fi)
-		}
-		l.httpCtx.Infof("Bind %s forward to %s success, start to accept", l.lister.Addr().String(), fi.Addr)
-		l.Accept()
-	}
-
-	return
-}
-
-func (l *Forward) Bind(fi *ForwardIni) (err error) {
-	if fi != nil && len(fi.Addr) != 0 && len(fi.Bind) != 0 {
+func (l *Forward) BindAndAccept(c *SSH, fi ForwardIni) {
+	var lister net.Listener
+	var err error
+	if len(fi.Addr) != 0 && len(fi.Bind) != 0 {
 		if !strings.Contains(fi.Bind, ":") {
 			fi.Bind = ":" + fi.Bind
 		}
-		l.fi = fi
 		if l.t == LOCAL {
-			l.lister, err = net.Listen("tcp", l.fi.Bind)
+			lister, err = net.Listen("tcp", fi.Bind)
 		} else if l.t == REMOTE {
-			l.lister, err = l.c.Listen(l.fi.Bind)
+			lister, err = c.Listen(fi.Bind)
 		}
-	} else {
-		return errors.New("Err ForwardIni")
+		if err != nil {
+			l.httpCtx.Warn(err)
+			return
+		}
+		defer lister.Close()
+		l.httpCtx.Infof("Bind %s forward to %s success, start to accept", lister.Addr().String(), fi.Addr)
+		l.Accept(c, lister, fi)
 	}
-
-	return
 }
 
-func (l *Forward) Accept() {
-	go func() {
-		<-l.httpCtx.Done()
-		l.Close()
-	}()
+func (l *Forward) Accept(c *SSH, listen net.Listener, fi ForwardIni) {
 	for {
-		conn, err := l.lister.Accept()
+		conn, err := listen.Accept()
 		if err != nil {
 			l.Close()
 			if err != io.EOF && !strings.Contains(err.Error(), "use of closed network connection") {
@@ -117,21 +112,17 @@ func (l *Forward) Accept() {
 			}
 			return
 		}
-		go l.Hand(conn)
+		go l.Hand(c, conn, fi)
 	}
 }
 
-func (l *Forward) Hand(conn net.Conn) {
+func (l *Forward) Hand(c *SSH, conn net.Conn, fi ForwardIni) {
 	var err error
 	var con net.Conn
 	if l.t == LOCAL {
-		if l.c2 != nil {
-			con, err = l.c2.Connect(l.fi.Addr)
-		} else {
-			con, err = l.c.Connect(l.fi.Addr)
-		}
+		con, err = c.Connect(fi.Addr)
 	} else {
-		con, err = net.Dial("tcp", l.fi.Addr)
+		con, err = net.Dial("tcp", fi.Addr)
 	}
 	if err != nil {
 		l.httpCtx.Error(err)
@@ -144,11 +135,6 @@ func (l *Forward) Hand(conn net.Conn) {
 
 func (l *Forward) Close() {
 	l.httpCtx.Cancel()
-
-	_ = l.lister.Close()
-	if l.c2 != nil {
-		l.c2.Close()
-	}
 	l.c.Close()
 }
 
