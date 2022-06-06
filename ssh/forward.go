@@ -64,7 +64,7 @@ func NewForward(httpCtx *hfw.HTTPContext, t ForwardType, sshConfig SSHConfig, fi
 		l.httpCtx.Infof("Bind %s forward to %s success, start to accept", l.lister.Addr().String(), fi.Addr)
 		l.Accept()
 	} else {
-		l.c.Close()
+		// l.c.Close()
 		return
 	}
 
@@ -78,6 +78,8 @@ func (l *Forward) Dial(sshConfig SSHConfig, fi *ForwardIni) (err error) {
 		if err == nil && fi != nil {
 			err = l.Bind(fi)
 		}
+		l.httpCtx.Infof("Bind %s forward to %s success, start to accept", l.lister.Addr().String(), fi.Addr)
+		l.Accept()
 	}
 
 	return
@@ -123,7 +125,11 @@ func (l *Forward) Hand(conn net.Conn) {
 	var err error
 	var con net.Conn
 	if l.t == LOCAL {
-		con, err = l.c.Connect(l.fi.Addr)
+		if l.c2 != nil {
+			con, err = l.c2.Connect(l.fi.Addr)
+		} else {
+			con, err = l.c.Connect(l.fi.Addr)
+		}
 	} else {
 		con, err = net.Dial("tcp", l.fi.Addr)
 	}
