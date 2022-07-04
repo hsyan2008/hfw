@@ -8,7 +8,6 @@ require (
 	github.com/bippio/go-impala v2.1.0+incompatible // indirect
 	github.com/bradfitz/gomemcache v0.0.0-20190913173617-a41fca850d0b // indirect
 	github.com/denisenkom/go-mssqldb v0.10.0 // indirect
-	github.com/fsnotify/fsnotify v1.4.9
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/go-xorm/cachestore v0.0.0-20170409031804-adfa3466c8e4
 	github.com/google/uuid v1.2.0
@@ -20,12 +19,9 @@ require (
 	github.com/lib/pq v1.10.2 // indirect
 	github.com/mattn/go-sqlite3 v1.14.7 // indirect
 	github.com/mediocregopher/radix/v3 v3.7.0
-	github.com/mkevac/debugcharts v0.0.0-20191222103121-ae1c48aa8615
 	github.com/prometheus/client_golang v1.10.0
 	github.com/robfig/cron/v3 v3.0.1
-	github.com/shirou/gopsutil v3.21.4+incompatible
 	github.com/stretchr/testify v1.5.1 // indirect
-	github.com/tklauser/go-sysconf v0.3.6 // indirect
 	go.etcd.io/etcd/api/v3 v3.5.4
 	go.etcd.io/etcd/client/v3 v3.5.4
 	golang.org/x/net v0.0.0-20210520170846-37e1c6afe023 // indirect
