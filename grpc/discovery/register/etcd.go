@@ -1,3 +1,4 @@
+//go:build etcd
 // +build etcd
 
 package register
@@ -7,10 +8,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/coreos/etcd/clientv3"
 	"github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/grpc/discovery/common"
 	"github.com/hsyan2008/hfw/signal"
+	"go.etcd.io/etcd/client/v3"
 )
 
 var _ common.Register = &EtcdRegister{}

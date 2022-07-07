@@ -1,3 +1,4 @@
+//go:build etcd
 // +build etcd
 
 package resolver
@@ -7,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/coreos/etcd/clientv3"
-	"github.com/coreos/etcd/mvcc/mvccpb"
 	"github.com/hsyan2008/go-logger"
 	"github.com/hsyan2008/hfw/configs"
 	"github.com/hsyan2008/hfw/grpc/discovery/common"
 	"github.com/hsyan2008/hfw/signal"
+	"go.etcd.io/etcd/api/v3/mvccpb"
+	"go.etcd.io/etcd/client/v3"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/resolver"
 )
