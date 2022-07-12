@@ -67,6 +67,9 @@ func (respErr *RespErr) String() string {
 }
 
 func (respErr *RespErr) Unwrap() error {
+	if respErr == nil {
+		return nil
+	}
 	return respErr.err
 }
 
