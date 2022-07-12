@@ -66,6 +66,13 @@ func (respErr *RespErr) String() string {
 		respErr.file, respErr.line, respErr.ErrNo(), respErr.ErrMsg())
 }
 
+func (respErr *RespErr) Unwrap() error {
+	if respErr == nil {
+		return nil
+	}
+	return respErr.err
+}
+
 //记录调用本函数的位置
 func NewRespErr(errNo int64, i interface{}) (respErr *RespErr) {
 	if errNo == 0 || i == nil {
