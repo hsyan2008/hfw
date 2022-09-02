@@ -58,7 +58,7 @@ func ProxyServe(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if err := recover(); err != nil {
 			httpCtx.Error(err, string(common.GetStack()))
-			httpError(httpCtx, bufrw, http.StatusInternalServerError, "panic")
+			httpResponse(httpCtx, bufrw, http.StatusInternalServerError, nil, "panic")
 		}
 	}()
 
@@ -66,9 +66,12 @@ func ProxyServe(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		httpCtx.Warn(err)
 		if err == ErrAuth {
-			httpError(httpCtx, bufrw,
+			httpResponse(httpCtx, bufrw,
 				http.StatusProxyAuthRequired,
-				`Proxy-Authenticate: Basic realm="auth faild"`)
+				map[string]string{
+					`Proxy-Authenticate`: `Basic realm="auth faild"`,
+				},
+				"")
 		}
 		return
 	}
@@ -87,7 +90,7 @@ func ProxyServe(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				httpCtx.Warn(err)
 				if i == retryTime-1 {
-					httpError(httpCtx, bufrw, http.StatusBadGateway, "dial service faild")
+					httpResponse(httpCtx, bufrw, http.StatusBadGateway, nil, "dial service faild")
 					return
 				}
 				continue
@@ -102,7 +105,7 @@ func ProxyServe(w http.ResponseWriter, r *http.Request) {
 			}
 			if err != nil {
 				httpCtx.Warn(err)
-				httpError(httpCtx, bufrw, http.StatusBadGateway, "send data to service faild")
+				httpResponse(httpCtx, bufrw, http.StatusBadGateway, nil, "send data to service faild")
 				return
 			}
 
@@ -139,7 +142,11 @@ func copy(httpCtx *hfw.HTTPContext, des, src net.Conn) {
 	zerocopy.Transfer(des, src)
 }
 
-func httpError(httpCtx *hfw.HTTPContext, bufrw *bufio.ReadWriter, code int, msg string) {
-	bufrw.WriteString(fmt.Sprintf("HTTP/1.1 %d %s\r\nTrace-Id: %s\r\n\r\n%s\r\n", code, http.StatusText(code), httpCtx.GetTraceID(), msg))
+func httpResponse(httpCtx *hfw.HTTPContext, bufrw *bufio.ReadWriter, code int, headers map[string]string, msg string) {
+	bufrw.WriteString(fmt.Sprintf("HTTP/1.1 %d %s\r\nTrace-Id: %s", code, http.StatusText(code), httpCtx.GetTraceID()))
+	for k, v := range headers {
+		bufrw.WriteString(fmt.Sprintf("\r\n%s: %s", k, v))
+	}
+	bufrw.WriteString(fmt.Sprintf("\r\n\r\n%s\r\n", msg))
 	bufrw.Flush()
 }
