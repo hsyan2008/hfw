@@ -13,7 +13,7 @@ import (
 	"github.com/hsyan2008/hfw/grpc/discovery/common"
 	"github.com/hsyan2008/hfw/signal"
 	"go.etcd.io/etcd/api/v3/mvccpb"
-	"go.etcd.io/etcd/client/v3"
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/resolver"
 )
@@ -48,7 +48,7 @@ func (r *etcdBuilder) Build(target resolver.Target, cc resolver.ClientConn, opts
 
 	r.cc = cc
 
-	go r.watch("/" + target.Scheme + "/" + target.Endpoint + "/")
+	go r.watch("/" + target.Scheme + "/" + target.Endpoint() + "/")
 
 	return r, nil
 }

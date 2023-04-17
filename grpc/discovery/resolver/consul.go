@@ -40,7 +40,7 @@ func NewConsulBuilder(scheme, address, tag string) resolver.Builder {
 }
 
 func (cb *consulBuilder) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
-	cb.serviceName = target.Endpoint
+	cb.serviceName = target.Endpoint()
 
 	adds, serviceConfig, err := cb.resolve()
 	if err != nil {

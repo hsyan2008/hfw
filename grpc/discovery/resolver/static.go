@@ -43,7 +43,7 @@ type staticResolver struct {
 }
 
 func (r *staticResolver) start() {
-	addrStrs := r.addrsStore[r.target.Endpoint]
+	addrStrs := r.addrsStore[r.target.Endpoint()]
 	addrs := make([]resolver.Address, len(addrStrs))
 	for i, s := range addrStrs {
 		addrs[i] = resolver.Address{Addr: s}
