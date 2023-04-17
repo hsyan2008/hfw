@@ -108,16 +108,15 @@ func removeClientConn(c configs.GrpcConfig, err error) {
 
 func newClientConn(ctx context.Context, address string, c configs.GrpcConfig, authValue string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 	if strings.Contains(address, ":///") {
-		// opts = append(opts, grpc.WithBalancerName("round_robin")) //grpc里默认是grpc.WithBalancerName("pick_first")
 		switch c.BalancerName {
 		case "round_robin":
 			c.BalancerName = roundrobin.Name
-		case "pick_first":
+		case "pick_first": //grpc默认
 		default:
 			// 现在默认是p2c
 			c.BalancerName = p2c.Name
 		}
-		opts = append(opts, grpc.WithBalancerName(c.BalancerName))
+		opts = append(opts, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingConfig": [{"%s":{}}]}`, c.BalancerName)))
 	}
 	if len(c.CertFile) > 0 && !filepath.IsAbs(c.CertFile) {
 		c.CertFile = filepath.Join(common.GetAppPath(), c.CertFile)
