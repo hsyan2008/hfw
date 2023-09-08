@@ -167,7 +167,7 @@ func GenerateAndRegisterConsulResolver(cc configs.GrpcConfig) (schema string, er
 	if resolver.Get(cc.ResolverScheme) != nil {
 		return cc.ResolverScheme, nil
 	}
-	builder := NewConsulBuilder(cc.ResolverScheme, cc.ResolverAddresses[0], cc.Tag)
+	builder := NewConsulBuilder(cc.ResolverType, cc.ResolverAddresses[0], cc.Tag)
 	resolver.Register(builder)
 	schema = builder.Scheme()
 	return
