@@ -14,14 +14,14 @@ import (
 	"github.com/google/uuid"
 )
 
-//Response ..
+// Response ..
 type Response struct {
 	ErrNo   int64       `json:"err_no"`
 	ErrMsg  string      `json:"err_msg"`
 	Results interface{} `json:"results"`
 }
 
-//Max ..
+// Max ..
 func Max(i int, j ...int) int {
 	for _, v := range j {
 		if v > i {
@@ -31,7 +31,7 @@ func Max(i int, j ...int) int {
 	return i
 }
 
-//Min ..
+// Min ..
 func Min(i int, j ...int) int {
 	for _, v := range j {
 		if v < i {
@@ -41,12 +41,12 @@ func Min(i int, j ...int) int {
 	return i
 }
 
-//Md5 ..
+// Md5 ..
 func Md5(str string) string {
 	return fmt.Sprintf("%x", md5.Sum([]byte(str)))
 }
 
-//IsExist ...
+// IsExist ...
 func IsExist(filepath string) bool {
 	_, err := os.Stat(filepath)
 	if err == nil {
@@ -59,7 +59,7 @@ func IsExist(filepath string) bool {
 	return !os.IsNotExist(err)
 }
 
-//IsDir ...
+// IsDir ...
 func IsDir(filepath string) bool {
 	f, err := os.Stat(filepath)
 	if err != nil {
@@ -68,9 +68,9 @@ func IsDir(filepath string) bool {
 	return f.IsDir()
 }
 
-//转换为当前操作系统支持的编码
-//linux和mac为utf8
-//win为GBK
+// 转换为当前操作系统支持的编码
+// linux和mac为utf8
+// win为GBK
 func ToOsCode(text string) string {
 	if runtime.GOOS == "windows" {
 		enc := mahonia.NewEncoder(("gbk"))
@@ -84,7 +84,7 @@ func Uuid() string {
 	return GetPureUUID()
 }
 
-//获取客户端ip
+// 获取客户端ip
 func GetClientIP(r *http.Request) string {
 	ip := r.Header.Get("X-Forwarded-For")
 	if strings.Contains(ip, "127.0.0.1") || ip == "" {
@@ -125,9 +125,9 @@ func ConvertToInt(v interface{}) int {
 	return 0
 }
 
-//把中文转成\u8981之类的unicode编码
-//参考http://blog.cyeam.com/json/2014/08/04/go_json
-//utf8包
+// 把中文转成\u8981之类的unicode编码
+// 参考http://blog.cyeam.com/json/2014/08/04/go_json
+// utf8包
 func UtfToUnicode(d []byte) (reader *bytes.Buffer, err error) {
 	reader = new(bytes.Buffer)
 	for len(d) > 0 {
@@ -150,7 +150,7 @@ func UtfToUnicode(d []byte) (reader *bytes.Buffer, err error) {
 	return
 }
 
-//用于打印panic时的堆栈
+// 用于打印panic时的堆栈
 func GetStack() []byte {
 	buf := make([]byte, 1<<12) //16kb
 	num := runtime.Stack(buf, false)
@@ -160,12 +160,12 @@ func GetStack() []byte {
 
 func GetPureUUID(oldS ...string) (s string) {
 
-	s = uuid.New().String()
+	s = strings.ReplaceAll(uuid.New().String(), "-", "")
 	if len(oldS) > 0 && oldS[0] != "" {
 		s = fmt.Sprintf("%s_%s", oldS[0], s)
 	}
 
-	return strings.ReplaceAll(s, "-", "")
+	return s
 }
 
 func GetTraceIDFromRequest(r *http.Request) (traceID string) {
